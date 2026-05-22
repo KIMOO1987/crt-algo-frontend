@@ -51,10 +51,33 @@ export default function MultiExchangeDashboard() {
   // Stats / Metrics per Exchange
   const [metrics, setMetrics] = useState<Record<string, any>>({});
   const [statusLogs, setStatusLogs] = useState<string[]>([]);
+  const [terminalTab, setTerminalTab] = useState<'trade' | 'vault'>('trade');
+  const [exchangeLogs, setExchangeLogs] = useState<any[]>([]);
 
   const addLog = useCallback((msg: string) => {
     setStatusLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 30));
   }, []);
+
+  const fetchExchangeLogs = useCallback(async (exId: string, uId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('exchange_logs')
+        .select('*')
+        .eq('user_id', uId)
+        .eq('exchange_name', exId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+        
+      if (error) {
+        console.error("Error fetching exchange logs:", error);
+        return;
+      }
+      
+      setExchangeLogs(data || []);
+    } catch (err) {
+      console.error("Error fetching exchange logs:", err);
+    }
+  }, [supabase]);
 
   // Hydrate user tier, stats, and configurations
   const fetchDashboardData = async () => {
@@ -203,6 +226,18 @@ export default function MultiExchangeDashboard() {
       setAlignment('Both');
     }
   }, [activeTab, exchangeConfigs]);
+
+  // Poll exchange logs for active exchange tab
+  useEffect(() => {
+    if (!userId) return;
+    fetchExchangeLogs(activeTab, userId);
+    
+    const interval = setInterval(() => {
+      fetchExchangeLogs(activeTab, userId);
+    }, 10000); // Poll every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, [activeTab, userId, fetchExchangeLogs]);
 
   const saveExchangeSettings = async (exchangeId: string) => {
     if (!userId) return addLog("❌ Cannot save: Session not found.");
@@ -562,25 +597,79 @@ export default function MultiExchangeDashboard() {
             </div>
 
             {/* Sync Status Terminal Console */}
-            <div className="bg-zinc-950 border border-zinc-850 rounded-3xl p-6 h-[250px] overflow-hidden flex flex-col relative font-mono text-xs">
-              <div className="flex justify-between items-center pb-4 border-b border-zinc-850 mb-3 text-[10px] text-zinc-500 uppercase tracking-widest">
-                <span>⚡ REAL-TIME SYSTEM SYNC STATUS LOGS</span>
-                <span className="text-orange-500 flex items-center gap-1.5"><Flame size={12} /> Active</span>
+            <div className="bg-zinc-950 border border-zinc-850 rounded-3xl p-6 h-[300px] overflow-hidden flex flex-col relative font-mono text-xs">
+              <div className="flex justify-between items-center pb-4 border-b border-zinc-850 mb-3 text-[10px] text-zinc-500 uppercase tracking-widest shrink-0">
+                <div className="flex gap-6">
+                  <button 
+                    onClick={() => setTerminalTab('trade')} 
+                    className={`font-black tracking-widest uppercase transition-all pb-1 ${
+                      terminalTab === 'trade' 
+                        ? 'text-orange-500 border-b-2 border-orange-500 font-bold' 
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    📈 Trade Logs ({activeEx.name})
+                  </button>
+                  <button 
+                    onClick={() => setTerminalTab('vault')} 
+                    className={`font-black tracking-widest uppercase transition-all pb-1 ${
+                      terminalTab === 'vault' 
+                        ? 'text-orange-500 border-b-2 border-orange-500 font-bold' 
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    🔒 Vault Sync Logs
+                  </button>
+                </div>
+                <span className="text-orange-500 flex items-center gap-1.5"><Flame className="animate-pulse" size={12} /> Active</span>
               </div>
               <div className="overflow-y-auto flex-1 space-y-2.5 custom-scrollbar pr-2">
-                {statusLogs.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-zinc-600 font-bold uppercase tracking-wider text-[10px]">
-                    Vault fully idle. Awaiting configuration saves...
-                  </div>
-                ) : (
-                  statusLogs.map((log, i) => (
-                    <div key={i} className="flex gap-3 text-zinc-400">
-                      <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
-                      <span className={log.includes('❌') ? 'text-red-400' : log.includes('✅') ? 'text-emerald-400' : 'text-zinc-300'}>
-                        {log}
-                      </span>
+                {terminalTab === 'trade' ? (
+                  exchangeLogs.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-zinc-600 font-bold uppercase tracking-wider text-[10px]">
+                      No trade execution logs found for {activeEx.name}.
                     </div>
-                  ))
+                  ) : (
+                    exchangeLogs.map((log, i) => {
+                      const timeStr = new Date(log.created_at).toLocaleTimeString();
+                      const isError = log.log_type === 'ERROR' || log.message.includes('❌');
+                      const isSuccess = log.log_type === 'SUCCESS' || log.message.includes('✅');
+                      const isWarning = log.log_type === 'WARNING' || log.message.includes('⚠️');
+                      
+                      let colorClass = 'text-zinc-300';
+                      if (isError) colorClass = 'text-red-400 font-semibold';
+                      else if (isSuccess) colorClass = 'text-emerald-400 font-semibold';
+                      else if (isWarning) colorClass = 'text-orange-400 font-semibold';
+
+                      return (
+                        <div key={log.id || i} className="flex gap-2.5 text-zinc-400 animate-fadeIn">
+                          <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
+                          <span className="text-zinc-500 select-none font-semibold shrink-0">[{timeStr}]</span>
+                          {log.symbol && (
+                            <span className="text-blue-400 font-bold shrink-0">
+                              [{log.symbol.toUpperCase()}]
+                            </span>
+                          )}
+                          <span className={colorClass}>{log.message}</span>
+                        </div>
+                      );
+                    })
+                  )
+                ) : (
+                  statusLogs.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-zinc-600 font-bold uppercase tracking-wider text-[10px]">
+                      Vault fully idle. Awaiting configuration saves...
+                    </div>
+                  ) : (
+                    statusLogs.map((log, i) => (
+                      <div key={i} className="flex gap-3 text-zinc-400">
+                        <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
+                        <span className={log.includes('❌') ? 'text-red-400' : log.includes('✅') ? 'text-emerald-400' : 'text-zinc-300'}>
+                          {log}
+                        </span>
+                      </div>
+                    ))
+                  )
                 )}
               </div>
             </div>
