@@ -11,6 +11,7 @@ import {
 
 const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
 
+
 // Complete list of exchanges supported
 const SUPPORTED_EXCHANGES = [
   { id: 'okx', name: 'OKX', requirePassphrase: true, logo: '/okx.png', table: 'okx_auth' },
