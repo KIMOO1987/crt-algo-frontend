@@ -146,7 +146,14 @@ export default function MultiExchangeDashboard() {
         // OPTIMIZATION: Only fetch live balance for the ACTIVE exchange tab to avoid slow requests and exchange rate-limiting
         if (exData && exData.api_key && ex.id === activeTab) {
           try {
-            const balRes = await fetch(`/api/balance?userId=${uId}&exchange=${ex.id}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2-second timeout guard
+            
+            const balRes = await fetch(`/api/balance?userId=${uId}&exchange=${ex.id}`, {
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
             if (balRes.ok) {
               const balData = await balRes.json();
               if (balData.status === 'success') {
@@ -155,7 +162,7 @@ export default function MultiExchangeDashboard() {
               }
             }
           } catch (err) {
-            console.error(`Failed to fetch live balance for ${ex.id}:`, err);
+            console.warn(`Failed to fetch live balance for ${ex.id} (timeout/offline):`, err);
           }
         }
 
