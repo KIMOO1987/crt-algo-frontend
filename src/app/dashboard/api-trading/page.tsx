@@ -147,7 +147,7 @@ export default function MultiExchangeDashboard() {
         if (exData && exData.api_key && ex.id === activeTab) {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2-second timeout guard
+            const timeoutId = setTimeout(() => controller.abort(), 6000); // 6-second timeout guard
             
             const balRes = await fetch(`/api/balance?userId=${uId}&exchange=${ex.id}`, {
               signal: controller.signal
@@ -175,10 +175,30 @@ export default function MultiExchangeDashboard() {
           const slCount = execs.reduce((acc, curr) => acc + (curr.sl_hits ?? 0), 0);
           const beCount = execs.reduce((acc, curr) => acc + (curr.be_hits ?? 0), 0);
           
-          // Closing balance is the real-time balance if fetched, else last recorded closing balance
-          const currentBal = balanceFetched ? liveBalance : (execs[execs.length - 1].closing_balance ?? exData?.daily_risk_wallet ?? 1000);
-          // Initial balance is opening balance of first trade
-          const initialBal = execs[0].opening_balance ?? exData?.daily_risk_wallet ?? 1000;
+          // Initial balance: prefer the configured vault size (daily_risk_wallet) as the starting capital, 
+          // falling back to the first trade's opening balance, or 1000.
+          const initialBal = exData?.daily_risk_wallet ?? execs[0].opening_balance ?? 1000;
+
+          // Closing balance is the real-time balance if fetched, else last recorded closing balance.
+          // If the last trade is still active (closing_balance is null), we search backward for the latest non-null closing balance,
+          // then latest opening_balance, then fall back to exData?.daily_risk_wallet.
+          let fallbackClosing = null;
+          for (let i = execs.length - 1; i >= 0; i--) {
+            if (execs[i].closing_balance !== null && execs[i].closing_balance !== undefined) {
+              fallbackClosing = execs[i].closing_balance;
+              break;
+            }
+          }
+          if (fallbackClosing === null) {
+            for (let i = execs.length - 1; i >= 0; i--) {
+              if (execs[i].opening_balance !== null && execs[i].opening_balance !== undefined) {
+                fallbackClosing = execs[i].opening_balance;
+                break;
+              }
+            }
+          }
+          const currentBal = balanceFetched ? liveBalance : (fallbackClosing ?? exData?.daily_risk_wallet ?? 1000);
+
           // PnL is the net change
           const totalPnL = currentBal - initialBal;
 
@@ -475,7 +495,7 @@ export default function MultiExchangeDashboard() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Wallet size={12} /> Wallet Capital ($)</label>
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Wallet size={12} /> Vault Capital ($)</label>
               <input 
                 type="number" 
                 value={walletSize} 
@@ -674,7 +694,7 @@ export default function MultiExchangeDashboard() {
             {/* Balances & PnL metrics */}
             <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl">
               <h3 className="text-xs font-black text-orange-500 uppercase tracking-widest flex items-center gap-2 mb-6">
-                <BarChart3 size={16} /> Wallet Performance Board
+                <BarChart3 size={16} /> Vault Performance Board
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
