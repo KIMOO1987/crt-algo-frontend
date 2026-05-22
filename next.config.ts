@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
-
+import path from "path";
 const nextConfig: NextConfig = {
   output: process.env.NEXT_EXPORT === 'true' ? 'export' : undefined,
   images: {
     unoptimized: true,
+  },
+  turbopack: {
+    root: path.resolve('.'),
   },
   async rewrites() {
     return [
@@ -15,5 +18,4 @@ const nextConfig: NextConfig = {
     ];
   },
 };
-
 export default nextConfig;
