@@ -114,14 +114,37 @@ export default function MultiExchangeDashboard() {
           .eq('user_id', uId)
           .eq('exchange_name', ex.id);
 
+        let liveBalance = exData?.daily_risk_wallet ?? 1000;
+        let balanceFetched = false;
+
+        // Try to retrieve the live exchange balance via the secure API proxy
+        if (exData && exData.api_key) {
+          try {
+            const balRes = await fetch(`/api/balance?userId=${uId}&exchange=${ex.id}`);
+            if (balRes.ok) {
+              const balData = await balRes.json();
+              if (balData.status === 'success') {
+                liveBalance = Number(balData.balance);
+                balanceFetched = true;
+              }
+            }
+          } catch (err) {
+            console.error(`Failed to fetch live balance for ${ex.id}:`, err);
+          }
+        }
+
         if (execs && execs.length > 0) {
           const total = execs.length;
           const tpCount = execs.reduce((acc, curr) => acc + (curr.tp_hits ?? 0), 0);
           const slCount = execs.reduce((acc, curr) => acc + (curr.sl_hits ?? 0), 0);
           const beCount = execs.reduce((acc, curr) => acc + (curr.be_hits ?? 0), 0);
-          const currentBal = execs[execs.length - 1].closing_balance ?? exData?.daily_risk_wallet ?? 1000;
+          
+          // Closing balance is the real-time balance if fetched, else last recorded closing balance
+          const currentBal = balanceFetched ? liveBalance : (execs[execs.length - 1].closing_balance ?? exData?.daily_risk_wallet ?? 1000);
+          // Initial balance is opening balance of first trade
           const initialBal = execs[0].opening_balance ?? exData?.daily_risk_wallet ?? 1000;
-          const totalPnL = execs.reduce((acc, curr) => acc + Number(curr.pnl ?? 0), 0);
+          // PnL is the net change
+          const totalPnL = currentBal - initialBal;
 
           metricsTemp[ex.id] = {
             total,
@@ -138,8 +161,8 @@ export default function MultiExchangeDashboard() {
             tps: 0,
             sls: 0,
             bes: 0,
-            opening: exData?.daily_risk_wallet ?? 1000,
-            closing: exData?.daily_risk_wallet ?? 1000,
+            opening: liveBalance,
+            closing: liveBalance,
             pnl: 0
           };
         }
