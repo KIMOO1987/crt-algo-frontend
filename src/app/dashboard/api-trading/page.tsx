@@ -142,13 +142,17 @@ export default function MultiExchangeDashboard() {
         const initialBal = exData?.daily_risk_wallet ?? 1000;
 
         if (execs && execs.length > 0) {
-          const total = execs.length;
           // Partial TP = executions that hit TP1 (either ended at TP1 or hit BE after TP1)
           const partialTpCount = execs.filter(e => e.tp_hits === 1 || e.status === 'TP1_HIT' || e.status === 'BE_HIT').length;
           // Full TP = executions that hit TP2
           const fullTpCount = execs.filter(e => e.tp_hits === 2 || e.status === 'TP2_HIT').length;
           const slCount = execs.reduce((acc, curr) => acc + (curr.sl_hits ?? 0), 0);
           const beCount = execs.reduce((acc, curr) => acc + (curr.be_hits ?? 0), 0);
+          
+          // Calculate total physical trades: since all TP/BE trades hit partial TP first,
+          // the unique physical trades count is the maximum of partial TPs or (Full TPs + Break Evens),
+          // plus any direct SL hits. This avoids double-counting.
+          const total = Math.max(partialTpCount, fullTpCount + beCount) + slCount;
           
           // Calculate Net Realized PnL directly from closed trades
           const totalPnL = execs.reduce((acc, curr) => acc + (curr.pnl ?? 0), 0);
