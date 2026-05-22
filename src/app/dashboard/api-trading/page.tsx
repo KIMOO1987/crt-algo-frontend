@@ -238,12 +238,16 @@ export default function MultiExchangeDashboard() {
     }
   }, [activeTab, exchangeConfigs]);
 
+  // Load session and dashboard data on mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
   // Polling loop for active stats and logs (runs every 4 seconds for real-time responsiveness)
   useEffect(() => {
     if (!userId) return;
     
-    // Initial immediate fetch
-    fetchDashboardData();
+    // Initial immediate fetch for logs once user session is resolved
     fetchExchangeLogs(activeTab, userId);
     
     const interval = setInterval(() => {
