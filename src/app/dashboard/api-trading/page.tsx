@@ -32,6 +32,8 @@ export default function MultiExchangeDashboard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userTier, setUserTier] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState('okx');
+  const [loadedTab, setLoadedTab] = useState<string | null>(null);
+
   
   // Exchange credentials configuration states
   const [exchangeConfigs, setExchangeConfigs] = useState<Record<string, any>>({});
@@ -183,9 +185,11 @@ export default function MultiExchangeDashboard() {
       }
 
       setExchangeConfigs(configsTemp);
-      setApiKeys(keysTemp);
-      setEnvironments(envTemp);
-      setBotEnables(enableTemp);
+      if (loading) {
+        setApiKeys(keysTemp);
+        setEnvironments(envTemp);
+        setBotEnables(enableTemp);
+      }
       setMetrics(metricsTemp);
 
       setLoading(false);
@@ -193,26 +197,39 @@ export default function MultiExchangeDashboard() {
       console.error(e);
       setLoading(false);
     }
-  }, [supabase, activeTab]);
+  }, [supabase, loading]);
 
-  // Sync risk settings when switching active exchange tabs
+  // Sync risk settings and form inputs when switching active exchange tabs
   useEffect(() => {
-    const config = exchangeConfigs[activeTab];
-    if (config) {
-      setWalletSize(config.daily_risk_wallet ?? 1000);
-      setRiskPercent(config.risk_percentage ?? 1.0);
-      setMinRR(config.rr ?? 1.5);
-      setMaxConcurrent(config.max_concurrent_setups ?? 3);
-      setAlignment(config.alignment ?? 'Both');
-    } else {
-      // Defaults for unconfigured exchanges
-      setWalletSize(1000);
-      setRiskPercent(1.0);
-      setMinRR(1.5);
-      setMaxConcurrent(3);
-      setAlignment('Both');
+    if (loading) return;
+
+    if (loadedTab !== activeTab) {
+      const config = exchangeConfigs[activeTab];
+      if (config) {
+        setWalletSize(config.daily_risk_wallet ?? 1000);
+        setRiskPercent(config.risk_percentage ?? 1.0);
+        setMinRR(config.rr ?? 1.5);
+        setMaxConcurrent(config.max_concurrent_setups ?? 3);
+        setAlignment(config.alignment ?? 'Both');
+        
+        setApiKeys(prev => ({ ...prev, [activeTab]: config.api_key || '' }));
+        setEnvironments(prev => ({ ...prev, [activeTab]: config.environment || 'testnet' }));
+        setBotEnables(prev => ({ ...prev, [activeTab]: config.is_enabled ?? true }));
+      } else {
+        // Defaults for unconfigured exchanges
+        setWalletSize(1000);
+        setRiskPercent(1.0);
+        setMinRR(1.5);
+        setMaxConcurrent(3);
+        setAlignment('Both');
+        
+        setApiKeys(prev => ({ ...prev, [activeTab]: '' }));
+        setEnvironments(prev => ({ ...prev, [activeTab]: 'testnet' }));
+        setBotEnables(prev => ({ ...prev, [activeTab]: true }));
+      }
+      setLoadedTab(activeTab);
     }
-  }, [activeTab, exchangeConfigs]);
+  }, [activeTab, exchangeConfigs, loading, loadedTab]);
 
   // Load session and dashboard data on mount
   useEffect(() => {
