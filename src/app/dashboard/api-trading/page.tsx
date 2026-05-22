@@ -136,8 +136,9 @@ export default function MultiExchangeDashboard() {
           enableTemp[ex.id] = true;
         }
 
-        // Filter metrics client-side from optimized single database fetch
-        const execs = allExecs?.filter(e => e.exchange_name === ex.id) || [];
+        // Filter metrics client-side from optimized single database fetch and sort chronologically (oldest first)
+        const execs = (allExecs?.filter(e => e.exchange_name === ex.id) || [])
+          .sort((a, b) => new Date(a.executed_at).getTime() - new Date(b.executed_at).getTime());
 
         let liveBalance = exData?.daily_risk_wallet ?? 1000;
         let balanceFetched = false;
@@ -175,9 +176,9 @@ export default function MultiExchangeDashboard() {
           const slCount = execs.reduce((acc, curr) => acc + (curr.sl_hits ?? 0), 0);
           const beCount = execs.reduce((acc, curr) => acc + (curr.be_hits ?? 0), 0);
           
-          // Initial balance: prefer the configured vault size (daily_risk_wallet) as the starting capital, 
-          // falling back to the first trade's opening balance, or 1000.
-          const initialBal = exData?.daily_risk_wallet ?? execs[0].opening_balance ?? 1000;
+          // Initial balance: Prefer the actual exchange balance at the start of your first trade,
+          // falling back to live balance, configured vault size, or 1000.
+          const initialBal = execs.length > 0 ? (execs[0].opening_balance ?? exData?.daily_risk_wallet ?? 1000) : (liveBalance ?? exData?.daily_risk_wallet ?? 1000);
 
           // Closing balance is the real-time balance if fetched, else last recorded closing balance.
           // If the last trade is still active (closing_balance is null), we search backward for the latest non-null closing balance,
@@ -495,7 +496,7 @@ export default function MultiExchangeDashboard() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Wallet size={12} /> Vault Capital ($)</label>
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Wallet size={12} /> Daily Risk Capital ($)</label>
               <input 
                 type="number" 
                 value={walletSize} 
