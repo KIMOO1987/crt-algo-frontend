@@ -11,7 +11,6 @@ import {
 
 const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
 
-
 // Complete list of exchanges supported
 const SUPPORTED_EXCHANGES = [
   { id: 'okx', name: 'OKX', requirePassphrase: true, logo: '/okx.png', table: 'okx_auth' },
@@ -137,36 +136,10 @@ export default function MultiExchangeDashboard() {
           enableTemp[ex.id] = true;
         }
 
-        // Filter metrics client-side from optimized single database fetch and sort chronologically (oldest first)
-        const execs = (allExecs?.filter(e => e.exchange_name === ex.id) || [])
-          .sort((a, b) => new Date(a.executed_at).getTime() - new Date(b.executed_at).getTime());
+        // Filter metrics client-side from optimized single database fetch
+        const execs = allExecs?.filter(e => e.exchange_name === ex.id) || [];
 
-        let liveBalance = exData?.daily_risk_wallet ?? 1000;
-        let balanceFetched = false;
-
-        // Try to retrieve the live exchange balance via secure API proxy
-        // OPTIMIZATION: Only fetch live balance for the ACTIVE exchange tab to avoid slow requests and exchange rate-limiting
-        if (exData && exData.api_key && ex.id === activeTab) {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 6000); // 6-second timeout guard
-            
-            const balRes = await fetch(`/api/balance?userId=${uId}&exchange=${ex.id}`, {
-              signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            if (balRes.ok) {
-              const balData = await balRes.json();
-              if (balData.status === 'success') {
-                liveBalance = Number(balData.balance);
-                balanceFetched = true;
-              }
-            }
-          } catch (err) {
-            console.warn(`Failed to fetch live balance for ${ex.id} (timeout/offline):`, err);
-          }
-        }
+        const initialBal = exData?.daily_risk_wallet ?? 1000;
 
         if (execs && execs.length > 0) {
           const total = execs.length;
@@ -177,32 +150,9 @@ export default function MultiExchangeDashboard() {
           const slCount = execs.reduce((acc, curr) => acc + (curr.sl_hits ?? 0), 0);
           const beCount = execs.reduce((acc, curr) => acc + (curr.be_hits ?? 0), 0);
           
-          // Initial balance: Prefer the actual exchange balance at the start of your first trade,
-          // falling back to live balance, configured vault size, or 1000.
-          const initialBal = execs.length > 0 ? (execs[0].opening_balance ?? exData?.daily_risk_wallet ?? 1000) : (liveBalance ?? exData?.daily_risk_wallet ?? 1000);
-
-          // Closing balance is the real-time balance if fetched, else last recorded closing balance.
-          // If the last trade is still active (closing_balance is null), we search backward for the latest non-null closing balance,
-          // then latest opening_balance, then fall back to exData?.daily_risk_wallet.
-          let fallbackClosing = null;
-          for (let i = execs.length - 1; i >= 0; i--) {
-            if (execs[i].closing_balance !== null && execs[i].closing_balance !== undefined) {
-              fallbackClosing = execs[i].closing_balance;
-              break;
-            }
-          }
-          if (fallbackClosing === null) {
-            for (let i = execs.length - 1; i >= 0; i--) {
-              if (execs[i].opening_balance !== null && execs[i].opening_balance !== undefined) {
-                fallbackClosing = execs[i].opening_balance;
-                break;
-              }
-            }
-          }
-          const currentBal = balanceFetched ? liveBalance : (fallbackClosing ?? exData?.daily_risk_wallet ?? 1000);
-
-          // PnL is the net change
-          const totalPnL = currentBal - initialBal;
+          // Calculate Net Realized PnL directly from closed trades
+          const totalPnL = execs.reduce((acc, curr) => acc + (curr.pnl ?? 0), 0);
+          const currentBal = initialBal + totalPnL;
 
           metricsTemp[ex.id] = {
             total,
@@ -221,8 +171,8 @@ export default function MultiExchangeDashboard() {
             fullTps: 0,
             sls: 0,
             bes: 0,
-            opening: liveBalance,
-            closing: liveBalance,
+            opening: initialBal,
+            closing: initialBal,
             pnl: 0
           };
         }
