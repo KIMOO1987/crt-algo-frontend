@@ -6,7 +6,8 @@ import CryptoJS from 'crypto-js';
 import { 
   ShieldAlert, ShieldCheck, Activity, Wallet, Percent, 
   Target, Lock, Save, Settings2, BarChart3, TrendingUp, CheckCircle, 
-  XCircle, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownRight, Flame
+  XCircle, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownRight, Flame,
+  PlayCircle, Compass, Award, GitBranch
 } from 'lucide-react';
 
 const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
@@ -49,6 +50,10 @@ export default function MultiExchangeDashboard() {
   const [minRR, setMinRR] = useState(1.5);
   const [maxConcurrent, setMaxConcurrent] = useState(3);
   const [alignment, setAlignment] = useState('Both');
+  const [entryMode, setEntryMode] = useState('market');
+  const [sweepQuality, setSweepQuality] = useState('All');
+  const [gradeSetting, setGradeSetting] = useState('All');
+  const [htfAlignment, setHtfAlignment] = useState('All');
 
   // Stats / Metrics per Exchange
   const [metrics, setMetrics] = useState<Record<string, any>>({});
@@ -211,6 +216,10 @@ export default function MultiExchangeDashboard() {
         setMinRR(config.rr ?? 1.5);
         setMaxConcurrent(config.max_concurrent_setups ?? 3);
         setAlignment(config.alignment ?? 'Both');
+        setEntryMode(config.entry_mode ?? 'market');
+        setSweepQuality(config.sweep_quality ?? 'All');
+        setGradeSetting(config.grade ?? 'All');
+        setHtfAlignment(config.htf_alignment ?? 'All');
         
         setApiKeys(prev => ({ ...prev, [activeTab]: config.api_key || '' }));
         setEnvironments(prev => ({ ...prev, [activeTab]: config.environment || 'testnet' }));
@@ -222,6 +231,10 @@ export default function MultiExchangeDashboard() {
         setMinRR(1.5);
         setMaxConcurrent(3);
         setAlignment('Both');
+        setEntryMode('market');
+        setSweepQuality('All');
+        setGradeSetting('All');
+        setHtfAlignment('All');
         
         setApiKeys(prev => ({ ...prev, [activeTab]: '' }));
         setEnvironments(prev => ({ ...prev, [activeTab]: 'testnet' }));
@@ -341,6 +354,10 @@ export default function MultiExchangeDashboard() {
       rr: minRR,
       max_concurrent_setups: maxConcurrent,
       alignment: alignment,
+      entry_mode: entryMode,
+      sweep_quality: sweepQuality,
+      grade: gradeSetting,
+      htf_alignment: htfAlignment,
       updated_at: new Date().toISOString()
     };
 
@@ -517,6 +534,74 @@ export default function MultiExchangeDashboard() {
                 <option value="Aligned">Aligned Only</option>
                 <option value="Counter">Counter Only</option>
               </select>
+            </div>
+          </div>
+
+          {/* Advanced Risk & Quality Filters Row */}
+          <div className="border-t border-zinc-850 pt-6">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-1.5">
+              <ShieldCheck size={14} className="text-orange-500" /> Advanced Quality & Execution Filters
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <PlayCircle size={12} /> Entry Execution Mode
+                </label>
+                <select 
+                  value={entryMode} 
+                  onChange={(e) => setEntryMode(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+                >
+                  <option value="market">Market Order</option>
+                  <option value="limit">Limit Order</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Compass size={12} /> Sweep Quality Filter
+                </label>
+                <select 
+                  value={sweepQuality} 
+                  onChange={(e) => setSweepQuality(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+                >
+                  <option value="All">All Sweeps (Bypass)</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                  <option value="Normal">Normal</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Award size={12} /> Grading Filter
+                </label>
+                <select 
+                  value={gradeSetting} 
+                  onChange={(e) => setGradeSetting(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+                >
+                  <option value="All">All Grades (Bypass)</option>
+                  <option value="A++">A++</option>
+                  <option value="A+">A+</option>
+                  <option value="GOOD">GOOD</option>
+                  <option value="NORMAL">NORMAL</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <GitBranch size={12} /> HTF Timeframe Alignment
+                </label>
+                <select 
+                  value={htfAlignment} 
+                  onChange={(e) => setHtfAlignment(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+                >
+                  <option value="All">All Alignments (Bypass)</option>
+                  <option value="M5/H1">5M - 1H Alignment</option>
+                  <option value="M15/H4">15M - 4H Alignment</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
