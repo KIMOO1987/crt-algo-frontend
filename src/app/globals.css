@@ -1,0 +1,171 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 1. DESIGN TOKENS (LIGHT & DARK) */
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --font-sans: 'Inter', var(--font-geist-sans), sans-serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  /* Light Mode Variables */
+  --bg: #f8fafc;
+  --fg: #0f172a;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-border-highlight: rgba(255, 255, 255, 0.9);
+  --glass-shadow: rgba(0, 0, 0, 0.05);
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --input-border: rgba(148, 163, 184, 0.3);
+  --glow-primary: rgba(249, 115, 22, 0.3); /* Orange 500 */
+}
+
+.dark {
+  /* Dark Mode Variables */
+  --bg: #030407;
+  --fg: #ffffff;
+  --glass-bg: rgba(10, 15, 25, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-highlight: rgba(255, 255, 255, 0.2);
+  --glass-shadow: rgba(0, 0, 0, 0.4);
+  --input-bg: rgba(0, 0, 0, 0.4);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --glow-primary: rgba(249, 115, 22, 0.4); /* Orange 500 */
+}
+
+/* 2. BASE STYLING */
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden; 
+  width: 100%;
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* 3. MOBILE OVERLAP FIREWALL */
+@media (max-width: 1024px) {
+  aside, .sidebar, [role="navigation"] {
+    display: none !important;
+  }
+  main, .main-content, #dashboard-root {
+    margin-left: 0 !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-top: 5rem !important; /* Pushes content below the mobile MENU button */
+    width: 100vw !important;
+  }
+}
+
+/* 4. CUSTOM COMPONENTS & BENTO/GLASS UTILS */
+@layer components {
+  .preserve-3d { transform-style: preserve-3d; }
+  .perspective-1000 { perspective: 1000px; }
+
+  /* BENTO/GLASS PANEL */
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border-highlight);
+    border-left: 1px solid var(--glass-border-highlight);
+    box-shadow: 0 10px 40px -10px var(--glass-shadow);
+    border-radius: 2rem;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  /* MODERN PILL BUTTON */
+  .btn-modern {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 5s ease infinite;
+    color: white;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 11px;
+    padding: 1rem 2rem;
+    border-radius: 9999px; /* Pill Shape */
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 8px 20px -5px var(--glow-primary), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-modern::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 50%; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+    transform: skewX(-20deg);
+    transition: all 0.5s ease;
+  }
+
+  .btn-modern:hover::before {
+    left: 150%;
+  }
+
+  .btn-modern:hover {
+    box-shadow: 0 12px 30px -5px var(--glow-primary), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transform: translateY(-3px) scale(1.02);
+  }
+
+  .btn-modern:active {
+    transform: translateY(1px) scale(0.98);
+    box-shadow: 0 4px 10px var(--glow-primary);
+  }
+
+  /* MODERN INPUT */
+  .input-modern {
+    background: var(--input-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--input-border);
+    border-radius: 9999px; /* Pill shape */
+    padding: 1rem 1.5rem;
+    font-size: 13px;
+    color: var(--fg);
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 5px var(--glass-shadow);
+  }
+
+  .input-modern:focus {
+    border-color: #8b5cf6;
+    background: var(--glass-bg);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3), inset 0 2px 5px var(--glass-shadow);
+    outline: none;
+  }
+
+  /* STATUS BADGE */
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-width: 1px;
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 5. CUSTOM SCROLLBAR */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border-highlight);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
