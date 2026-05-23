@@ -153,8 +153,8 @@ export default function MultiExchangeDashboard() {
           const partialTpCount = execs.filter(e => e.tp_hits === 1 || e.status === 'TP1_HIT' || e.status === 'BE_HIT').length;
           // Full TP = executions that hit TP2
           const fullTpCount = execs.filter(e => e.tp_hits === 2 || e.status === 'TP2_HIT').length;
-          const slCount = execs.reduce((acc, curr) => acc + (curr.sl_hits ?? 0), 0);
-          const beCount = execs.reduce((acc, curr) => acc + (curr.be_hits ?? 0), 0);
+          const slCount = execs.filter(e => e.status === 'SL_HIT' || (e.sl_hits && e.sl_hits > 0)).length;
+          const beCount = execs.filter(e => e.status === 'BE_HIT' || (e.be_hits && e.be_hits > 0)).length;
           
           // Calculate total physical trades: since all TP/BE trades hit partial TP first,
           // the unique physical trades count is the maximum of partial TPs or (Full TPs + Break Evens),
@@ -567,8 +567,6 @@ export default function MultiExchangeDashboard() {
                 >
                   <option value="All">All Sweeps (Bypass)</option>
                   <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
                   <option value="Normal">Normal</option>
                 </select>
               </div>
