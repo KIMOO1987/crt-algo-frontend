@@ -142,6 +142,7 @@ export default function SignalsPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [assetClass, setAssetClass] = useState('ALL');
+  const [tfAlignment, setTfAlignment] = useState('ALL');
 
   const fetchSignals = useCallback(async (page: number, isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -157,6 +158,10 @@ export default function SignalsPage() {
 
     if (assetClass !== 'ALL') {
       query = query.eq('category', assetClass);
+    }
+
+    if (tfAlignment !== 'ALL') {
+      query = query.eq('tf_alignment', tfAlignment);
     }
 
     if (dateFrom) {
@@ -186,17 +191,17 @@ export default function SignalsPage() {
     if (data) {
       setSignals(data);
       setTotalCount(count || 0);
-      if (page === 1 && !searchTerm && assetClass === 'ALL') localStorage.setItem('history_cache', JSON.stringify(data));
+      if (page === 1 && !searchTerm && assetClass === 'ALL' && tfAlignment === 'ALL') localStorage.setItem('history_cache', JSON.stringify(data));
     }
     setLoading(false);
-  }, [searchTerm, assetClass, dateFrom, dateTo]);
+  }, [searchTerm, assetClass, dateFrom, dateTo, tfAlignment]);
 
   useEffect(() => {
     const delay = setTimeout(() => fetchSignals(currentPage), 400);
     return () => clearTimeout(delay);
   }, [fetchSignals, currentPage]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo, assetClass]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo, assetClass, tfAlignment]);
 
   if (authLoading || (loading && signals.length === 0)) {
     return (
@@ -237,6 +242,13 @@ export default function SignalsPage() {
                 <option value="FOREX">FOREX</option>
                 <option value="INDICES">INDICES</option>
                 <option value="METALS">METALS</option>
+              </select>
+              <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none">
+                <option value="ALL">ALL ALIGNMENTS</option>
+                <option value="M5/H1">5M - 1H Alignment</option>
+                <option value="M15/H4">15M - 4H Alignment</option>
+                <option value="M30/H6">30M - 6H Alignment</option>
+                <option value="H1/D1">1H - 1D Alignment</option>
               </select>
               <div className="relative flex-grow md:w-64 h-[42px]">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />

@@ -154,6 +154,7 @@ export default function PerformancePage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [assetClass, setAssetClass] = useState('ALL');
+  const [tfAlignment, setTfAlignment] = useState('ALL');
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({
     key: 'created_at',
     direction: 'desc'
@@ -186,6 +187,9 @@ export default function PerformancePage() {
       if (assetClass !== 'ALL') {
         query = query.eq('category', assetClass);
       }
+      if (tfAlignment !== 'ALL') {
+        query = query.eq('tf_alignment', tfAlignment);
+      }
       if (dateFrom) {
         query = query.gte('created_at', new Date(dateFrom).toISOString());
       }
@@ -210,6 +214,7 @@ export default function PerformancePage() {
 
         if (searchTerm) statsQuery = statsQuery.ilike('symbol', `%${searchTerm}%`);
         if (assetClass !== 'ALL') statsQuery = statsQuery.eq('category', assetClass);
+        if (tfAlignment !== 'ALL') statsQuery = statsQuery.eq('tf_alignment', tfAlignment);
         if (dateFrom) statsQuery = statsQuery.gte('created_at', new Date(dateFrom).toISOString());
         if (dateTo) {
           const toDate = new Date(dateTo);
@@ -261,7 +266,7 @@ export default function PerformancePage() {
         setStats(calculatedStats);
         setTotalCount(count || 0);
         
-        if (page === 1 && !searchTerm && assetClass === 'ALL') {
+        if (page === 1 && !searchTerm && assetClass === 'ALL' && tfAlignment === 'ALL') {
           localStorage.setItem('perf_history_cache', JSON.stringify(data));
           localStorage.setItem('perf_stats_cache', JSON.stringify(calculatedStats));
         }
@@ -271,14 +276,14 @@ export default function PerformancePage() {
     } finally {
       setLoading(false);
     }
-  }, [user, searchTerm, assetClass, dateFrom, dateTo]);
+  }, [user, searchTerm, assetClass, dateFrom, dateTo, tfAlignment]);
 
   useEffect(() => {
     const delay = setTimeout(() => fetchPerformance(currentPage), 400);
     return () => clearTimeout(delay);
   }, [fetchPerformance, currentPage, sortConfig]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo, assetClass]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo, assetClass, tfAlignment]);
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
@@ -341,6 +346,18 @@ export default function PerformancePage() {
                   <option value="FOREX" className="">FOREX</option>
                   <option value="INDICES" className="">INDICES</option>
                   <option value="METALS" className="">METALS</option>
+                </select>
+              </div>
+
+              {/* Timeframe Alignment Filter */}
+              <div className="flex flex-col gap-1 w-full md:w-48">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe Alignment</label>
+                <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full">
+                  <option value="ALL">ALL ALIGNMENTS</option>
+                  <option value="M5/H1">5M - 1H Alignment</option>
+                  <option value="M15/H4">15M - 4H Alignment</option>
+                  <option value="M30/H6">30M - 6H Alignment</option>
+                  <option value="H1/D1">1H - 1D Alignment</option>
                 </select>
               </div>
 

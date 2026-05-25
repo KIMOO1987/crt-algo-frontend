@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import AccessGuard from '@/components/AccessGuard'; // Switched to AccessGuard
 import {
   Clock, Activity, Zap, ArrowUpRight, TrendingUp,
-  TrendingDown, Layout, Target, Shield, AlertCircle
+  TrendingDown, Layout, Target, Shield, AlertCircle, Calendar
 } from 'lucide-react';
 import SignalModal from '@/components/SignalModal';
 
@@ -27,6 +27,31 @@ export default function ActiveSignalsPage() {
   const [loadingSignals, setLoadingSignals] = useState(true);
   const [livePrices, setLivePrices] = useState<{ [key: string]: number }>({});
   const [selectedSignal, setSelectedSignal] = useState<any | null>(null);
+  const [tfAlignment, setTfAlignment] = useState('ALL');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  const filteredSignals = useMemo(() => {
+    return activeSignals.filter(signal => {
+      if (tfAlignment !== 'ALL' && signal.tf_alignment !== tfAlignment) {
+        return false;
+      }
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        if (new Date(signal.created_at) < fromDate) {
+          return false;
+        }
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (new Date(signal.created_at) > toDate) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [activeSignals, tfAlignment, dateFrom, dateTo]);
 
   // 1. SIGNAL DATA FETCHING & REALTIME
   useEffect(() => {
@@ -255,11 +280,55 @@ export default function ActiveSignalsPage() {
             </div>
           </div>
 
+          {/* Filters Bar */}
+          <div className="glass-panel p-5 rounded-[1.5rem] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-center">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">Timeframe Alignment</span>
+              <div className="input-modern relative">
+                <select 
+                  value={tfAlignment} 
+                  onChange={(e) => setTfAlignment(e.target.value)} 
+                  className="bg-transparent font-black text-sm w-full outline-none appearance-none cursor-pointer pr-4"
+                >
+                  <option value="ALL" className="bg-[var(--bg)]">All Alignments</option>
+                  <option value="M5/H1" className="bg-[var(--bg)]">5M - 1H Alignment</option>
+                  <option value="M15/H4" className="bg-[var(--bg)]">15M - 4H Alignment</option>
+                  <option value="M30/H6" className="bg-[var(--bg)]">30M - 6H Alignment</option>
+                  <option value="H1/D1" className="bg-[var(--bg)]">1H - 1D Alignment</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">From Date</span>
+              <div className="flex items-center input-modern">
+                <Calendar size={14} className="text-blue-400 mr-2 flex items-center" />
+                <input 
+                  type="date" 
+                  value={dateFrom} 
+                  onChange={(e) => setDateFrom(e.target.value)} 
+                  className="bg-transparent font-black text-xs w-full outline-none appearance-none cursor-pointer" 
+                />
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">To Date</span>
+              <div className="flex items-center input-modern">
+                <Calendar size={14} className="text-blue-400 mr-2 flex items-center" />
+                <input 
+                  type="date" 
+                  value={dateTo} 
+                  onChange={(e) => setDateTo(e.target.value)} 
+                  className="bg-transparent font-black text-xs w-full outline-none appearance-none cursor-pointer" 
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Signals Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
             <AnimatePresence mode="popLayout">
-              {activeSignals.length > 0 ? (
-                activeSignals.map((signal) => (
+              {filteredSignals.length > 0 ? (
+                filteredSignals.map((signal) => (
                   <motion.div
                     key={signal.id}
                     layout

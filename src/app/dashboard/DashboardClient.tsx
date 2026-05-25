@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
   TrendingUp, Zap, Star, Activity, BarChart3, Target, Layers,
   Wallet, CheckCircle2, XCircle, MinusCircle, Percent, Save, Mail, TrendingDown,
-  Info, AlertCircle, ChevronRight, Clock, Key, Copy, Check
+  Info, AlertCircle, ChevronRight, Clock, Key, Copy, Check, Calendar
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip,
@@ -36,6 +36,9 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
   const [rewardValue, setRewardValue] = useState(userProfile?.reward_value || 2.0); 
   const [timeframe, setTimeframe] = useState('all');
   const [assetClass, setAssetClass] = useState('ALL');
+  const [tfAlignment, setTfAlignment] = useState('ALL');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [copied, setCopied] = useState(false); // <-- NEW STATE
@@ -70,7 +73,10 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
       p_risk_percent: riskValue,
       p_reward_ratio: rewardValue,
       p_timeframe: timeframe,
-      p_asset_class: assetClass
+      p_asset_class: assetClass,
+      p_tf_alignment: tfAlignment,
+      p_date_from: dateFrom ? new Date(dateFrom).toISOString() : null,
+      p_date_to: dateTo ? new Date(new Date(dateTo).setHours(23, 59, 59, 999)).toISOString() : null
     });
 
     if (error) {
@@ -85,7 +91,7 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
       setRecentSignals(data.recentSignals || []);
     }
     setIsInitialLoad(false);
-  }, [userProfile?.id, accountSize, riskValue, rewardValue, timeframe, assetClass]);
+  }, [userProfile?.id, accountSize, riskValue, rewardValue, timeframe, assetClass, tfAlignment, dateFrom, dateTo]);
 
   // --- EXACT LOCATION OF THE CODE YOU ASKED FOR ---
   useEffect(() => {
@@ -182,15 +188,31 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
                </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <InputBox label="Account Size" icon={<Wallet size={16}/>} value={accountSize} onChange={setAccountSize} prefix="$" color="emerald" />
                 <InputBox label="Risk per SL" icon={<Percent size={16}/>} value={riskValue} onChange={setRiskValue} suffix="R" color="red" />
                 <InputBox label="Reward per TP" icon={<TrendingUp size={16}/>} value={rewardValue} onChange={setRewardValue} suffix="R" color="blue" />
+                <div className="flex items-end">
+                   <button onClick={handleSaveSettings} disabled={isSaving} className="btn-modern h-[50px] flex items-center justify-center gap-2 w-full">
+                      <Save size={16} className={isSaving ? 'animate-spin' : ''} /> {isSaving ? 'Saving' : 'Save Config'}
+                   </button>
+                </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 border-t border-[var(--glass-border)] pt-6">
                 <SelectBox label="Result Scope" value={timeframe} onChange={setTimeframe} options={[{v:'all', l:'All Time'}, {v:'daily', l:'Daily'}, {v:'weekly', l:'Weekly'}, {v:'monthly', l:'Monthly'}]} />
                 <SelectBox label="Asset Class" value={assetClass} onChange={setAssetClass} options={[{v:'ALL', l:'All Assets'}, {v:'CRYPTO', l:'Crypto'}, {v:'FOREX', l:'Forex'}, {v:'METALS', l:'Metals'}]} />
-                <button onClick={handleSaveSettings} disabled={isSaving} className="btn-modern h-[50px] self-end flex items-center justify-center gap-2 w-full md:w-auto">
-                   <Save size={16} className={isSaving ? 'animate-spin' : ''} /> {isSaving ? 'Saving' : 'Save Config'}
-                </button>
+                <SelectBox label="Timeframe Alignment" value={tfAlignment} onChange={setTfAlignment} options={[
+                   { v: 'ALL', l: 'All Alignments' },
+                   { v: 'M5/H1', l: '5M - 1H Alignment' },
+                   { v: 'M15/H4', l: '15M - 4H Alignment' },
+                   { v: 'M30/H6', l: '30M - 6H Alignment' },
+                   { v: 'H1/D1', l: '1H - 1D Alignment' }
+                ]} />
+                <div className="grid grid-cols-2 gap-4">
+                   <DateInput label="From Date" value={dateFrom} onChange={setDateFrom} icon={<Calendar size={14} className="text-purple-400" />} />
+                   <DateInput label="To Date" value={dateTo} onChange={setDateTo} icon={<Calendar size={14} className="text-purple-400" />} />
+                </div>
             </div>
         </motion.div>
 
@@ -279,6 +301,23 @@ function SelectBox({ label, value, onChange, options }: any) {
           <select value={value} onChange={(e) => onChange(e.target.value)} className="bg-transparent font-black text-lg w-full outline-none appearance-none cursor-pointer pr-4">
             {options.map((o: any) => <option key={o.v} value={o.v} className="bg-[var(--bg)]">{o.l}</option>)}
           </select>
+       </div>
+    </div>
+  );
+}
+
+function DateInput({ label, value, onChange, icon }: any) {
+  return (
+    <div className="flex flex-col w-full">
+       <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">{label}</span>
+       <div className="flex items-center input-modern">
+          {icon && <span className="opacity-50 mr-2 flex items-center">{icon}</span>}
+          <input 
+             type="date" 
+             value={value} 
+             onChange={(e) => onChange(e.target.value)} 
+             className="bg-transparent font-black text-sm w-full outline-none appearance-none cursor-pointer" 
+          />
        </div>
     </div>
   );

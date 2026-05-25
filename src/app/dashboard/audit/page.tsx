@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/hooks/useAuth';
 import AccessGuard from '@/components/AccessGuard';
-import { Search, Activity, Zap, TrendingUp, Layers, Target, Wallet, BarChart3, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Activity, Zap, TrendingUp, Layers, Target, Wallet, BarChart3, AlertCircle, ChevronUp, ChevronDown, Calendar } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
 
 // Sub-component remains the same as your original
@@ -48,6 +48,9 @@ export default function SymbolAudit() {
 
   const [search, setSearch] = useState('');
   const [assetClass, setAssetClass] = useState('ALL');
+  const [tfAlignment, setTfAlignment] = useState('ALL');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({
     key: 'totalRR',
     direction: 'desc'
@@ -70,11 +73,26 @@ export default function SymbolAudit() {
 
     const fetchPerformance = async () => {
       try {
-        // 1. Fetch ALL completed signals directly to include PUBLIC signals
-        const { data, error } = await supabase
+        let query = supabase
           .from('signals')
           .select('symbol, status, entry_price, sl, tp, tp_secondary')
           .eq('is_active', false);
+
+        if (tfAlignment !== 'ALL') {
+          query = query.eq('tf_alignment', tfAlignment);
+        }
+
+        if (dateFrom) {
+          query = query.gte('created_at', new Date(dateFrom).toISOString());
+        }
+
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999);
+          query = query.lte('created_at', toDate.toISOString());
+        }
+
+        const { data, error } = await query;
 
         if (data) {
           // 2. Aggregate manually by symbol
@@ -137,7 +155,7 @@ export default function SymbolAudit() {
     };
 
     fetchPerformance();
-  }, [user]);
+  }, [user, tfAlignment, dateFrom, dateTo]);
 
   // 3. DYNAMIC FILTERING (Optimized with useMemo)
   const filteredStats = useMemo(() => {
@@ -208,7 +226,7 @@ export default function SymbolAudit() {
               </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
+            <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
               <div className="flex flex-col gap-1 w-full md:w-48">
                 <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
                 <div className="relative">
@@ -218,16 +236,60 @@ export default function SymbolAudit() {
                     onChange={(e) => setAssetClass(e.target.value)}
                     className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full"
                   >
-                    <option value="ALL" className="">ALL ASSETS</option>
-                    <option value="CRYPTO" className="">CRYPTO</option>
-                    <option value="FOREX" className="">FOREX</option>
-                    <option value="INDICES" className="">INDICES</option>
-                    <option value="METALS" className="">METALS</option>
+                    <option value="ALL">ALL ASSETS</option>
+                    <option value="CRYPTO">CRYPTO</option>
+                    <option value="FOREX">FOREX</option>
+                    <option value="INDICES">INDICES</option>
+                    <option value="METALS">METALS</option>
                   </select>
                 </div>
               </div>
 
-              <div className="relative flex-grow md:w-64 self-end h-[42px] mb-0.5">
+              <div className="flex flex-col gap-1 w-full md:w-48">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe Alignment</label>
+                <div className="relative">
+                  <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
+                  <select
+                    value={tfAlignment}
+                    onChange={(e) => setTfAlignment(e.target.value)}
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full"
+                  >
+                    <option value="ALL">ALL ALIGNMENTS</option>
+                    <option value="M5/H1">5M - 1H Alignment</option>
+                    <option value="M15/H4">15M - 4H Alignment</option>
+                    <option value="M30/H6">30M - 6H Alignment</option>
+                    <option value="H1/D1">1H - 1D Alignment</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 w-full md:w-40">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From Date</label>
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 w-full md:w-40">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To Date</label>
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="relative flex-grow md:w-64 h-[42px] mb-0.5">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
                 <input
                   type="text" placeholder="Search symbol..."
