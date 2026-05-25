@@ -38,7 +38,7 @@ export async function fetchMarketQuote(symbol: string) {
       // General Backup (Crypto/Other)
       // Primary for Crypto: Binance
       const clean = normalizeSymbol(symbol);
-      const binanceTicker = SYMBOL_MAP[clean]?.binance || (clean.endsWith('USD') ? clean + 'T' : clean);
+      const binanceTicker = SYMBOL_MAP[clean]?.binance || (clean.endsWith('USD') ? clean + 'T' : clean + 'USDT');
       try {
         const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${binanceTicker}`);
         if (res.ok) {
@@ -46,8 +46,6 @@ export async function fetchMarketQuote(symbol: string) {
           if (data.price) price = parseFloat(data.price);
         }
       } catch (err) {}
-
-      if (price === null) price = await fetchAlphaVantageQuote(symbol);
     }
   } catch (err) {
     console.error(`[MarketData] Error fetching quote for ${symbol}:`, err);
