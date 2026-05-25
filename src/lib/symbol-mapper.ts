@@ -70,6 +70,9 @@ export function normalizeSymbol(symbol: string): string {
     clean = clean.split(':')[1];
   }
 
+  // Remove perp suffixes like .P, -P, .PERP, -PERP
+  clean = clean.replace(/[\.\-](P|PERP)$/i, '');
+
   // Strip common suffixes
   clean = clean.replace(/USDT$/, '');
   clean = clean.replace(/USD$/, '');
