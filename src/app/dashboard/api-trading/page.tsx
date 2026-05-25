@@ -23,6 +23,131 @@ const SUPPORTED_EXCHANGES = [
   { id: 'gateio', name: 'Gate.io', requirePassphrase: false, logo: '/gateio.png', table: 'gateio_auth' }
 ];
 
+const GRADE_OPTIONS = [
+  { value: 'All', label: 'All Grades (Bypass)' },
+  { value: 'A++', label: 'A++' },
+  { value: 'A+', label: 'A+' },
+  { value: 'GOOD', label: 'GOOD' },
+  { value: 'NORMAL', label: 'NORMAL' }
+];
+
+const HTF_OPTIONS = [
+  { value: 'All', label: 'All Alignments (Bypass)' },
+  { value: 'M5/H1', label: '5M - 1H Alignment' },
+  { value: 'M15/H4', label: '15M - 4H Alignment' },
+  { value: 'M30/H6', label: '30M - 6H Alignment' },
+  { value: 'H1/D1', label: '1H - 1D Alignment' }
+];
+
+interface MultiSelectProps {
+  label: string;
+  icon: React.ReactNode;
+  options: { value: string; label: string }[];
+  selectedValues: string;
+  onChange: (value: string) => void;
+}
+
+function MultiSelectDropdown({ label, icon, options, selectedValues, onChange }: MultiSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentList = selectedValues ? selectedValues.split(',').map(v => v.trim()).filter(Boolean) : [];
+
+  const handleToggle = (value: string) => {
+    if (value === 'All') {
+      onChange('All');
+      return;
+    }
+
+    let newList = currentList.filter(v => v !== 'All');
+
+    if (newList.includes(value)) {
+      newList = newList.filter(v => v !== value);
+    } else {
+      newList.push(value);
+    }
+
+    if (newList.length === 0) {
+      onChange('All');
+    } else {
+      onChange(newList.join(','));
+    }
+  };
+
+  const isChecked = (value: string) => {
+    if (value === 'All') {
+      return currentList.includes('All') || currentList.length === 0;
+    }
+    return currentList.includes(value) && !currentList.includes('All');
+  };
+
+  const getDisplayText = () => {
+    if (currentList.includes('All') || currentList.length === 0) {
+      return 'All (Bypass)';
+    }
+    return currentList.join(', ');
+  };
+
+  return (
+    <div className="space-y-2 relative" ref={dropdownRef}>
+      <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none">
+        {icon} {label}
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all text-left flex justify-between items-center select-none"
+      >
+        <span className="truncate pr-2">{getDisplayText()}</span>
+        <span className="text-zinc-500 text-[10px] transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1.5 w-full bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-xl shadow-2xl p-2 space-y-1 max-h-60 overflow-y-auto custom-scrollbar select-none animate-fadeIn">
+          {options.map((opt) => {
+            const checked = isChecked(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleToggle(opt.value)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer text-left transition-all ${
+                  checked 
+                    ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' 
+                    : 'text-zinc-400 hover:bg-zinc-900/60 hover:text-white border border-transparent'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
+                  checked 
+                    ? 'border-orange-500 bg-orange-500 text-black' 
+                    : 'border-zinc-700 bg-zinc-950'
+                }`}>
+                  {checked && (
+                    <svg className="w-3 h-3 fill-current stroke-2" viewBox="0 0 24 24">
+                      <path fill="none" stroke="currentColor" strokeWidth="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span>{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MultiExchangeDashboard() {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -570,38 +695,20 @@ export default function MultiExchangeDashboard() {
                   <option value="Normal">Normal</option>
                 </select>
               </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                  <Award size={12} /> Grading Filter
-                </label>
-                <select 
-                  value={gradeSetting} 
-                  onChange={(e) => setGradeSetting(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-                >
-                  <option value="All">All Grades (Bypass)</option>
-                  <option value="A++">A++</option>
-                  <option value="A+">A+</option>
-                  <option value="GOOD">GOOD</option>
-                  <option value="NORMAL">NORMAL</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                  <GitBranch size={12} /> HTF Timeframe Alignment
-                </label>
-                <select 
-                  value={htfAlignment} 
-                  onChange={(e) => setHtfAlignment(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-                >
-                  <option value="All">All Alignments (Bypass)</option>
-                  <option value="M5/H1">5M - 1H Alignment</option>
-                  <option value="M15/H4">15M - 4H Alignment</option>
-                  <option value="M30/H6">30M - 6H Alignment</option>
-                  <option value="H1/D1">1H - 1D Alignment</option>
-                </select>
-              </div>
+              <MultiSelectDropdown
+                label="Grading Filter"
+                icon={<Award size={12} />}
+                options={GRADE_OPTIONS}
+                selectedValues={gradeSetting}
+                onChange={setGradeSetting}
+              />
+              <MultiSelectDropdown
+                label="HTF Timeframe Alignment"
+                icon={<GitBranch size={12} />}
+                options={HTF_OPTIONS}
+                selectedValues={htfAlignment}
+                onChange={setHtfAlignment}
+              />
             </div>
           </div>
         </div>
