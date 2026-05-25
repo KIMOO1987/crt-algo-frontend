@@ -56,7 +56,6 @@ const menuGroups = [
     label: 'Crypto Bots',
     items: [
       { name: 'API Trading (Multi)', icon: Cpu, path: '/dashboard/api-trading', minTier: 2 },
-      { name: '3Commas (Webhook)', icon: Zap, path: '/dashboard/three-commas', minTier: 2 },
     ]
   }
 ];
