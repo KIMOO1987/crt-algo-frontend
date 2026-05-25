@@ -598,6 +598,8 @@ export default function MultiExchangeDashboard() {
                   <option value="All">All Alignments (Bypass)</option>
                   <option value="M5/H1">5M - 1H Alignment</option>
                   <option value="M15/H4">15M - 4H Alignment</option>
+                  <option value="M30/H6">30M - 6H Alignment</option>
+                  <option value="H1/D1">1H - 1D Alignment</option>
                 </select>
               </div>
             </div>
