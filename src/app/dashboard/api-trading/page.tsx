@@ -715,20 +715,36 @@ export default function MultiExchangeDashboard() {
 
         {/* Exchange Navigation Dock */}
         <div className="flex overflow-x-auto gap-3 pb-3 scrollbar-hide border-b border-zinc-850">
-          {SUPPORTED_EXCHANGES.map(ex => (
-            <button
-              key={ex.id}
-              onClick={() => setActiveTab(ex.id)}
-              className={`px-6 py-3.5 rounded-full text-xs font-black uppercase tracking-widest border transition-all duration-300 flex items-center gap-2 shrink-0 ${
-                activeTab === ex.id 
-                  ? 'bg-orange-500 border-orange-500 text-white shadow-xl shadow-orange-500/10' 
-                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
-              }`}
-            >
-              <Activity size={12} className={activeTab === ex.id ? 'animate-spin' : ''} />
-              {ex.name}
-            </button>
-          ))}
+          {SUPPORTED_EXCHANGES.map(ex => {
+            const isConfigured = !!exchangeConfigs[ex.id];
+            const isEnabled = botEnables[ex.id] ?? true;
+            
+            return (
+              <button
+                key={ex.id}
+                onClick={() => setActiveTab(ex.id)}
+                className={`px-6 py-3.5 rounded-full text-xs font-black uppercase tracking-widest border transition-all duration-300 flex items-center gap-2.5 shrink-0 ${
+                  activeTab === ex.id 
+                    ? 'bg-orange-500 border-orange-500 text-white shadow-xl shadow-orange-500/10' 
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                }`}
+              >
+                <Activity size={12} className={activeTab === ex.id ? 'animate-spin' : ''} />
+                <span>{ex.name}</span>
+                
+                {/* Activation Status Badge */}
+                {isConfigured ? (
+                  isEnabled ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" title="Active & Enabled" />
+                  ) : (
+                    <span className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" title="Configured but Paused" />
+                  )
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-zinc-700" title="Unconfigured" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
