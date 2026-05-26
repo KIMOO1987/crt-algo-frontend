@@ -84,7 +84,7 @@ export async function fetchMarketCandles(symbol: string, interval: string = '5',
     // 3. Fallback to Binance (Highly reliable for Crypto)
     if (candles.length === 0) {
       const clean = normalizeSymbol(symbol);
-      const binanceTicker = SYMBOL_MAP[clean]?.binance || (clean.endsWith('USD') ? clean + 'T' : clean);
+      const binanceTicker = SYMBOL_MAP[clean]?.binance || (clean.endsWith('USD') ? clean + 'T' : clean + 'USDT');
       const endpoints = [
         `https://api.binance.com/api/v3/klines?symbol=${binanceTicker}&interval=5m&limit=${limit}`,
         `https://fapi.binance.com/fapi/v1/klines?symbol=${binanceTicker}&interval=5m&limit=${limit}`

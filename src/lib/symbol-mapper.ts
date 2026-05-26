@@ -115,7 +115,21 @@ export const SYMBOL_MAP: Record<string, SymbolMapEntry> = {
   "VIRTUALUSD": { "tradingview": "BINANCE:VIRTUALUSDT", "oanda": "VIRTUALUSD", "forexcom": "VIRTUALUSD", "binance": "VIRTUALUSDT", "finnhub": "" },
   "ICPUSD": { "tradingview": "BINANCE:ICPUSDT", "oanda": "ICPUSD", "forexcom": "ICPUSD", "binance": "ICPUSDT", "finnhub": "" },
   "USDPUSD": { "tradingview": "BINANCE:USDPUSDT", "oanda": "USDPUSD", "forexcom": "USDPUSD", "binance": "USDPUSDT", "finnhub": "" },
-  "TUSDUSD": { "tradingview": "BINANCE:TUSDUSDT", "oanda": "TUSDUSD", "forexcom": "TUSDUSD", "binance": "TUSDUSDT", "finnhub": "" }
+  "TUSDUSD": { "tradingview": "BINANCE:TUSDUSDT", "oanda": "TUSDUSD", "forexcom": "TUSDUSD", "binance": "TUSDUSDT", "finnhub": "" },
+  "BSUSD": { "tradingview": "BINANCE:BSUSDT", "oanda": "BSUSD", "forexcom": "BSUSD", "binance": "BSUSDT", "finnhub": "" },
+  "SKYUSD": { "tradingview": "BINANCE:SKYUSDT", "oanda": "SKYUSD", "forexcom": "SKYUSD", "binance": "SKYUSDT", "finnhub": "" },
+  "TIAUSD": { "tradingview": "BINANCE:TIAUSDT", "oanda": "TIAUSD", "forexcom": "TIAUSD", "binance": "TIAUSDT", "finnhub": "" },
+  "POPCATUSD": { "tradingview": "BINANCE:POPCATUSDT", "oanda": "POPCATUSD", "forexcom": "POPCATUSD", "binance": "POPCATUSDT", "finnhub": "" },
+  "CHZUSD": { "tradingview": "BINANCE:CHZUSDT", "oanda": "CHZUSD", "forexcom": "CHZUSD", "binance": "CHZUSDT", "finnhub": "" },
+  "PUMPUSD": { "tradingview": "BINANCE:PUMPUSDT", "oanda": "PUMPUSD", "forexcom": "PUMPUSD", "binance": "PUMPUSDT", "finnhub": "" },
+  "OKBUSD": { "tradingview": "OKX:OKBUSDT", "oanda": "OKBUSD", "forexcom": "OKBUSD", "binance": "OKBUSDT", "finnhub": "" },
+  "TRUMPUSD": { "tradingview": "BINANCE:TRUMPUSDT", "oanda": "TRUMPUSD", "forexcom": "TRUMPUSD", "binance": "TRUMPUSDT", "finnhub": "" },
+  "DYDXUSD": { "tradingview": "BINANCE:DYDXUSDT", "oanda": "DYDXUSD", "forexcom": "DYDXUSD", "binance": "DYDXUSDT", "finnhub": "" },
+  "KAITOUSD": { "tradingview": "BINANCE:KAITOUSDT", "oanda": "KAITOUSD", "forexcom": "KAITOUSD", "binance": "KAITOUSDT", "finnhub": "" },
+  "GMTUSD": { "tradingview": "BINANCE:GMTUSDT", "oanda": "GMTUSD", "forexcom": "GMTUSD", "binance": "GMTUSDT", "finnhub": "" },
+  "ORDERUSD": { "tradingview": "BINANCE:ORDERUSDT", "oanda": "ORDERUSD", "forexcom": "ORDERUSD", "binance": "ORDERUSDT", "finnhub": "" },
+  "YGGUSD": { "tradingview": "BINANCE:YGGUSDT", "oanda": "YGGUSD", "forexcom": "YGGUSD", "binance": "YGGUSDT", "finnhub": "" },
+  "EGLDUSD": { "tradingview": "BINANCE:EGLDUSDT", "oanda": "EGLDUSD", "forexcom": "EGLDUSD", "binance": "EGLDUSDT", "finnhub": "" }
 };
 
 /**
@@ -152,7 +166,8 @@ export function normalizeSymbol(symbol: string): string {
     "XAU": "XAUUSD",
     "XAG": "XAGUSD",
     "BTC": "BTCUSD",
-    "ETH": "ETHUSD"
+    "ETH": "ETHUSD",
+    "ESPO": "ESPORTSUSD"
   };
 
   const base = aliasMap[clean] || clean;
