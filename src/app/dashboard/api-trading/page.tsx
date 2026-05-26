@@ -662,19 +662,7 @@ export default function MultiExchangeDashboard() {
             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-1.5">
               <ShieldCheck size={14} className="text-orange-500" /> Advanced Quality & Execution Filters
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                  <PlayCircle size={12} /> Entry Execution Mode
-                </label>
-                <select 
-                  value={entryMode} 
-                  onChange={(e) => setEntryMode(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-                >
-                  <option value="market">Market Order</option>
-                </select>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                   <Compass size={12} /> Sweep Quality Filter
