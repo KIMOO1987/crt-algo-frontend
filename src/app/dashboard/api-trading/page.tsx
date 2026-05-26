@@ -152,6 +152,7 @@ export default function MultiExchangeDashboard() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userTier, setUserTier] = useState<number | null>(null);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState('okx');
   const [loadedTab, setLoadedTab] = useState<string | null>(null);
 
@@ -221,14 +222,16 @@ export default function MultiExchangeDashboard() {
       // Fetch user profile and tier
       const { data: profile } = await supabase
         .from('profiles')
-        .select('tier')
+        .select('tier, is_pro')
         .eq('id', uId)
         .single();
 
       const tier = profile?.tier ?? 0;
+      const isProUser = profile?.is_pro ?? false;
       setUserTier(tier);
+      setIsPro(isProUser);
 
-      if (tier < 2) {
+      if (tier < 2 || !isProUser) {
         setLoading(false);
         return;
       }
@@ -269,17 +272,16 @@ export default function MultiExchangeDashboard() {
         const initialBal = exData?.daily_risk_wallet ?? 1000;
 
         if (execs && execs.length > 0) {
-          // Partial TP = executions that hit TP1 (either ended at TP1 or hit BE after TP1)
-          const partialTpCount = execs.filter(e => e.tp_hits === 1 || e.status === 'TP1_HIT' || e.status === 'BE_HIT').length;
+          // Partial TP = executions that hit TP1 (active in BE_MODIFIED, closed at TP1, closed at BE, or closed at TP2)
+          const partialTpCount = execs.filter(e => (e.tp_hits && e.tp_hits >= 1) || ['TP1_HIT', 'TP2_HIT', 'BE_HIT', 'BE_MODIFIED', 'FUNDING_CLOSE_TP1'].includes(e.status)).length;
           // Full TP = executions that hit TP2
           const fullTpCount = execs.filter(e => e.tp_hits === 2 || e.status === 'TP2_HIT').length;
           const slCount = execs.filter(e => e.status === 'SL_HIT' || (e.sl_hits && e.sl_hits > 0)).length;
-          const beCount = execs.filter(e => e.status === 'BE_HIT' || (e.be_hits && e.be_hits > 0)).length;
+          // Break Evens = executions that hit Break-Even Stop Loss exit
+          const beCount = execs.filter(e => e.status === 'BE_HIT').length;
           
-          // Calculate total physical trades: since all TP/BE trades hit partial TP first,
-          // the unique physical trades count is the maximum of partial TPs or (Full TPs + Break Evens),
-          // plus any direct SL hits. This avoids double-counting.
-          const total = Math.max(partialTpCount, fullTpCount + beCount) + slCount;
+          // Total physical trade executions (all statuses including ENTRY)
+          const total = execs.length;
           
           // Calculate Net Realized PnL directly from closed trades
           const totalPnL = execs.reduce((acc, curr) => acc + (curr.pnl ?? 0), 0);
@@ -547,8 +549,8 @@ export default function MultiExchangeDashboard() {
     );
   }
 
-  // Access Lock Block for Free / Tier 1 Users
-  if (userTier !== null && userTier < 2) {
+  // Access Lock Block for Free / Tier 1 / Non-Pro Users
+  if (userTier !== null && (userTier < 2 || !isPro)) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center text-white">
         <ShieldAlert className="text-red-500 mb-4 animate-bounce" size={54} />
