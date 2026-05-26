@@ -15,12 +15,7 @@ const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
 // Complete list of exchanges supported
 const SUPPORTED_EXCHANGES = [
   { id: 'okx', name: 'OKX', requirePassphrase: true, logo: '/okx.png', table: 'okx_auth' },
-  { id: 'binance', name: 'Binance', requirePassphrase: false, logo: '/binance.png', table: 'binance_auth' },
-  { id: 'bybit', name: 'Bybit', requirePassphrase: false, logo: '/bybit.png', table: 'bybit_auth' },
-  { id: 'kucoin', name: 'KuCoin', requirePassphrase: true, logo: '/kucoin.png', table: 'kucoin_auth' },
-  { id: 'bitget', name: 'Bitget', requirePassphrase: true, logo: '/bitget.png', table: 'bitget_auth' },
-  { id: 'kraken', name: 'Kraken', requirePassphrase: false, logo: '/kraken.png', table: 'kraken_auth' },
-  { id: 'gateio', name: 'Gate.io', requirePassphrase: false, logo: '/gateio.png', table: 'gateio_auth' }
+  { id: 'bybit', name: 'Bybit', requirePassphrase: false, logo: '/bybit.png', table: 'bybit_auth' }
 ];
 
 const GRADE_OPTIONS = [
@@ -678,7 +673,6 @@ export default function MultiExchangeDashboard() {
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
                 >
                   <option value="market">Market Order</option>
-                  <option value="limit">Limit Order</option>
                 </select>
               </div>
               <div className="space-y-2">
