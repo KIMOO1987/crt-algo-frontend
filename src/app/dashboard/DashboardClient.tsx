@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
   TrendingUp, Zap, Star, Activity, BarChart3, Target, Layers,
   Wallet, CheckCircle2, XCircle, MinusCircle, Percent, Save, Mail, TrendingDown,
-  Info, AlertCircle, ChevronRight, Clock, Key, Copy, Check, Calendar
+  Info, AlertCircle, ChevronRight, Clock, Key, Copy, Check, Calendar, ChevronDown
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip,
@@ -193,8 +193,12 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
                 <InputBox label="Risk per SL" icon={<Percent size={16}/>} value={riskValue} onChange={setRiskValue} suffix="R" color="red" />
                 <InputBox label="Reward per TP" icon={<TrendingUp size={16}/>} value={rewardValue} onChange={setRewardValue} suffix="R" color="blue" />
                 <div className="flex items-end">
-                   <button onClick={handleSaveSettings} disabled={isSaving} className="btn-modern h-[50px] flex items-center justify-center gap-2 w-full">
-                      <Save size={16} className={isSaving ? 'animate-spin' : ''} /> {isSaving ? 'Saving' : 'Save Config'}
+                   <button 
+                     onClick={handleSaveSettings} 
+                     disabled={isSaving} 
+                     className="h-[50px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:shadow-[0_0_30px_rgba(59,130,246,0.4)] active:scale-95 flex items-center justify-center gap-2 w-full border border-blue-500/30 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                   >
+                      <Save size={14} className={isSaving ? 'animate-spin' : ''} /> {isSaving ? 'Saving' : 'Save Config'}
                    </button>
                 </div>
             </div>
@@ -281,12 +285,28 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
 
 // Reusable Components
 function InputBox({ label, icon, value, onChange, prefix, suffix, color }: any) {
+  const getFocusColors = (color: string) => {
+    switch (color) {
+      case 'emerald': return 'focus-within:border-emerald-500/40 focus-within:shadow-[0_0_15px_rgba(52,211,153,0.15)] text-emerald-400';
+      case 'red': return 'focus-within:border-red-500/40 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] text-red-400';
+      case 'blue': return 'focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] text-blue-400';
+      default: return 'focus-within:border-purple-500/40 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.15)] text-purple-400';
+    }
+  };
+
   return (
     <div className="flex flex-col w-full">
        <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">{label}</span>
-       <div className="flex items-center input-modern">
+       <div className={`flex items-center bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 rounded-2xl px-4 py-3 h-[50px] transition-all duration-300 ${getFocusColors(color)}`}>
+          {icon && <span className="opacity-60 mr-2 flex items-center">{icon}</span>}
           {prefix && <span className="opacity-50 font-black text-sm mr-2">{prefix}</span>}
-          <input type="number" step="0.1" value={value} onChange={(e) => onChange(Number(e.target.value))} className="bg-transparent font-black text-lg w-full outline-none" />
+          <input 
+            type="number" 
+            step="0.1" 
+            value={value} 
+            onChange={(e) => onChange(Number(e.target.value))} 
+            className="bg-transparent font-black text-sm font-mono w-full outline-none text-zinc-900 dark:text-white" 
+          />
           {suffix && <span className="opacity-50 font-black text-sm ml-2">{suffix}</span>}
        </div>
     </div>
@@ -297,10 +317,15 @@ function SelectBox({ label, value, onChange, options }: any) {
   return (
     <div className="flex flex-col w-full">
        <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">{label}</span>
-       <div className="input-modern relative">
-          <select value={value} onChange={(e) => onChange(e.target.value)} className="bg-transparent font-black text-lg w-full outline-none appearance-none cursor-pointer pr-4">
-            {options.map((o: any) => <option key={o.v} value={o.v} className="bg-[var(--bg)]">{o.l}</option>)}
+       <div className="relative w-full h-[50px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-purple-500/40 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.15)] rounded-2xl flex items-center transition-all duration-300">
+          <select 
+            value={value} 
+            onChange={(e) => onChange(e.target.value)} 
+            className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-zinc-900 dark:text-white relative z-10"
+          >
+            {options.map((o: any) => <option key={o.v} value={o.v} className="bg-zinc-950 text-white">{o.l}</option>)}
           </select>
+          <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
        </div>
     </div>
   );
@@ -310,13 +335,13 @@ function DateInput({ label, value, onChange, icon }: any) {
   return (
     <div className="flex flex-col w-full">
        <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">{label}</span>
-       <div className="flex items-center input-modern">
-          {icon && <span className="opacity-50 mr-2 flex items-center">{icon}</span>}
+       <div className="relative w-full h-[50px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-purple-500/40 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.15)] rounded-2xl flex items-center px-4 transition-all duration-300">
+          {icon && <span className="opacity-60 mr-2 shrink-0 flex items-center">{icon}</span>}
           <input 
              type="date" 
              value={value} 
              onChange={(e) => onChange(e.target.value)} 
-             className="bg-transparent font-black text-sm w-full outline-none appearance-none cursor-pointer" 
+             className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none appearance-none cursor-pointer text-zinc-900 dark:text-white [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-calendar-picker-indicator]:hover:opacity-100" 
           />
        </div>
     </div>

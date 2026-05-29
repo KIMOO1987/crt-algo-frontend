@@ -9,7 +9,8 @@ import SignalChart from '@/components/SignalChart';
 import { 
   Search, Activity, Target, Shield, Clock, Zap, 
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
-  ArrowUpRight, Layout, AlertCircle, FileSpreadsheet
+  ArrowUpRight, Layout, AlertCircle, FileSpreadsheet,
+  Calendar, ChevronDown
 } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
@@ -306,55 +307,94 @@ export default function SignalsPage() {
             </div>
 
             <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
+              {/* Date Filters */}
               <div className="flex gap-2">
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From</label>
-                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none h-[42px]" />
+                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
+                    <Calendar size={14} className="opacity-60 mr-2 shrink-0 text-blue-400" />
+                    <input 
+                      type="date" 
+                      value={dateFrom} 
+                      onChange={(e) => setDateFrom(e.target.value)} 
+                      className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none appearance-none cursor-pointer text-zinc-900 dark:text-white [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-calendar-picker-indicator]:hover:opacity-100" 
+                    />
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To</label>
-                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none h-[42px]" />
+                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
+                    <Calendar size={14} className="opacity-60 mr-2 shrink-0 text-blue-400" />
+                    <input 
+                      type="date" 
+                      value={dateTo} 
+                      onChange={(e) => setDateTo(e.target.value)} 
+                      className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none appearance-none cursor-pointer text-zinc-900 dark:text-white [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-calendar-picker-indicator]:hover:opacity-100" 
+                    />
+                  </div>
                 </div>
               </div>
               
+              {/* Asset Class Select */}
               <div className="flex flex-col gap-1 w-full md:w-36">
                 <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
-                <select value={assetClass} onChange={(e) => setAssetClass(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none h-[42px] w-full cursor-pointer">
-                  <option value="ALL">ALL ASSETS</option>
-                  <option value="CRYPTO">CRYPTO</option>
-                  <option value="FOREX">FOREX</option>
-                  <option value="INDICES">INDICES</option>
-                  <option value="METALS">METALS</option>
-                </select>
+                <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center transition-all duration-300">
+                  <select 
+                    value={assetClass} 
+                    onChange={(e) => setAssetClass(e.target.value)} 
+                    className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-zinc-900 dark:text-white relative z-10"
+                  >
+                    <option value="ALL">ALL ASSETS</option>
+                    <option value="CRYPTO">CRYPTO</option>
+                    <option value="FOREX">FOREX</option>
+                    <option value="INDICES">INDICES</option>
+                    <option value="METALS">METALS</option>
+                  </select>
+                  <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
+                </div>
               </div>
               
+              {/* Timeframe Select */}
               <div className="flex flex-col gap-1 w-full md:w-44">
                 <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe</label>
-                <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none h-[42px] w-full cursor-pointer">
-                  <option value="ALL">ALL ALIGNMENTS</option>
-                  <option value="M5/H1">5M - 1H Alignment</option>
-                  <option value="M15/H4">15M - 4H Alignment</option>
-                  <option value="M30/H6">30M - 6H Alignment</option>
-                  <option value="H1/D1">1H - 1D Alignment</option>
-                </select>
+                <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center transition-all duration-300">
+                  <select 
+                    value={tfAlignment} 
+                    onChange={(e) => setTfAlignment(e.target.value)} 
+                    className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-zinc-900 dark:text-white relative z-10"
+                  >
+                    <option value="ALL">ALL ALIGNMENTS</option>
+                    <option value="M5/H1">5M - 1H Alignment</option>
+                    <option value="M15/H4">15M - 4H Alignment</option>
+                    <option value="M30/H6">30M - 6H Alignment</option>
+                    <option value="H1/D1">1H - 1D Alignment</option>
+                  </select>
+                  <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
+                </div>
               </div>
 
               {/* Symbol Selector checklist */}
               <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
 
               <div className="flex gap-2 w-full md:w-auto items-end h-[42px]">
-                <div className="relative flex-grow md:w-48 h-full">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
-                  <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search symbol..." className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white outline-none" />
+                {/* Search */}
+                <div className="relative flex-grow md:w-48 h-full bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
+                  <Search className="text-zinc-600 dark:text-zinc-500 mr-2 shrink-0" size={14} />
+                  <input 
+                    value={searchTerm} 
+                    onChange={(e) => setSearchTerm(e.target.value)} 
+                    placeholder="Search symbol..." 
+                    className="bg-transparent font-black text-xs font-mono w-full outline-none text-zinc-900 dark:text-white" 
+                  />
                 </div>
                 
                 {/* Excel CSV Exporter Button */}
                 <button
                   onClick={handleDownloadCSV}
-                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)] h-full shrink-0"
+                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all duration-300 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] h-full shrink-0 hover:scale-105 active:scale-95 cursor-pointer"
                   title="Download Spreadsheet"
                 >
-                  <FileSpreadsheet size={18} />
+                  <FileSpreadsheet size={16} />
                 </button>
               </div>
             </div>
