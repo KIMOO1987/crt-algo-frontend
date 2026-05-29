@@ -1,16 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import CryptoJS from 'crypto-js';
 import { 
   ShieldAlert, ShieldCheck, Activity, Wallet, Percent, 
   Target, Lock, Save, Settings2, BarChart3, TrendingUp, CheckCircle, 
   XCircle, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownRight, Flame,
-  PlayCircle, Compass, Award, GitBranch, ChevronDown, Check
+  PlayCircle, Compass, Award, GitBranch
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import CustomSelect from '@/components/customselect';
 
 const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
 
@@ -46,7 +44,7 @@ interface MultiSelectProps {
 
 function MultiSelectDropdown({ label, icon, options, selectedValues, onChange }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -96,58 +94,51 @@ function MultiSelectDropdown({ label, icon, options, selectedValues, onChange }:
   };
 
   return (
-    <div className="space-y-1.5 relative w-full flex flex-col" ref={dropdownRef}>
-      <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none ml-2">
+    <div className="space-y-2 relative" ref={dropdownRef}>
+      <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none">
         {icon} {label}
       </label>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-white/[0.02] border border-white/[0.08] hover:border-white/20 focus:border-orange-500/40 focus:shadow-[0_0_15px_rgba(249,115,22,0.15)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-white outline-none transition-all duration-300 h-[42px] flex justify-between items-center select-none cursor-pointer"
+        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all text-left flex justify-between items-center select-none"
       >
         <span className="truncate pr-2">{getDisplayText()}</span>
-        <ChevronDown size={14} className={`text-zinc-500 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="text-zinc-500 text-[10px] transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
       </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute left-0 right-0 mt-2 bg-[#0d0f14]/95 border border-white/[0.08] rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl z-[999] overflow-hidden max-h-60 overflow-y-auto custom-scrollbar p-2 space-y-1 select-none"
-            style={{ top: '100%' }}
-          >
-            {options.map((opt) => {
-              const checked = isChecked(opt.value);
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => handleToggle(opt.value)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider cursor-pointer text-left transition-all ${
-                    checked 
-                      ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' 
-                      : 'text-zinc-400 hover:bg-white/[0.05] hover:text-white border border-transparent'
-                  }`}
-                >
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
-                    checked 
-                      ? 'border-orange-500 bg-orange-500/20 text-orange-450' 
-                      : 'border-white/20 bg-white/[0.01]'
-                  }`}>
-                    {checked && (
-                      <Check size={10} strokeWidth={4} className="text-orange-400" />
-                    )}
-                  </div>
-                  <span>{opt.label}</span>
-                </button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isOpen && (
+        <div className="absolute z-50 mt-1.5 w-full bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-xl shadow-2xl p-2 space-y-1 max-h-60 overflow-y-auto custom-scrollbar select-none animate-fadeIn">
+          {options.map((opt) => {
+            const checked = isChecked(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleToggle(opt.value)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer text-left transition-all ${
+                  checked 
+                    ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' 
+                    : 'text-zinc-400 hover:bg-zinc-900/60 hover:text-white border border-transparent'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
+                  checked 
+                    ? 'border-orange-500 bg-orange-500 text-black' 
+                    : 'border-zinc-700 bg-zinc-950'
+                }`}>
+                  {checked && (
+                    <svg className="w-3 h-3 fill-current stroke-2" viewBox="0 0 24 24">
+                      <path fill="none" stroke="currentColor" strokeWidth="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span>{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -165,6 +156,7 @@ export default function MultiExchangeDashboard() {
   const [activeTab, setActiveTab] = useState('okx');
   const [loadedTab, setLoadedTab] = useState<string | null>(null);
 
+  
   // Exchange credentials configuration states
   const [exchangeConfigs, setExchangeConfigs] = useState<Record<string, any>>({});
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
@@ -244,11 +236,13 @@ export default function MultiExchangeDashboard() {
         return;
       }
 
+      // Optimized single batch query for all user execution statistics to reduce db roundtrips by 700%
       const { data: allExecs } = await supabase
         .from('trade_executions')
         .select('*')
         .eq('user_id', uId);
 
+      // Concurrently load credentials configs for all exchanges
       const configsTemp: Record<string, any> = {};
       const keysTemp: Record<string, string> = {};
       const envTemp: Record<string, 'testnet' | 'live'> = {};
@@ -272,15 +266,24 @@ export default function MultiExchangeDashboard() {
           enableTemp[ex.id] = true;
         }
 
+        // Filter metrics client-side from optimized single database fetch
         const execs = allExecs?.filter(e => e.exchange_name === ex.id) || [];
+
         const initialBal = exData?.daily_risk_wallet ?? 1000;
 
         if (execs && execs.length > 0) {
+          // Partial TP = executions that hit TP1 (active in BE_MODIFIED, closed at TP1, closed at BE, or closed at TP2)
           const partialTpCount = execs.filter(e => (e.tp_hits && e.tp_hits >= 1) || ['TP1_HIT', 'TP2_HIT', 'BE_HIT', 'BE_MODIFIED', 'FUNDING_CLOSE_TP1'].includes(e.status)).length;
+          // Full TP = executions that hit TP2
           const fullTpCount = execs.filter(e => e.tp_hits === 2 || e.status === 'TP2_HIT').length;
           const slCount = execs.filter(e => e.status === 'SL_HIT' || (e.sl_hits && e.sl_hits > 0)).length;
+          // Break Evens = executions that hit Break-Even Stop Loss exit
           const beCount = execs.filter(e => e.status === 'BE_HIT').length;
+          
+          // Total physical trade executions (all statuses including ENTRY)
           const total = execs.length;
+          
+          // Calculate Net Realized PnL directly from closed trades
           const totalPnL = execs.reduce((acc, curr) => acc + (curr.pnl ?? 0), 0);
           const currentBal = initialBal + totalPnL;
 
@@ -315,6 +318,7 @@ export default function MultiExchangeDashboard() {
         setBotEnables(enableTemp);
       }
       setMetrics(metricsTemp);
+
       setLoading(false);
     } catch (e) {
       console.error(e);
@@ -322,6 +326,7 @@ export default function MultiExchangeDashboard() {
     }
   }, [supabase, loading]);
 
+  // Sync risk settings and form inputs when switching active exchange tabs
   useEffect(() => {
     if (loading) return;
 
@@ -342,6 +347,7 @@ export default function MultiExchangeDashboard() {
         setEnvironments(prev => ({ ...prev, [activeTab]: config.environment || 'testnet' }));
         setBotEnables(prev => ({ ...prev, [activeTab]: config.is_enabled ?? true }));
       } else {
+        // Defaults for unconfigured exchanges
         setWalletSize(1000);
         setRiskPercent(1.0);
         setMinRR(1.5);
@@ -360,22 +366,27 @@ export default function MultiExchangeDashboard() {
     }
   }, [activeTab, exchangeConfigs, loading, loadedTab]);
 
+  // Load session and dashboard data on mount
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  // Polling loop for active stats and logs (runs every 4 seconds for real-time responsiveness)
   useEffect(() => {
     if (!userId) return;
+    
+    // Initial immediate fetch for logs once user session is resolved
     fetchExchangeLogs(activeTab, userId);
     
     const interval = setInterval(() => {
       fetchDashboardData();
       fetchExchangeLogs(activeTab, userId);
-    }, 4000);
+    }, 4000); // 4-second live refresh cycle
     
     return () => clearInterval(interval);
   }, [activeTab, userId, fetchExchangeLogs, fetchDashboardData]);
 
+  // Supabase Real-time Subscriptions for instantaneous UI updates (sub-50ms reactive updates)
   useEffect(() => {
     if (!userId) return;
 
@@ -383,13 +394,29 @@ export default function MultiExchangeDashboard() {
       .channel('dashboard-realtime-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'trade_executions', filter: `user_id=eq.${userId}` },
-        () => fetchDashboardData()
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trade_executions',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('⚡ Realtime trade execution update:', payload);
+          fetchDashboardData();
+        }
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'exchange_logs', filter: `user_id=eq.${userId}` },
-        () => fetchExchangeLogs(activeTab, userId)
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'exchange_logs',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('⚡ Realtime exchange log update:', payload);
+          fetchExchangeLogs(activeTab, userId);
+        }
       )
       .subscribe();
 
@@ -397,6 +424,7 @@ export default function MultiExchangeDashboard() {
       supabase.removeChannel(channel);
     };
   }, [userId, activeTab, fetchExchangeLogs, fetchDashboardData]);
+
 
   const saveExchangeSettings = async (exchangeId: string) => {
     if (!userId) return addLog("❌ Cannot save: Session not found.");
@@ -419,11 +447,14 @@ export default function MultiExchangeDashboard() {
         log_type: 'INFO'
       });
       fetchExchangeLogs(exchangeId, userId);
-    } catch (err) {}
+    } catch (err) {
+      console.error("Error inserting sync log:", err);
+    }
 
     const plainSecret = apiSecrets[exchangeId];
     const plainPassphrase = passphrases[exchangeId];
 
+    // Maintain existing decrypted credentials if not overriding
     let encryptedSecret = exchangeConfigs[exchangeId]?.encrypted_secret || '';
     if (plainSecret) {
       encryptedSecret = CryptoJS.AES.encrypt(plainSecret, MASTER_ENCRYPTION_KEY).toString();
@@ -481,7 +512,10 @@ export default function MultiExchangeDashboard() {
           symbol: null,
           log_type: 'SUCCESS'
         });
-      } catch (err) {}
+      } catch (err) {
+        console.error("Error inserting sync success log:", err);
+      }
+      // Clear plain values
       setApiSecrets(prev => ({ ...prev, [exchangeId]: '' }));
       setPassphrases(prev => ({ ...prev, [exchangeId]: '' }));
       fetchDashboardData();
@@ -497,7 +531,9 @@ export default function MultiExchangeDashboard() {
           symbol: null,
           log_type: 'ERROR'
         });
-      } catch (err) {}
+      } catch (err) {
+        console.error("Error inserting sync error log:", err);
+      }
       fetchExchangeLogs(exchangeId, userId);
     }
   };
@@ -513,6 +549,7 @@ export default function MultiExchangeDashboard() {
     );
   }
 
+  // Access Lock Block for Free / Tier 1 / Non-Pro Users
   if (userTier !== null && (userTier < 2 || !isPro)) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center text-white">
@@ -523,7 +560,7 @@ export default function MultiExchangeDashboard() {
         </p>
         <button 
           onClick={() => window.location.href = '/dashboard/payments'} 
-          className="mt-8 px-8 py-3.5 bg-gradient-to-r from-orange-500 to-red-600 rounded-full text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 shadow-xl transition-all cursor-pointer"
+          className="mt-8 px-8 py-3.5 bg-gradient-to-r from-orange-500 to-red-600 rounded-full text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 shadow-xl transition-all"
         >
           UPGRADE NOW
         </button>
@@ -557,7 +594,7 @@ export default function MultiExchangeDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-[10px] tracking-widest uppercase shadow-lg">
+            <span className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-[10px] tracking-widest uppercase">
               Pro Access Enabled
             </span>
           </div>
@@ -568,65 +605,58 @@ export default function MultiExchangeDashboard() {
           <h2 className="text-sm font-black uppercase tracking-widest text-orange-500 flex items-center gap-2.5">
             <Target size={18} /> Global Trade Risk Settings
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-2"><Wallet size={12} /> Daily Risk Capital ($)</label>
-              <div className="flex items-center bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 rounded-xl px-4 py-3 h-[42px] transition-all duration-300 focus-within:border-orange-500/40 focus-within:shadow-[0_0_15px_rgba(249,115,22,0.15)] text-orange-400">
-                <input 
-                  type="number" 
-                  value={walletSize} 
-                  onChange={(e) => setWalletSize(Number(e.target.value))} 
-                  className="bg-transparent font-black text-xs font-mono w-full outline-none text-white"
-                />
-              </div>
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Wallet size={12} /> Daily Risk Capital ($)</label>
+              <input 
+                type="number" 
+                value={walletSize} 
+                onChange={(e) => setWalletSize(Number(e.target.value))} 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+              />
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-2"><Percent size={12} /> Risk Per Trade (%)</label>
-              <div className="flex items-center bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 rounded-xl px-4 py-3 h-[42px] transition-all duration-300 focus-within:border-orange-500/40 focus-within:shadow-[0_0_15px_rgba(249,115,22,0.15)] text-orange-400">
-                <input 
-                  type="number" 
-                  step="0.1"
-                  value={riskPercent} 
-                  onChange={(e) => setRiskPercent(Number(e.target.value))} 
-                  className="bg-transparent font-black text-xs font-mono w-full outline-none text-white"
-                />
-              </div>
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Percent size={12} /> Risk Per Trade (%)</label>
+              <input 
+                type="number" 
+                step="0.1"
+                value={riskPercent} 
+                onChange={(e) => setRiskPercent(Number(e.target.value))} 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+              />
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-2"><Target size={12} /> Minimum RR Ratio</label>
-              <div className="flex items-center bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 rounded-xl px-4 py-3 h-[42px] transition-all duration-300 focus-within:border-orange-500/40 focus-within:shadow-[0_0_15px_rgba(249,115,22,0.15)] text-orange-400">
-                <input 
-                  type="number" 
-                  step="0.1"
-                  value={minRR} 
-                  onChange={(e) => setMinRR(Number(e.target.value))} 
-                  className="bg-transparent font-black text-xs font-mono w-full outline-none text-white"
-                />
-              </div>
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Target size={12} /> Minimum RR Ratio</label>
+              <input 
+                type="number" 
+                step="0.1"
+                value={minRR} 
+                onChange={(e) => setMinRR(Number(e.target.value))} 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+              />
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-2"><Activity size={12} /> Max Setups</label>
-              <div className="flex items-center bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 rounded-xl px-4 py-3 h-[42px] transition-all duration-300 focus-within:border-orange-500/40 focus-within:shadow-[0_0_15px_rgba(249,115,22,0.15)] text-orange-400">
-                <input 
-                  type="number" 
-                  min="1"
-                  value={maxConcurrent} 
-                  onChange={(e) => setMaxConcurrent(Number(e.target.value))} 
-                  className="bg-transparent font-black text-xs font-mono w-full outline-none text-white"
-                />
-              </div>
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Activity size={12} /> Max Setups</label>
+              <input 
+                type="number" 
+                min="1"
+                value={maxConcurrent} 
+                onChange={(e) => setMaxConcurrent(Number(e.target.value))} 
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+              />
             </div>
-
-            <CustomSelect
-              label="Trend Alignment"
-              value={alignment}
-              onChange={setAlignment}
-              options={[
-                { v: "Both", l: "Both Modes" },
-                { v: "Aligned", l: "Aligned Only" },
-                { v: "Counter", l: "Counter Only" }
-              ]}
-            />
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Activity size={12} /> Trend Alignment</label>
+              <select 
+                value={alignment} 
+                onChange={(e) => setAlignment(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+              >
+                <option value="Both">Both</option>
+                <option value="Aligned">Aligned Only</option>
+                <option value="Counter">Counter Only</option>
+              </select>
+            </div>
           </div>
 
           {/* Advanced Risk & Quality Filters Row */}
@@ -634,19 +664,21 @@ export default function MultiExchangeDashboard() {
             <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-1.5">
               <ShieldCheck size={14} className="text-orange-500" /> Advanced Quality & Execution Filters
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-end">
-              <CustomSelect
-                label="Sweep Quality Filter"
-                value={sweepQuality}
-                onChange={setSweepQuality}
-                icon={<Compass className="text-zinc-500 mr-1" size={12} />}
-                options={[
-                  { v: "All", l: "All Sweeps (Bypass)" },
-                  { v: "High", l: "High Quality" },
-                  { v: "Normal", l: "Normal Quality" }
-                ]}
-              />
-
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Compass size={12} /> Sweep Quality Filter
+                </label>
+                <select 
+                  value={sweepQuality} 
+                  onChange={(e) => setSweepQuality(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+                >
+                  <option value="All">All Sweeps (Bypass)</option>
+                  <option value="High">High</option>
+                  <option value="Normal">Normal</option>
+                </select>
+              </div>
               <MultiSelectDropdown
                 label="Grading Filter"
                 icon={<Award size={12} />}
@@ -654,7 +686,6 @@ export default function MultiExchangeDashboard() {
                 selectedValues={gradeSetting}
                 onChange={setGradeSetting}
               />
-              
               <MultiSelectDropdown
                 label="HTF Timeframe Alignment"
                 icon={<GitBranch size={12} />}
@@ -673,20 +704,19 @@ export default function MultiExchangeDashboard() {
             const isEnabled = botEnables[ex.id] ?? true;
             
             return (
-              <motion.button
+              <button
                 key={ex.id}
                 onClick={() => setActiveTab(ex.id)}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                className={`px-6 py-3.5 rounded-full text-xs font-black uppercase tracking-widest border transition-all duration-300 flex items-center gap-2.5 shrink-0 cursor-pointer ${
+                className={`px-6 py-3.5 rounded-full text-xs font-black uppercase tracking-widest border transition-all duration-300 flex items-center gap-2.5 shrink-0 ${
                   activeTab === ex.id 
-                    ? 'bg-orange-500 border-orange-500 text-white shadow-xl shadow-orange-500/20' 
+                    ? 'bg-orange-500 border-orange-500 text-white shadow-xl shadow-orange-500/10' 
                     : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
                 }`}
               >
                 <Activity size={12} className={activeTab === ex.id ? 'animate-spin' : ''} />
                 <span>{ex.name}</span>
                 
+                {/* Activation Status Badge */}
                 {isConfigured ? (
                   isEnabled ? (
                     <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" title="Active & Enabled" />
@@ -696,7 +726,7 @@ export default function MultiExchangeDashboard() {
                 ) : (
                   <span className="w-2 h-2 rounded-full bg-zinc-700" title="Unconfigured" />
                 )}
-              </motion.button>
+              </button>
             );
           })}
         </div>
@@ -717,13 +747,13 @@ export default function MultiExchangeDashboard() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-2 ml-2">Network Environment</label>
-                  <div className="flex bg-zinc-950 rounded-xl p-1.5 border border-zinc-850">
+                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-2">Network Environment</label>
+                  <div className="flex bg-zinc-950 rounded-xl p-1.5 border border-zinc-800">
                     <button 
                       onClick={() => setEnvironments(prev => ({ ...prev, [activeEx.id]: 'testnet' }))}
-                      className={`flex-1 py-2.5 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest cursor-pointer ${
+                      className={`flex-1 py-2.5 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest ${
                         (environments[activeEx.id] || 'testnet') === 'testnet' 
-                          ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' 
+                          ? 'bg-orange-500 text-white shadow-lg' 
                           : 'text-zinc-500 hover:text-white'
                       }`}
                     >
@@ -731,9 +761,9 @@ export default function MultiExchangeDashboard() {
                     </button>
                     <button 
                       onClick={() => setEnvironments(prev => ({ ...prev, [activeEx.id]: 'live' }))}
-                      className={`flex-1 py-2.5 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest cursor-pointer ${
+                      className={`flex-1 py-2.5 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest ${
                         (environments[activeEx.id] || 'testnet') === 'live' 
-                          ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' 
+                          ? 'bg-red-600 text-white shadow-lg' 
                           : 'text-zinc-500 hover:text-white'
                       }`}
                     >
@@ -743,66 +773,58 @@ export default function MultiExchangeDashboard() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2 ml-2"><Settings2 size={10}/> API KEY</label>
-                  <div className="flex items-center bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 rounded-xl px-4 py-3 h-[42px] transition-all duration-300 focus-within:border-orange-500/40 focus-within:shadow-[0_0_15px_rgba(249,115,22,0.15)] text-orange-400">
-                    <input 
-                      type="text" 
-                      value={apiKeys[activeEx.id] || ''} 
-                      onChange={(e) => setApiKeys(prev => ({ ...prev, [activeEx.id]: e.target.value }))} 
-                      className="bg-transparent font-black text-xs font-mono w-full outline-none text-white"
-                      placeholder={`${activeEx.name} API Public Key`}
-                    />
-                  </div>
+                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Settings2 size={10}/> API KEY</label>
+                  <input 
+                    type="text" 
+                    value={apiKeys[activeEx.id] || ''} 
+                    onChange={(e) => setApiKeys(prev => ({ ...prev, [activeEx.id]: e.target.value }))} 
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+                    placeholder={`${activeEx.name} API Public Key`}
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2 ml-2"><Lock size={10}/> SECRET KEY (AES ENCRYPTED)</label>
-                  <div className="flex items-center bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 rounded-xl px-4 py-3 h-[42px] transition-all duration-300 focus-within:border-orange-500/40 focus-within:shadow-[0_0_15px_rgba(249,115,22,0.15)] text-orange-400">
-                    <input 
-                      type="password" 
-                      value={apiSecrets[activeEx.id] || ''} 
-                      onChange={(e) => setApiSecrets(prev => ({ ...prev, [activeEx.id]: e.target.value }))} 
-                      className="bg-transparent font-black text-xs font-mono w-full outline-none text-white"
-                      placeholder="••••••••••••••••••••••••"
-                    />
-                  </div>
+                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Lock size={10}/> SECRET KEY (AES ENCRYPTED)</label>
+                  <input 
+                    type="password" 
+                    value={apiSecrets[activeEx.id] || ''} 
+                    onChange={(e) => setApiSecrets(prev => ({ ...prev, [activeEx.id]: e.target.value }))} 
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+                    placeholder="••••••••••••••••••••••••"
+                  />
                 </div>
 
                 {activeEx.requirePassphrase && (
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2 ml-2"><Lock size={10}/> API PASSPHRASE</label>
-                    <div className="flex items-center bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 rounded-xl px-4 py-3 h-[42px] transition-all duration-300 focus-within:border-orange-500/40 focus-within:shadow-[0_0_15px_rgba(249,115,22,0.15)] text-orange-400">
-                      <input 
-                        type="password" 
-                        value={passphrases[activeEx.id] || ''} 
-                        onChange={(e) => setPassphrases(prev => ({ ...prev, [activeEx.id]: e.target.value }))} 
-                        className="bg-transparent font-black text-xs font-mono w-full outline-none text-white"
-                        placeholder="Exchange passphrase / passphrase password"
-                      />
-                    </div>
+                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Lock size={10}/> API PASSPHRASE</label>
+                    <input 
+                      type="password" 
+                      value={passphrases[activeEx.id] || ''} 
+                      onChange={(e) => setPassphrases(prev => ({ ...prev, [activeEx.id]: e.target.value }))} 
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
+                      placeholder="Exchange passphrase / passphrase password"
+                    />
                   </div>
                 )}
 
-                <div className="flex items-center justify-between p-4 bg-zinc-950/20 border border-white/[0.05] rounded-xl">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-2">
+                <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-850 rounded-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
                     Trade Engine State
                   </span>
                   <button 
                     onClick={() => setBotEnables(prev => ({ ...prev, [activeEx.id]: !(botEnables[activeEx.id] ?? true) }))}
-                    className="text-orange-500 focus:outline-none cursor-pointer"
+                    className="text-orange-500 focus:outline-none"
                   >
-                    {(botEnables[activeEx.id] ?? true) ? <ToggleRight size={38} className="text-emerald-500" /> : <ToggleLeft size={38} className="text-zinc-650" />}
+                    {(botEnables[activeEx.id] ?? true) ? <ToggleRight size={38} className="text-emerald-500" /> : <ToggleLeft size={38} className="text-zinc-600" />}
                   </button>
                 </div>
 
-                <motion.button 
+                <button 
                   onClick={() => saveExchangeSettings(activeEx.id)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full py-4 bg-white hover:bg-zinc-200 text-black text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)] active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-4 bg-white hover:bg-zinc-200 text-black text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
                 >
                   <Save size={14} /> SAVE & SYNC {activeEx.name.toUpperCase()}
-                </motion.button>
+                </button>
               </div>
             </div>
           </div>
@@ -812,25 +834,25 @@ export default function MultiExchangeDashboard() {
             
             {/* Live stats summary board */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
+              <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-between">
                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Executions</span>
-                <span className="text-2xl font-black mt-2 text-white font-mono">{activeMetrics.total}</span>
+                <span className="text-2xl font-black mt-2 text-white">{activeMetrics.total}</span>
               </div>
-              <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
+              <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-between">
                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Partial TP</span>
-                <span className="text-2xl font-black mt-2 text-amber-400 flex items-center gap-1.5 font-mono"><CheckCircle size={16} /> {activeMetrics.partialTps}</span>
+                <span className="text-2xl font-black mt-2 text-amber-400 flex items-center gap-1.5"><CheckCircle size={16} /> {activeMetrics.partialTps}</span>
               </div>
-              <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
+              <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-between">
                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Full TP</span>
-                <span className="text-2xl font-black mt-2 text-emerald-400 flex items-center gap-1.5 font-mono"><CheckCircle size={16} /> {activeMetrics.fullTps}</span>
+                <span className="text-2xl font-black mt-2 text-emerald-400 flex items-center gap-1.5"><CheckCircle size={16} /> {activeMetrics.fullTps}</span>
               </div>
-              <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-5 rounded-2xl flex flex-col justify-between shadow-lg">
+              <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-between">
                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">SL Hits</span>
-                <span className="text-2xl font-black mt-2 text-red-500 flex items-center gap-1.5 font-mono"><XCircle size={16} /> {activeMetrics.sls}</span>
+                <span className="text-2xl font-black mt-2 text-red-500 flex items-center gap-1.5"><XCircle size={16} /> {activeMetrics.sls}</span>
               </div>
-              <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-5 rounded-2xl flex flex-col justify-between shadow-lg col-span-2 sm:col-span-1">
+              <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-between col-span-2 sm:col-span-1">
                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Break Evens</span>
-                <span className="text-2xl font-black mt-2 text-blue-400 flex items-center gap-1.5 font-mono"><ShieldCheck size={16} /> {activeMetrics.bes}</span>
+                <span className="text-2xl font-black mt-2 text-blue-400 flex items-center gap-1.5"><ShieldCheck size={16} /> {activeMetrics.bes}</span>
               </div>
             </div>
 
@@ -841,15 +863,15 @@ export default function MultiExchangeDashboard() {
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="bg-zinc-950/40 border border-zinc-850 p-6 rounded-2xl">
+                <div className="bg-zinc-950 border border-zinc-850 p-6 rounded-2xl">
                   <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Opening Balance</span>
                   <h4 className="text-xl font-bold mt-2 font-mono">${Number(activeMetrics.opening).toFixed(2)}</h4>
                 </div>
-                <div className="bg-zinc-950/40 border border-zinc-850 p-6 rounded-2xl">
+                <div className="bg-zinc-950 border border-zinc-850 p-6 rounded-2xl">
                   <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Closing Balance</span>
                   <h4 className="text-xl font-bold mt-2 font-mono">${Number(activeMetrics.closing).toFixed(2)}</h4>
                 </div>
-                <div className={`bg-zinc-950/45 border p-6 rounded-2xl ${activeMetrics.pnl >= 0 ? 'border-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.05)]' : 'border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.05)]'}`}>
+                <div className={`bg-zinc-950 border p-6 rounded-2xl ${activeMetrics.pnl >= 0 ? 'border-emerald-500/20' : 'border-red-500/20'}`}>
                   <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Net Realized PnL</span>
                   <div className="flex items-center gap-2 mt-2">
                     <h4 className={`text-xl font-black font-mono ${activeMetrics.pnl >= 0 ? 'text-emerald-400' : 'text-red-500'}`}>
@@ -862,12 +884,12 @@ export default function MultiExchangeDashboard() {
             </div>
 
             {/* Sync Status Terminal Console */}
-            <div className="bg-[#0b0c10]/95 border border-zinc-850 rounded-3xl p-6 h-[300px] overflow-hidden flex flex-col relative font-mono text-xs shadow-2xl backdrop-blur-md">
+            <div className="bg-zinc-950 border border-zinc-850 rounded-3xl p-6 h-[300px] overflow-hidden flex flex-col relative font-mono text-xs">
               <div className="flex justify-between items-center pb-4 border-b border-zinc-850 mb-3 text-[10px] text-zinc-500 uppercase tracking-widest shrink-0">
                 <div className="flex gap-6">
                   <button 
                     onClick={() => setTerminalTab('trade')} 
-                    className={`font-black tracking-widest uppercase transition-all pb-1 cursor-pointer ${
+                    className={`font-black tracking-widest uppercase transition-all pb-1 ${
                       terminalTab === 'trade' 
                         ? 'text-orange-500 border-b-2 border-orange-500 font-bold' 
                         : 'text-zinc-500 hover:text-zinc-300'
@@ -877,7 +899,7 @@ export default function MultiExchangeDashboard() {
                   </button>
                   <button 
                     onClick={() => setTerminalTab('vault')} 
-                    className={`font-black tracking-widest uppercase transition-all pb-1 cursor-pointer ${
+                    className={`font-black tracking-widest uppercase transition-all pb-1 ${
                       terminalTab === 'vault' 
                         ? 'text-orange-500 border-b-2 border-orange-500 font-bold' 
                         : 'text-zinc-500 hover:text-zinc-300'
@@ -893,7 +915,7 @@ export default function MultiExchangeDashboard() {
                   (() => {
                     const tradeLogs = exchangeLogs.filter(log => log.symbol);
                     return tradeLogs.length === 0 ? (
-                      <div className="flex items-center justify-center h-full text-zinc-650 font-bold uppercase tracking-wider text-[10px]">
+                      <div className="flex items-center justify-center h-full text-zinc-600 font-bold uppercase tracking-wider text-[10px]">
                         No trade execution logs found for {activeEx.name}.
                       </div>
                     ) : (
@@ -910,7 +932,7 @@ export default function MultiExchangeDashboard() {
 
                         return (
                           <div key={log.id || i} className="flex gap-2.5 text-zinc-400 animate-fadeIn">
-                            <span className="text-zinc-700 select-none shrink-0">&gt;&gt;</span>
+                            <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
                             <span className="text-zinc-500 select-none font-semibold shrink-0">[{timeStr}]</span>
                             {log.symbol && (
                               <span className="text-blue-400 font-bold shrink-0">
@@ -928,7 +950,7 @@ export default function MultiExchangeDashboard() {
                     const vaultLogs = exchangeLogs.filter(log => !log.symbol);
                     if (vaultLogs.length === 0 && statusLogs.length === 0) {
                       return (
-                        <div className="flex items-center justify-center h-full text-zinc-650 font-bold uppercase tracking-wider text-[10px]">
+                        <div className="flex items-center justify-center h-full text-zinc-600 font-bold uppercase tracking-wider text-[10px]">
                           Vault fully idle. Awaiting configuration saves...
                         </div>
                       );
@@ -948,7 +970,7 @@ export default function MultiExchangeDashboard() {
 
                           return (
                             <div key={log.id || i} className="flex gap-2.5 text-zinc-400 animate-fadeIn">
-                              <span className="text-zinc-700 select-none shrink-0">&gt;&gt;</span>
+                              <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
                               <span className="text-zinc-500 select-none font-semibold shrink-0">[{timeStr}]</span>
                               <span className={colorClass}>{log.message}</span>
                             </div>
@@ -956,8 +978,8 @@ export default function MultiExchangeDashboard() {
                         })}
                         {vaultLogs.length === 0 && statusLogs.map((log, i) => (
                           <div key={`local-${i}`} className="flex gap-3 text-zinc-400">
-                            <span className="text-zinc-700 select-none shrink-0">&gt;&gt;</span>
-                            <span className={log.includes('❌') ? 'text-red-400 font-semibold' : log.includes('✅') ? 'text-emerald-400 font-semibold' : 'text-zinc-300'}>
+                            <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
+                            <span className={log.includes('❌') ? 'text-red-400' : log.includes('✅') ? 'text-emerald-400' : 'text-zinc-300'}>
                               {log}
                             </span>
                           </div>

@@ -7,9 +7,9 @@ import AccessGuard from '@/components/AccessGuard';
 import { Search, Activity, Zap, TrendingUp, Layers, Target, Wallet, BarChart3, AlertCircle, ChevronUp, ChevronDown, Calendar, FileSpreadsheet } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
-import CustomSelect from '@/components/customselect';
 import { exportToCSV } from '@/lib/csv-exporter';
 
+// Sub-component remains the same as your original
 function AnalysisCard({ title, symbol, value, subValue, colorClass, icon: Icon }: any) {
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-6 md:p-8 rounded-[2rem] hover:border-white/[0.1] hover:bg-white/[0.06] transition-all duration-300 group shadow-2xl flex flex-col justify-between">
@@ -32,6 +32,7 @@ function AnalysisCard({ title, symbol, value, subValue, colorClass, icon: Icon }
 export default function SymbolAudit() {
   const { user, loading: authLoading } = useAuth();
 
+  // 1. INSTANT HYDRATION
   const [stats, setStats] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('audit_stats_cache');
@@ -57,8 +58,10 @@ export default function SymbolAudit() {
     direction: 'desc'
   });
 
+  // Symbol multi-select filter states
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
 
+  // Dynamically extract unique symbols from the aggregated stats
   const uniqueSymbols = useMemo(() => {
     return Array.from(new Set(stats.map((s: any) => s.symbol.toUpperCase()))).sort();
   }, [stats]);
@@ -69,6 +72,8 @@ export default function SymbolAudit() {
       direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
     }));
   };
+
+
 
   useEffect(() => {
     if (!user) {
@@ -100,6 +105,7 @@ export default function SymbolAudit() {
         const { data, error } = await query;
 
         if (data) {
+          // 2. Aggregate manually by symbol
           const symbolMap: { [key: string]: any } = {};
 
           data.forEach(s => {
@@ -128,7 +134,7 @@ export default function SymbolAudit() {
               stats.wins++;
               stats.total_rr += Math.abs(Number(s.tp_secondary || s.tp || 0) - entry) / risk;
             } else if (status === 'TP1' || status === 'TP1 + SL (BE)') {
-              stats.wins++; 
+              stats.wins++; // Treat partial as win for audit
               stats.total_rr += Math.abs(Number(s.tp || 0) - entry) / risk;
             } else if (status === 'SL' || status === 'LOSS') {
               stats.losses++;
@@ -161,6 +167,7 @@ export default function SymbolAudit() {
     fetchPerformance();
   }, [user, tfAlignment, dateFrom, dateTo]);
 
+  // 3. DYNAMIC FILTERING (Optimized with useMemo)
   const filteredStats = useMemo(() => {
     const filtered = stats.filter(s => {
       const searchMatch = s.symbol.toUpperCase().includes(search.toUpperCase());
@@ -193,6 +200,7 @@ export default function SymbolAudit() {
     exportToCSV(filteredStats, headers, "Symbol_Audit_Analytics_Report");
   };
 
+  // Derived metrics for Top Cards
   const mostProfitable = useMemo(() => [...filteredStats].sort((a, b) => b.totalRR - a.totalRR)[0], [filteredStats]);
   const highestWinRate = useMemo(() => [...filteredStats].filter(s => s.trades >= 2).sort((a, b) => b.winRate - a.winRate)[0], [filteredStats]);
   const mostTraded = useMemo(() => [...filteredStats].sort((a, b) => b.trades - a.trades)[0], [filteredStats]);
@@ -210,6 +218,7 @@ export default function SymbolAudit() {
     };
   }, [filteredStats]);
 
+  // ... (Rest of your JSX layout stays the same) ...
   if (authLoading || (loading && stats.length === 0)) {
     return (
       <div className="min-h-screen flex items-center justify-center ">
@@ -223,8 +232,7 @@ export default function SymbolAudit() {
 
   return (
     <AccessGuard requiredTier={1} tierName="PRO">
-      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72 min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
-        
+      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
         {/* Ambient Glowing Backgrounds */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
           <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[150px] rounded-full mix-blend-screen" />
@@ -243,64 +251,65 @@ export default function SymbolAudit() {
             </div>
 
             <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
-              {/* Asset Class Select */}
-              <CustomSelect
-                label="Asset Class"
-                value={assetClass}
-                onChange={setAssetClass}
-                containerClassName="w-full md:w-36"
-                icon={<Layers className="text-zinc-500 mr-1" size={14} />}
-                options={[
-                  { v: "ALL", l: "ALL ASSETS" },
-                  { v: "CRYPTO", l: "CRYPTO" },
-                  { v: "FOREX", l: "FOREX" },
-                  { v: "INDICES", l: "INDICES" },
-                  { v: "METALS", l: "METALS" }
-                ]}
-              />
-
-              {/* Timeframe Alignment Select */}
-              <CustomSelect
-                label="Timeframe Alignment"
-                value={tfAlignment}
-                onChange={setTfAlignment}
-                containerClassName="w-full md:w-44"
-                icon={<Activity className="text-zinc-500 mr-1" size={14} />}
-                options={[
-                  { v: "ALL", l: "ALL ALIGNMENTS" },
-                  { v: "M5/H1", l: "5M - 1H Alignment" },
-                  { v: "M15/H4", l: "15M - 4H Alignment" },
-                  { v: "M30/H6", l: "30M - 6H Alignment" },
-                  { v: "H1/D1", l: "1H - 1D Alignment" }
-                ]}
-              />
-
-              {/* Date Filters */}
-              <div className="flex gap-2 w-full md:w-auto">
-                <div className="flex flex-col gap-1 w-full md:w-36">
-                  <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From Date</label>
-                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
-                    <Calendar className="opacity-60 mr-2 shrink-0 text-blue-400" size={14} />
-                    <input
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                      className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none cursor-pointer text-zinc-900 dark:text-white relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-20"
-                    />
-                  </div>
+              <div className="flex flex-col gap-1 w-full md:w-36">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
+                <div className="relative">
+                  <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
+                  <select
+                    value={assetClass}
+                    onChange={(e) => setAssetClass(e.target.value)}
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]"
+                  >
+                    <option value="ALL">ALL ASSETS</option>
+                    <option value="CRYPTO">CRYPTO</option>
+                    <option value="FOREX">FOREX</option>
+                    <option value="INDICES">INDICES</option>
+                    <option value="METALS">METALS</option>
+                  </select>
                 </div>
+              </div>
 
-                <div className="flex flex-col gap-1 w-full md:w-36">
-                  <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To Date</label>
-                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
-                    <Calendar className="opacity-60 mr-2 shrink-0 text-blue-400" size={14} />
-                    <input
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                      className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none cursor-pointer text-zinc-900 dark:text-white relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-20"
-                    />
-                  </div>
+              <div className="flex flex-col gap-1 w-full md:w-44">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe Alignment</label>
+                <div className="relative">
+                  <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
+                  <select
+                    value={tfAlignment}
+                    onChange={(e) => setTfAlignment(e.target.value)}
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]"
+                  >
+                    <option value="ALL">ALL ALIGNMENTS</option>
+                    <option value="M5/H1">5M - 1H Alignment</option>
+                    <option value="M15/H4">15M - 4H Alignment</option>
+                    <option value="M30/H6">30M - 6H Alignment</option>
+                    <option value="H1/D1">1H - 1D Alignment</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 w-full md:w-36">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From Date</label>
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full h-[42px]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 w-full md:w-36">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To Date</label>
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full h-[42px]"
+                  />
                 </div>
               </div>
 
@@ -309,13 +318,12 @@ export default function SymbolAudit() {
 
               {/* Search and Download Button */}
               <div className="flex gap-2 w-full md:w-auto items-end h-[42px] mb-0.5">
-                <div className="relative flex-grow md:w-48 h-full bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
-                  <Search className="text-zinc-600 dark:text-zinc-500 mr-2 shrink-0" size={14} />
+                <div className="relative flex-grow md:w-48 h-full">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
                   <input
-                    type="text" 
-                    placeholder="Search symbol..."
+                    type="text" placeholder="Search symbol..."
                     value={search}
-                    className="bg-transparent font-black text-xs font-mono w-full outline-none text-zinc-900 dark:text-white"
+                    className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white focus:border-blue-500/50 hover:border-white/20 outline-none transition-all"
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
@@ -323,10 +331,10 @@ export default function SymbolAudit() {
                 {/* Excel CSV Exporter Button */}
                 <button
                   onClick={handleDownloadCSV}
-                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all duration-300 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] h-full shrink-0 hover:scale-105 active:scale-95 cursor-pointer"
+                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)] h-full shrink-0"
                   title="Download Spreadsheet"
                 >
-                  <FileSpreadsheet size={16} />
+                  <FileSpreadsheet size={18} />
                 </button>
               </div>
             </div>

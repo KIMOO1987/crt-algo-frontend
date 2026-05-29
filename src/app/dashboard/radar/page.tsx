@@ -7,11 +7,10 @@ import { supabase } from '@/lib/supabaseClient';
 import AccessGuard from '@/components/AccessGuard';
 import { Shield, Activity, Radio, Search, Layers, ChevronRight, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CustomSelect from '@/components/customselect';
 import Link from 'next/link';
 
 export default function RadarPage() {
-  // 1. INSTANT HYDRATION
+  // 1. INSTANT HYDRATION: Load from localStorage immediately
   const [liveSignals, setLiveSignals] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('radar_signals_cache');
@@ -42,10 +41,13 @@ export default function RadarPage() {
     }));
   };
 
+  // --- SYMBOL CATEGORIZATION HELPER (No change) ---
+
   // 2. REFINED RADAR DATA FETCHING
   const fetchRadarData = useCallback(async (isSilent = false) => {
     if (!isSilent && liveSignals.length === 0) setIsLoading(true);
 
+    // INCREASE POOL SIZE: Fetch 50 signals instead of 10 to ensure we find enough PRIME setups
     const { data, error } = await supabase
       .from('signals')
       .select('*')
@@ -72,7 +74,7 @@ export default function RadarPage() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchRadarData]);
 
-  // --- REAL-TIME PRICE UPDATES ---
+  // --- REAL-TIME PRICE UPDATES (Keep existing Logic) ---
   useEffect(() => {
     if (liveSignals.length === 0) return;
     const cryptoPairs = liveSignals.filter(s => getSymbolCategory(s.symbol) === 'CRYPTO');
@@ -103,10 +105,10 @@ export default function RadarPage() {
             const clean = normalizeSymbol(symbol);
             setLivePrices(prev => ({ ...prev, [clean]: price }));
           }
-          await new Promise(r => setTimeout(r, 200)); 
+          await new Promise(r => setTimeout(r, 200)); // Minor throttle
         }
       } catch (err) { }
-    }, 5000); 
+    }, 5000); // 5s refresh for polled assets
     return () => { if (socket) socket.close(); clearInterval(pollInterval); };
   }, [liveSignals]);
 
@@ -114,6 +116,7 @@ export default function RadarPage() {
   const getConfidence = (signal: any) => {
     const minutesAgo = (Date.now() - new Date(signal.created_at).getTime()) / 60000;
 
+    // NORMALIZE LIVE PRICE
     const entry = Number(signal.entry_price || 0);
     const sl = Number(signal.sl || 0);
     const cleanSym = normalizeSymbol(signal.symbol);
@@ -122,17 +125,23 @@ export default function RadarPage() {
     const isBuy = signal.side?.toUpperCase() === 'BUY' || signal.side?.toUpperCase() === 'BULLISH';
     const rr = risk ? (isBuy ? (current - entry) : (entry - current)) / risk : 0;
 
+    // A. Freshness (40 points max)
     const timeScore = Math.max(0, 40 - (minutesAgo / 4));
+
+    // B. Confluence (30 points max)
     const confCount = signal.confluences ? signal.confluences.split(',').length : 1;
     const confluenceScore = Math.min(30, confCount * 10);
 
+    // C. Proximity/Performance (30 points max)
+    // We award points if the signal is near entry OR moving into profit
     let performanceScore = 0;
-    if (rr >= -0.1 && rr <= 0.3) performanceScore = 30; 
+    if (rr >= -0.1 && rr <= 0.3) performanceScore = 30; // Perfect "Entry Zone" signal
     else if (rr > 0.3) performanceScore = Math.min(30, rr * 10);
     else performanceScore = 0;
 
     const total = Math.round(timeScore + confluenceScore + performanceScore);
 
+    // LOWERED THRESHOLDS: 75 is now PRIME (allows for entries to show up)
     if (total >= 75) return { val: Math.min(total, 100), label: 'PRIME' };
     if (total >= 50) return { val: total, label: 'STABLE' };
     if (total >= 30) return { val: total, label: 'DECAY' };
@@ -143,6 +152,7 @@ export default function RadarPage() {
   const filteredRadarSignals = liveSignals
     .map(s => ({ ...s, confidence: getConfidence(s) }))
     .filter(s => {
+      // Show PRIME and STABLE only
       const isHighProb = s.confidence.label === 'PRIME' || s.confidence.label === 'STABLE';
       const symbolMatch = s.symbol.toLowerCase().includes(searchTerm.toLowerCase());
       const assetMatch = assetClass === 'ALL' || getSymbolCategory(s.symbol) === assetClass;
@@ -209,7 +219,7 @@ export default function RadarPage() {
 
   return (
     <AccessGuard requiredTier={1} tierName="PRO">
-      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72 min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
+      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
 
         {/* Ambient Glowing Backgrounds */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -230,28 +240,31 @@ export default function RadarPage() {
               </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto items-end">
-              <CustomSelect
-                label="Asset Class"
-                value={assetClass}
-                onChange={setAssetClass}
-                containerClassName="w-full md:w-48"
-                icon={<Layers className="text-zinc-500 mr-1" size={14} />}
-                options={[
-                  { v: "ALL", l: "ALL ASSETS" },
-                  { v: "CRYPTO", l: "CRYPTO" },
-                  { v: "FOREX", l: "FOREX" },
-                  { v: "INDICES", l: "INDICES" },
-                  { v: "METALS", l: "METALS" }
-                ]}
-              />
+            <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
+              <div className="flex flex-col gap-1 w-full md:w-48">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
+                <div className="relative">
+                  <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
+                  <select
+                    value={assetClass}
+                    onChange={(e) => setAssetClass(e.target.value)}
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full"
+                  >
+                    <option value="ALL">ALL ASSETS</option>
+                    <option value="CRYPTO">CRYPTO</option>
+                    <option value="FOREX">FOREX</option>
+                    <option value="INDICES">INDICES</option>
+                    <option value="METALS">METALS</option>
+                  </select>
+                </div>
+              </div>
 
-              <div className="relative flex-grow md:w-64 h-[42px] mb-0.5">
+              <div className="relative flex-grow md:w-64 self-end h-[42px] mb-0.5">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
                 <input
                   type="text"
                   placeholder="Search stream..."
-                  className="w-full h-full pl-12 pr-4 bg-white/[0.02] border border-white/[0.08] focus:border-blue-500/40 focus:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white outline-none transition-all duration-300"
+                  className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white focus:border-blue-500/50 hover:border-white/20 outline-none transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -328,6 +341,7 @@ export default function RadarPage() {
                         const risk = Math.abs(entry - sl);
                         const isBuy = signal.side?.toUpperCase() === 'BUY' || signal.side?.toUpperCase() === 'BULLISH';
 
+                        // --- SEALING LOGIC ---
                         let rr = 0;
                         if (status === 'SL') {
                           rr = -1.0;
@@ -336,6 +350,7 @@ export default function RadarPage() {
                         } else if ((status === 'TP1' || status === 'TP1 + SL (BE)') && tp1) {
                           rr = risk ? Math.abs(tp1 - entry) / risk : 0;
                         } else {
+                          // Live Calculation
                           const current = livePrices[cleanSym] ?? Number(signal.current_price || entry);
                           const reward = isBuy ? (current - entry) : (entry - current);
                           rr = risk ? reward / risk : 0;
@@ -391,7 +406,7 @@ export default function RadarPage() {
                               })()}
                             </td>
                             <td className="px-6 py-6 text-center">
-                              <Link href="/dashboard/active" className="p-2 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.08] hover:text-zinc-900 dark:text-white transition-all group-hover:border-white/20 inline-flex cursor-pointer">
+                              <Link href="/dashboard/active" className="p-2 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.08] hover:text-zinc-900 dark:text-white transition-all group-hover:border-white/20 inline-flex">
                                 <ChevronRight size={16} />
                               </Link>
                             </td>

@@ -9,13 +9,13 @@ import SignalChart from '@/components/SignalChart';
 import { 
   Search, Activity, Target, Shield, Clock, Zap, 
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
-  ArrowUpRight, Layout, AlertCircle, FileSpreadsheet,
-  Calendar, ChevronDown
+  ArrowUpRight, Layout, AlertCircle, FileSpreadsheet
 } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
-import CustomSelect from '@/components/customselect';
 import { exportToCSV } from '@/lib/csv-exporter';
+
+
 
 const handleViewSetup = (symbol: string) => {
   const myLayoutId = "TWlqcP20"; 
@@ -88,7 +88,6 @@ const SignalCard = ({ signal, onClick }: { signal: any, onClick: () => void }) =
     <motion.div 
       id={`signal-card-${signal.id}`}
       layout onClick={onClick} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className="relative overflow-hidden bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-6 md:p-8 rounded-[2.5rem] hover:border-white/[0.1] hover:bg-white/[0.06] transition-all duration-500 group shadow-2xl flex flex-col justify-between min-h-[500px] cursor-pointer"
     >
       <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[120px] opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity duration-700 ${isBuy ? 'bg-emerald-500' : 'bg-red-500'}`} />
@@ -123,7 +122,7 @@ const SignalCard = ({ signal, onClick }: { signal: any, onClick: () => void }) =
       </div>
       
       <div className="flex flex-col gap-3 mt-4">
-        <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="action-btn relative z-10 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-zinc-900 dark:text-white py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] active:scale-95 flex items-center justify-center gap-3 border border-blue-500/30 group/btn cursor-pointer">
+        <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="action-btn relative z-10 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-zinc-900 dark:text-white py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] active:scale-95 flex items-center justify-center gap-3 border border-blue-500/30 group/btn">
           <Layout size={16} className="text-blue-200 group-hover/btn:text-zinc-900 dark:text-white transition-colors" /> 
           Open Live Setup 
           <ArrowUpRight size={16} className="text-blue-200 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
@@ -133,6 +132,7 @@ const SignalCard = ({ signal, onClick }: { signal: any, onClick: () => void }) =
   );
 };
 
+// --- 5. MAIN PAGE ---
 export default function SignalsPage() {
   const { user, loading: authLoading } = useAuth();
   const [signals, setSignals] = useState<any[]>(() => (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('history_cache') || '[]') : []));
@@ -290,7 +290,7 @@ export default function SignalsPage() {
 
   return (
     <AccessGuard requiredTier={1} tierName="PRO">
-      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72 min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
+      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
           <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[150px]" />
           <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px]" />
@@ -306,86 +306,55 @@ export default function SignalsPage() {
             </div>
 
             <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
-              {/* Date Filters */}
-              <div className="flex gap-2 w-full md:w-auto">
-                <div className="flex flex-col gap-1 w-full md:w-36">
+              <div className="flex gap-2">
+                <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From</label>
-                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
-                    <Calendar size={14} className="opacity-60 mr-2 shrink-0 text-blue-400" />
-                    <input 
-                      type="date" 
-                      value={dateFrom} 
-                      onChange={(e) => setDateFrom(e.target.value)} 
-                      className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none cursor-pointer text-zinc-900 dark:text-white relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-20" 
-                    />
-                  </div>
+                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none h-[42px]" />
                 </div>
-                <div className="flex flex-col gap-1 w-full md:w-36">
+                <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To</label>
-                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
-                    <Calendar size={14} className="opacity-60 mr-2 shrink-0 text-blue-400" />
-                    <input 
-                      type="date" 
-                      value={dateTo} 
-                      onChange={(e) => setDateTo(e.target.value)} 
-                      className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none cursor-pointer text-zinc-900 dark:text-white relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-20" 
-                    />
-                  </div>
+                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none h-[42px]" />
                 </div>
               </div>
               
-              {/* Asset Class Select */}
-              <CustomSelect
-                label="Asset Class"
-                value={assetClass}
-                onChange={setAssetClass}
-                containerClassName="w-full md:w-36"
-                options={[
-                  { v: "ALL", l: "ALL ASSETS" },
-                  { v: "CRYPTO", l: "CRYPTO" },
-                  { v: "FOREX", l: "FOREX" },
-                  { v: "INDICES", l: "INDICES" },
-                  { v: "METALS", l: "METALS" }
-                ]}
-              />
+              <div className="flex flex-col gap-1 w-full md:w-36">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
+                <select value={assetClass} onChange={(e) => setAssetClass(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none h-[42px] w-full cursor-pointer">
+                  <option value="ALL">ALL ASSETS</option>
+                  <option value="CRYPTO">CRYPTO</option>
+                  <option value="FOREX">FOREX</option>
+                  <option value="INDICES">INDICES</option>
+                  <option value="METALS">METALS</option>
+                </select>
+              </div>
               
-              {/* Timeframe Select */}
-              <CustomSelect
-                label="Timeframe"
-                value={tfAlignment}
-                onChange={setTfAlignment}
-                containerClassName="w-full md:w-44"
-                options={[
-                  { v: "ALL", l: "ALL ALIGNMENTS" },
-                  { v: "M5/H1", l: "5M - 1H Alignment" },
-                  { v: "M15/H4", l: "15M - 4H Alignment" },
-                  { v: "M30/H6", l: "30M - 6H Alignment" },
-                  { v: "H1/D1", l: "1H - 1D Alignment" }
-                ]}
-              />
+              <div className="flex flex-col gap-1 w-full md:w-44">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe</label>
+                <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none h-[42px] w-full cursor-pointer">
+                  <option value="ALL">ALL ALIGNMENTS</option>
+                  <option value="M5/H1">5M - 1H Alignment</option>
+                  <option value="M15/H4">15M - 4H Alignment</option>
+                  <option value="M30/H6">30M - 6H Alignment</option>
+                  <option value="H1/D1">1H - 1D Alignment</option>
+                </select>
+              </div>
 
               {/* Symbol Selector checklist */}
               <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
 
               <div className="flex gap-2 w-full md:w-auto items-end h-[42px]">
-                {/* Search */}
-                <div className="relative flex-grow md:w-48 h-full bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
-                  <Search className="text-zinc-600 dark:text-zinc-500 mr-2 shrink-0" size={14} />
-                  <input 
-                    value={searchTerm} 
-                    onChange={(e) => setSearchTerm(e.target.value)} 
-                    placeholder="Search symbol..." 
-                    className="bg-transparent font-black text-xs font-mono w-full outline-none text-zinc-900 dark:text-white" 
-                  />
+                <div className="relative flex-grow md:w-48 h-full">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
+                  <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search symbol..." className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white outline-none" />
                 </div>
                 
                 {/* Excel CSV Exporter Button */}
                 <button
                   onClick={handleDownloadCSV}
-                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all duration-300 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] h-full shrink-0 hover:scale-105 active:scale-95 cursor-pointer animate-none"
+                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)] h-full shrink-0"
                   title="Download Spreadsheet"
                 >
-                  <FileSpreadsheet size={16} />
+                  <FileSpreadsheet size={18} />
                 </button>
               </div>
             </div>
@@ -406,9 +375,9 @@ export default function SignalsPage() {
 
           {Math.ceil(totalCount / ITEMS_PER_PAGE) > 1 && (
             <div className="mt-8 mb-4 flex justify-center items-center gap-4">
-              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-900 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"><ChevronLeft size={20} /></button>
+              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500"><ChevronLeft size={20} /></button>
               <span className="text-[10px] font-black uppercase text-zinc-600 dark:text-zinc-500 tracking-widest">Page {currentPage} of {Math.ceil(totalCount / ITEMS_PER_PAGE)}</span>
-              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / ITEMS_PER_PAGE)))} disabled={currentPage === Math.ceil(totalCount / ITEMS_PER_PAGE)} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-900 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"><ChevronRight size={20} /></button>
+              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / ITEMS_PER_PAGE)))} disabled={currentPage === Math.ceil(totalCount / ITEMS_PER_PAGE)} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500"><ChevronRight size={20} /></button>
             </div>
           )}
 

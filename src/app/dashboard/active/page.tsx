@@ -3,18 +3,18 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
-import AccessGuard from '@/components/AccessGuard'; 
+import AccessGuard from '@/components/AccessGuard'; // Switched to AccessGuard
 import {
   Clock, Activity, Zap, ArrowUpRight, TrendingUp,
   TrendingDown, Layout, Target, Shield, AlertCircle, Calendar
 } from 'lucide-react';
 import SignalModal from '@/components/SignalModal';
-import CustomSelect from '@/components/customselect';
-import SymbolMultiSelectComponent from '@/components/SymbolMultiSelect';
 
-import { normalizeSymbol, getSymbolCategory, deduplicateSignals, SYMBOL_MAP } from '@/lib/symbol-mapper';
+// --- SYMBOL CATEGORIZATION HELPER ---
+import { normalizeSymbol, getSymbolCategory, deduplicateSignals, getMappedSymbol, SYMBOL_MAP } from '@/lib/symbol-mapper';
 import { fetchMarketQuote } from '@/lib/market-data';
 
+// --- UI HANDLERS ---
 const handleViewSetup = (symbol: string) => {
   const myLayoutId = "TWlqcP20";
   const cleanSymbol = symbol.includes(':') ? symbol.split(':')[1] : symbol;
@@ -30,19 +30,10 @@ export default function ActiveSignalsPage() {
   const [tfAlignment, setTfAlignment] = useState('ALL');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
-
-  // Dynamically extract unique symbols from active signals
-  const uniqueSymbols = useMemo(() => {
-    return Array.from(new Set(activeSignals.map((s: any) => s.symbol.toUpperCase()))).sort();
-  }, [activeSignals]);
 
   const filteredSignals = useMemo(() => {
     return activeSignals.filter(signal => {
       if (tfAlignment !== 'ALL' && signal.tf_alignment !== tfAlignment) {
-        return false;
-      }
-      if (selectedSymbols.length > 0 && !selectedSymbols.includes(signal.symbol.toUpperCase())) {
         return false;
       }
       if (dateFrom) {
@@ -60,11 +51,12 @@ export default function ActiveSignalsPage() {
       }
       return true;
     });
-  }, [activeSignals, tfAlignment, dateFrom, dateTo, selectedSymbols]);
+  }, [activeSignals, tfAlignment, dateFrom, dateTo]);
 
   // 1. SIGNAL DATA FETCHING & REALTIME
   useEffect(() => {
     const fetchActive = async () => {
+      // 1. Optimistic Cache Load: Instantly show previous signals
       const cached = sessionStorage.getItem('active_signals_cache');
       if (cached) {
         try {
@@ -78,12 +70,15 @@ export default function ActiveSignalsPage() {
             });
             return next;
           });
-          setLoadingSignals(false);
+          setLoadingSignals(false); // Instantly hide loader if cache is found
         } catch (e) { }
       } else {
+        // Only show loading screen if there is no cache
         setLoadingSignals(true);
       }
 
+      // 2. Fetch fresh data silently in the background
+      // Fetches signals from the last 24 hours
       const timeLimit = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
       const { data, error } = await supabase
@@ -98,8 +93,10 @@ export default function ActiveSignalsPage() {
       } else if (data) {
         const unique = deduplicateSignals(data);
         setActiveSignals(unique);
+        // Save the fresh signals to cache for the next refresh
         sessionStorage.setItem('active_signals_cache', JSON.stringify(unique));
 
+        // Initialize live prices only for symbols we aren't tracking yet
         setLivePrices(prev => {
           const next = { ...prev };
           data.forEach(s => {
@@ -114,6 +111,7 @@ export default function ActiveSignalsPage() {
 
     fetchActive();
 
+    // Realtime subscription to keep the dashboard live
     const channel = supabase.channel('active_signals_stream')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'signals' }, () => {
         fetchActive();
@@ -126,6 +124,7 @@ export default function ActiveSignalsPage() {
   useEffect(() => {
     if (activeSignals.length === 0) return;
 
+    // --- A. BINANCE WEBSOCKET (ANY SUPPORTED ASSET) ---
     const binanceSymbols = activeSignals.filter(s => {
       const normalized = normalizeSymbol(s.symbol);
       return SYMBOL_MAP[normalized]?.binance;
@@ -154,8 +153,13 @@ export default function ActiveSignalsPage() {
           console.error("[Binance WS] Parse Error:", err);
         }
       };
+
+      socket.onerror = (err) => {
+        // Silently handle connection errors to avoid console spam
+      };
     }
 
+    // --- B. NON-BINANCE POLLING (UNIFIED FALLBACK) ---
     const otherSignals = activeSignals.filter(s => {
       const normalized = normalizeSymbol(s.symbol);
       return !SYMBOL_MAP[normalized]?.binance;
@@ -173,13 +177,14 @@ export default function ActiveSignalsPage() {
             const clean = normalizeSymbol(symbol);
             setLivePrices(prev => ({ ...prev, [clean]: price }));
           }
-          await new Promise(r => setTimeout(r, 200)); 
+          await new Promise(r => setTimeout(r, 200)); // Minor throttle
         }
       } catch (err) { }
-    }, 5000); 
+    }, 5000); // 5s refresh for polled assets
 
     return () => {
       if (socket) {
+        // Graceful closure: only close if open, or wait for open then close if connecting
         if (socket.readyState === WebSocket.OPEN) {
           socket.close();
         } else if (socket.readyState === WebSocket.CONNECTING) {
@@ -188,7 +193,7 @@ export default function ActiveSignalsPage() {
       }
       clearInterval(pollInterval);
     };
-  }, [activeSignals.length]); 
+  }, [activeSignals.length]); // Only re-run if the NUMBER of signals changes, preventing jitter
   
   // 3. AUTO-SYNC STATUS TO SUPABASE
   useEffect(() => {
@@ -232,6 +237,7 @@ export default function ActiveSignalsPage() {
           if (error) {
             console.error(`[Sync] Error updating ${signal.symbol}:`, error.message);
           } else {
+            // Optimistically update local state to prevent redundant requests
             setActiveSignals(prev => prev.map(s => 
               s.id === signal.id ? { ...s, status: newDbStatus, is_active: !shouldDeactivate } : s
             ));
@@ -240,13 +246,13 @@ export default function ActiveSignalsPage() {
       }
     };
 
-    const timer = setTimeout(syncPending, 2000); 
+    const timer = setTimeout(syncPending, 2000); // Check for transitions every 2s
     return () => clearTimeout(timer);
   }, [livePrices, activeSignals]);
 
   return (
     <AccessGuard requiredTier={1} tierName="PRO">
-      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72 min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
+      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
 
         {/* Ambient Glowing Backgrounds */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -275,51 +281,44 @@ export default function ActiveSignalsPage() {
           </div>
 
           {/* Filters Bar */}
-          <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-5 rounded-[2rem] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end backdrop-blur-md">
-            
-            {/* Timeframe Select */}
-            <CustomSelect
-              label="Timeframe Alignment"
-              value={tfAlignment}
-              onChange={setTfAlignment}
-              options={[
-                { v: "ALL", l: "All Alignments" },
-                { v: "M5/H1", l: "5M - 1H Alignment" },
-                { v: "M15/H4", l: "15M - 4H Alignment" },
-                { v: "M30/H6", l: "30M - 6H Alignment" },
-                { v: "H1/D1", l: "1H - 1D Alignment" }
-              ]}
-            />
-            
-            {/* Symbol Checklist Filter */}
-            <SymbolMultiSelectComponent
-              symbols={uniqueSymbols}
-              selectedSymbols={selectedSymbols}
-              onChange={setSelectedSymbols}
-            />
-
-            <div className="flex flex-col gap-1 w-full">
+          <div className="glass-panel p-5 rounded-[1.5rem] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-center">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">Timeframe Alignment</span>
+              <div className="input-modern relative">
+                <select 
+                  value={tfAlignment} 
+                  onChange={(e) => setTfAlignment(e.target.value)} 
+                  className="bg-transparent font-black text-sm w-full outline-none appearance-none cursor-pointer pr-4"
+                >
+                  <option value="ALL" className="bg-[var(--bg)]">All Alignments</option>
+                  <option value="M5/H1" className="bg-[var(--bg)]">5M - 1H Alignment</option>
+                  <option value="M15/H4" className="bg-[var(--bg)]">15M - 4H Alignment</option>
+                  <option value="M30/H6" className="bg-[var(--bg)]">30M - 6H Alignment</option>
+                  <option value="H1/D1" className="bg-[var(--bg)]">1H - 1D Alignment</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-col">
               <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">From Date</span>
-              <div className="flex items-center relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl px-4 transition-all duration-300">
+              <div className="flex items-center input-modern">
                 <Calendar size={14} className="text-blue-400 mr-2 flex items-center" />
                 <input 
                   type="date" 
                   value={dateFrom} 
                   onChange={(e) => setDateFrom(e.target.value)} 
-                  className="bg-transparent font-black text-xs w-full outline-none cursor-pointer text-zinc-900 dark:text-white relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-20" 
+                  className="bg-transparent font-black text-xs w-full outline-none appearance-none cursor-pointer" 
                 />
               </div>
             </div>
-
-            <div className="flex flex-col gap-1 w-full">
+            <div className="flex flex-col">
               <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">To Date</span>
-              <div className="flex items-center relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl px-4 transition-all duration-300">
+              <div className="flex items-center input-modern">
                 <Calendar size={14} className="text-blue-400 mr-2 flex items-center" />
                 <input 
                   type="date" 
                   value={dateTo} 
                   onChange={(e) => setDateTo(e.target.value)} 
-                  className="bg-transparent font-black text-xs w-full outline-none cursor-pointer text-zinc-900 dark:text-white relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-20" 
+                  className="bg-transparent font-black text-xs w-full outline-none appearance-none cursor-pointer" 
                 />
               </div>
             </div>
@@ -336,10 +335,11 @@ export default function ActiveSignalsPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
                     className="relative overflow-hidden bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-6 md:p-8 rounded-[2.5rem] hover:border-white/[0.1] hover:bg-white/[0.06] transition-all duration-500 group shadow-2xl flex flex-col justify-between min-h-[500px]"
                   >
-                    <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[120px] opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity duration-700 ${signal.side === 'BUY' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    {/* Internal Ambient Glow */}
+                    <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[120px] opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity duration-700 ${signal.side === 'BUY' ? 'bg-emerald-500' : 'bg-red-500'
+                      }`} />
 
                     <div className="relative z-10">
                       <div className="flex justify-between items-start mb-8 border-b border-[var(--glass-border)] pb-6">
@@ -449,7 +449,7 @@ export default function ActiveSignalsPage() {
                     <div className="flex flex-col gap-3 mt-4">
                       <button
                         onClick={() => setSelectedSignal(signal)}
-                        className="relative z-10 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-zinc-900 dark:text-white py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] active:scale-95 flex items-center justify-center gap-3 border border-blue-500/30 group/btn cursor-pointer"
+                        className="relative z-10 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-zinc-900 dark:text-white py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] active:scale-95 flex items-center justify-center gap-3 border border-blue-500/30 group/btn"
                       >
                         <Layout size={16} className="text-blue-200 group-hover/btn:text-zinc-900 dark:text-white transition-colors" />
                         Open Live Setup
@@ -503,6 +503,9 @@ function getTimeAgo(timestamp: string) {
 }
 
 function getDisplayStatus(status: string, livePrice?: number, signal?: any) {
+  const category = signal ? getSymbolCategory(signal.symbol) : 'CRYPTO';
+
+  // ORGANIC PROTECTION: Now for ALL assets if price is available
   if (livePrice && signal) {
     const entry = Number(signal.entry_price);
     const sl = Number(signal.sl);
@@ -510,8 +513,9 @@ function getDisplayStatus(status: string, livePrice?: number, signal?: any) {
     const tp2 = Number(signal.tp_secondary);
     const side = signal.side?.toUpperCase();
     const isBuy = side === 'BUY' || side === 'BULLISH';
-    const tolerance = 0.00005; 
+    const tolerance = 0.00005; // 0.005% alignment with backend worker
 
+    // 1. Live Target Detection (Immediate feedback before DB update)
     if (tp2 && ((isBuy && livePrice >= (tp2 * (1 - tolerance))) || (!isBuy && livePrice <= (tp2 * (1 + tolerance))))) {
       return 'TP2 REACHED (LIVE)';
     }
@@ -524,11 +528,13 @@ function getDisplayStatus(status: string, livePrice?: number, signal?: any) {
       return 'SL HIT (LIVE)';
     }
 
+    // 2. Break Even Detection (TP1 -> BE)
     if (status === 'TP1' && entry && ((isBuy && livePrice <= (entry * (1 + tolerance))) || (!isBuy && livePrice >= (entry * (1 - tolerance))))) {
       return 'BE REACHED (LIVE)';
     }
   }
 
+  // Backup Logic for METALS, INDICES, FOREX or Fallback
   switch (status?.toUpperCase()) {
     case 'PENDING': return 'In Progress';
     case 'ENTRY': return 'Active';
@@ -541,6 +547,9 @@ function getDisplayStatus(status: string, livePrice?: number, signal?: any) {
   }
 }
 
+/**
+ * Calculates the potential R:R for a specific target level
+ */
 function calculateTargetRR(target: any, entry: any, sl: any) {
   const t = Number(target);
   const e = Number(entry);
@@ -551,6 +560,9 @@ function calculateTargetRR(target: any, entry: any, sl: any) {
   return `+${(reward / risk).toFixed(1)}R`;
 }
 
+/**
+ * Calculates the Dynamic RR based on current status (Ported from History Page)
+ */
 function getDynamicRR(signal: any) {
   const entry = Number(signal.entry_price || 0);
   const sl = Number(signal.sl || 0);
@@ -560,6 +572,7 @@ function getDynamicRR(signal: any) {
   if (!entry || !sl || entry === sl) return '0.0R';
   const risk = Math.abs(entry - sl);
 
+  // Outcome-based results
   if (signal.status === 'SL') return '-1.0R';
   if (signal.status === 'TP2' && tp2) {
     return `+${(Math.abs(tp2 - entry) / risk).toFixed(1)}R`;
@@ -568,10 +581,14 @@ function getDynamicRR(signal: any) {
     return `+${(Math.abs(tp1 - entry) / risk).toFixed(1)}R`;
   }
 
+  // Setup fallback (Potential)
   const targetTp = tp2 || tp1;
   return `1:${(Math.abs(targetTp - entry) / risk).toFixed(1)}`;
 }
 
+/**
+ * Calculates Realtime R:R based on current price vs entry and risk
+ */
 function calculateLiveRR(signal: any, livePrices: { [key: string]: number }) {
   const status = signal.status?.toUpperCase();
   const entry = Number(signal.entry_price || 0);
@@ -579,13 +596,16 @@ function calculateLiveRR(signal: any, livePrices: { [key: string]: number }) {
   const tp1 = Number(signal.tp || 0);
   const tp2 = Number(signal.tp_secondary || 0);
   const risk = Math.abs(entry - sl);
+  const category = getSymbolCategory(signal.symbol);
 
   if (!entry || !sl || risk === 0) return '0.00R';
 
+  // Sealing logic for final states
   if (status === 'SL') return '-1.00R';
   if (status === 'TP2' && tp2) return `+${(Math.abs(tp2 - entry) / risk).toFixed(2)}R`;
   if ((status === 'TP1' || status === 'TP1 + SL (BE)') && tp1) return `+${(Math.abs(tp1 - entry) / risk).toFixed(2)}R`;
 
+  // Backup Logic: Always live calculation for Metals, Indices, Forex
   const cleanSymbol = normalizeSymbol(signal.symbol);
   const current = livePrices[cleanSymbol] ?? Number(signal.current_price || entry);
   const side = signal.side?.toUpperCase();
