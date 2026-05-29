@@ -9,7 +9,8 @@ import {
   LogOut, 
   ShieldCheck, 
   UserPlus,
-  LayoutDashboard
+  LayoutDashboard,
+  Activity
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { ThemeToggle } from './ThemeToggle';
@@ -18,6 +19,7 @@ const adminMenuGroups = [
   {
     label: 'SYSTEM CONTROL',
     items: [
+      { name: 'Signals Manager', path: '/admin/signals', icon: Activity, roles: ['admin', 'moderator'] },
       { name: 'Plans Editor', path: '/admin/plans', icon: Settings, roles: ['admin', 'moderator'] },
       { name: 'Staff Manager', path: '/admin/staff', icon: UserPlus, roles: ['admin'] },
     ]
