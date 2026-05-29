@@ -7,6 +7,7 @@ import {
   Loader2, RefreshCcw, TrendingUp, TrendingDown, Clock, ShieldAlert,
   ArrowUpRight, AlertCircle, Save, Layers, Target, Shield, Zap, ChevronDown
 } from 'lucide-react';
+import CustomSelect from '@/components/customselect';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -128,8 +129,12 @@ export default function SignalsManager() {
     setIsModalOpen(true);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -242,14 +247,14 @@ export default function SignalsManager() {
             {/* Create Button */}
             <button
               onClick={openCreateModal}
-              className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] active:scale-95 flex items-center justify-center gap-2 border border-blue-500/30"
+              className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] active:scale-95 flex items-center justify-center gap-2 border border-blue-500/30 cursor-pointer"
             >
               <Plus size={16} /> Create Signal Setup
             </button>
             
             <button 
               onClick={fetchSignals} 
-              className="p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:bg-white/[0.08] hover:border-white/20 hover:text-white transition-all text-zinc-500 flex items-center justify-center"
+              className="p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:bg-white/[0.08] hover:border-white/20 hover:text-white transition-all text-zinc-500 flex items-center justify-center cursor-pointer"
             >
               <RefreshCcw size={18} className={loading ? "animate-spin" : ""} />
             </button>
@@ -257,9 +262,9 @@ export default function SignalsManager() {
         </div>
 
         {/* Filters Panel */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-white/[0.02] border border-white/[0.05] p-5 rounded-[2rem] backdrop-blur-md">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-white/[0.02] border border-white/[0.05] p-5 rounded-[2rem] backdrop-blur-md items-end">
           {/* Search */}
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5 w-full">
             <label className="text-[9px] font-black text-zinc-500 uppercase ml-2 tracking-widest">Filter Symbol</label>
             <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
               <Search className="text-zinc-500 mr-2 shrink-0" size={14} />
@@ -274,63 +279,48 @@ export default function SignalsManager() {
           </div>
 
           {/* Asset Category */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] font-black text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
-            <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center transition-all duration-300">
-              <select
-                value={assetClass}
-                onChange={(e) => setAssetClass(e.target.value)}
-                className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-zinc-900 dark:text-white relative z-10"
-              >
-                <option value="ALL">ALL ASSETS</option>
-                <option value="CRYPTO">CRYPTO</option>
-                <option value="FOREX">FOREX</option>
-                <option value="INDICES">INDICES</option>
-                <option value="METALS">METALS</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
-            </div>
-          </div>
+          <CustomSelect
+            label="Asset Class"
+            value={assetClass}
+            onChange={setAssetClass}
+            options={[
+              { v: "ALL", l: "ALL ASSETS" },
+              { v: "CRYPTO", l: "CRYPTO" },
+              { v: "FOREX", l: "FOREX" },
+              { v: "INDICES", l: "INDICES" },
+              { v: "METALS", l: "METALS" }
+            ]}
+          />
 
           {/* Status */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] font-black text-zinc-500 uppercase ml-2 tracking-widest">Outcome Status</label>
-            <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center transition-all duration-300">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-zinc-900 dark:text-white relative z-10"
-              >
-                <option value="ALL">ALL STATUSES</option>
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="PENDING">PENDING</option>
-                <option value="TP1">TP1 HIT</option>
-                <option value="TP2">TP2 HIT</option>
-                <option value="SL">SL HIT</option>
-                <option value="WIN">TAKE PROFIT (WIN)</option>
-                <option value="LOSS">STOP LOSS (LOSS)</option>
-                <option value="TP1 + SL (BE)">PARTIAL TP1 (BE)</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
-            </div>
-          </div>
+          <CustomSelect
+            label="Outcome Status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { v: "ALL", l: "ALL STATUSES" },
+              { v: "ACTIVE", l: "ACTIVE" },
+              { v: "PENDING", l: "PENDING" },
+              { v: "TP1", l: "TP1 HIT" },
+              { v: "TP2", l: "TP2 HIT" },
+              { v: "SL", l: "SL HIT" },
+              { v: "WIN", l: "TAKE PROFIT (WIN)" },
+              { v: "LOSS", l: "STOP LOSS (LOSS)" },
+              { v: "TP1 + SL (BE)", l: "PARTIAL TP1 (BE)" }
+            ]}
+          />
 
           {/* Active/Inactive */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] font-black text-zinc-500 uppercase ml-2 tracking-widest">Activity State</label>
-            <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center transition-all duration-300">
-              <select
-                value={stateFilter}
-                onChange={(e) => setStateFilter(e.target.value)}
-                className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-zinc-900 dark:text-white relative z-10"
-              >
-                <option value="ALL">ALL STATES</option>
-                <option value="LIVE">LIVE ACTIVE SIGNALS</option>
-                <option value="ARCHIVED">ARCHIVED/HISTORICAL</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
-            </div>
-          </div>
+          <CustomSelect
+            label="Activity State"
+            value={stateFilter}
+            onChange={setStateFilter}
+            options={[
+              { v: "ALL", l: "ALL STATES" },
+              { v: "LIVE", l: "LIVE ACTIVE SIGNALS" },
+              { v: "ARCHIVED", l: "ARCHIVED/HISTORICAL" }
+            ]}
+          />
         </div>
 
         {/* Signals Table */}
@@ -428,7 +418,7 @@ export default function SignalsManager() {
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => openEditModal(signal)}
-                              className="p-2 rounded-xl bg-white/5 hover:bg-blue-500/20 hover:text-blue-400 border border-transparent hover:border-blue-500/30 transition-all text-zinc-500"
+                              className="p-2 rounded-xl bg-white/5 hover:bg-blue-500/20 hover:text-blue-400 border border-transparent hover:border-blue-500/30 transition-all text-zinc-500 cursor-pointer"
                               title="Edit Signal Setup"
                             >
                               <Edit2 size={14} />
@@ -436,7 +426,7 @@ export default function SignalsManager() {
                             <button
                               onClick={() => handleDeleteSignal(signal.id, signal.symbol)}
                               disabled={saving === signal.id}
-                              className="p-2 rounded-xl bg-white/5 hover:bg-red-500/20 hover:text-red-400 border border-transparent hover:border-red-500/30 transition-all text-zinc-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="p-2 rounded-xl bg-white/5 hover:bg-red-500/20 hover:text-red-400 border border-transparent hover:border-red-500/30 transition-all text-zinc-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                               title="Delete Setup"
                             >
                               {saving === signal.id ? (
@@ -472,7 +462,7 @@ export default function SignalsManager() {
             <button 
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
               disabled={currentPage === 1 || loading} 
-              className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-500 hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-500 hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               <Clock size={16} className="rotate-180" />
             </button>
@@ -482,7 +472,7 @@ export default function SignalsManager() {
             <button 
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
               disabled={currentPage === totalPages || loading} 
-              className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-500 hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-500 hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               <Clock size={16} />
             </button>
@@ -513,7 +503,7 @@ export default function SignalsManager() {
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)} 
-                className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all"
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-pointer"
               >
                 <X size={18} className="text-zinc-400" />
               </button>
@@ -541,69 +531,48 @@ export default function SignalsManager() {
                 </div>
 
                 {/* Category */}
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-zinc-500 uppercase ml-1 tracking-widest flex items-center gap-1">
-                    <Layers size={10} className="text-indigo-400" /> Asset Category
-                  </label>
-                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center transition-all duration-300">
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-white relative z-10"
-                    >
-                      <option value="CRYPTO">CRYPTO</option>
-                      <option value="FOREX">FOREX</option>
-                      <option value="INDICES">INDICES</option>
-                      <option value="METALS">METALS</option>
-                    </select>
-                    <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
-                  </div>
-                </div>
+                <CustomSelect
+                  label="Asset Category"
+                  value={formData.category}
+                  onChange={(val) => handleSelectChange('category', val)}
+                  icon={<Layers className="text-indigo-400" size={10} />}
+                  options={[
+                    { v: "CRYPTO", l: "CRYPTO" },
+                    { v: "FOREX", l: "FOREX" },
+                    { v: "INDICES", l: "INDICES" },
+                    { v: "METALS", l: "METALS" }
+                  ]}
+                />
 
                 {/* Side */}
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-zinc-500 uppercase ml-1 tracking-widest flex items-center gap-1">
-                    <TrendingUp size={10} className="text-emerald-400" /> Action Side
-                  </label>
-                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center transition-all duration-300">
-                    <select
-                      name="side"
-                      value={formData.side}
-                      onChange={handleInputChange}
-                      className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-white relative z-10"
-                    >
-                      <option value="BUY">BUY (BULLISH)</option>
-                      <option value="SELL">SELL (BEARISH)</option>
-                    </select>
-                    <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
-                  </div>
-                </div>
+                <CustomSelect
+                  label="Action Side"
+                  value={formData.side}
+                  onChange={(val) => handleSelectChange('side', val)}
+                  icon={<TrendingUp className="text-emerald-400" size={10} />}
+                  options={[
+                    { v: "BUY", l: "BUY (BULLISH)" },
+                    { v: "SELL", l: "SELL (BEARISH)" }
+                  ]}
+                />
 
                 {/* Status */}
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-zinc-500 uppercase ml-1 tracking-widest flex items-center gap-1">
-                    <Target size={10} className="text-amber-400" /> Outcome Status
-                  </label>
-                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center transition-all duration-300">
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                      className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-white relative z-10"
-                    >
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="PENDING">PENDING</option>
-                      <option value="TP1">TP1 HIT</option>
-                      <option value="TP2">TP2 HIT</option>
-                      <option value="SL">SL HIT</option>
-                      <option value="WIN">TAKE PROFIT (WIN)</option>
-                      <option value="LOSS">STOP LOSS (LOSS)</option>
-                      <option value="TP1 + SL (BE)">PARTIAL TP1 (BE)</option>
-                    </select>
-                    <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
-                  </div>
-                </div>
+                <CustomSelect
+                  label="Outcome Status"
+                  value={formData.status}
+                  onChange={(val) => handleSelectChange('status', val)}
+                  icon={<Target className="text-amber-400" size={10} />}
+                  options={[
+                    { v: "ACTIVE", l: "ACTIVE" },
+                    { v: "PENDING", l: "PENDING" },
+                    { v: "TP1", l: "TP1 HIT" },
+                    { v: "TP2", l: "TP2 HIT" },
+                    { v: "SL", l: "SL HIT" },
+                    { v: "WIN", l: "TAKE PROFIT (WIN)" },
+                    { v: "LOSS", l: "STOP LOSS (LOSS)" },
+                    { v: "TP1 + SL (BE)", l: "PARTIAL TP1 (BE)" }
+                  ]}
+                />
 
                 {/* Entry Price */}
                 <div className="space-y-1.5">
@@ -670,25 +639,18 @@ export default function SignalsManager() {
                 </div>
 
                 {/* Timeframe Alignment */}
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black text-zinc-500 uppercase ml-1 tracking-widest flex items-center gap-1">
-                    <Clock size={10} className="text-zinc-500" /> Timeframe Alignment
-                  </label>
-                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center transition-all duration-300">
-                    <select
-                      name="tf_alignment"
-                      value={formData.tf_alignment}
-                      onChange={handleInputChange}
-                      className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-white relative z-10"
-                    >
-                      <option value="M5/H1">M5/H1 (5M - 1H Alignment)</option>
-                      <option value="M15/H4">M15/H4 (15M - 4H Alignment)</option>
-                      <option value="M30/H6">30M - 6H Alignment</option>
-                      <option value="H1/D1">H1/D1 (1H - 1D Alignment)</option>
-                    </select>
-                    <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
-                  </div>
-                </div>
+                <CustomSelect
+                  label="Timeframe Alignment"
+                  value={formData.tf_alignment}
+                  onChange={(val) => handleSelectChange('tf_alignment', val)}
+                  icon={<Clock className="text-zinc-500" size={10} />}
+                  options={[
+                    { v: "M5/H1", l: "M5/H1 (5M - 1H Alignment)" },
+                    { v: "M15/H4", l: "M15/H4 (15M - 4H Alignment)" },
+                    { v: "M30/H6", l: "M30/H6 (30M - 6H Alignment)" },
+                    { v: "H1/D1", l: "H1/D1 (1H - 1D Alignment)" }
+                  ]}
+                />
 
                 {/* Strategy */}
                 <div className="space-y-1.5">
@@ -743,14 +705,14 @@ export default function SignalsManager() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-8 py-3.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 transition-all text-center"
+                  className="flex-1 px-8 py-3.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 transition-all text-center cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving === "modal"}
-                  className="flex-1 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(59,130,246,0.3)] active:scale-95 border border-blue-500/30 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(59,130,246,0.3)] active:scale-95 border border-blue-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {saving === "modal" ? (
                     <Loader2 size={14} className="animate-spin text-blue-200" />
