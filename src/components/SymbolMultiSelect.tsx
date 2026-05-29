@@ -54,8 +54,8 @@ export default function SymbolMultiSelect({
   };
 
   return (
-    <div className="relative w-full md:w-60" ref={dropdownRef}>
-      <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest block mb-1">
+    <div className="relative w-full md:w-60 flex flex-col" ref={dropdownRef}>
+      <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest block mb-1.5">
         Symbols Checklist
       </label>
       
@@ -63,7 +63,7 @@ export default function SymbolMultiSelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none flex items-center justify-between focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer h-[42px]"
+        className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none flex items-center justify-between focus:border-blue-500/40 focus:shadow-[0_0_15px_rgba(59,130,246,0.15)] hover:border-white/20 transition-all cursor-pointer h-[42px]"
       >
         <div className="flex items-center gap-2 truncate">
           <Filter size={12} className="text-zinc-500 shrink-0" />
@@ -82,11 +82,12 @@ export default function SymbolMultiSelect({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="absolute left-0 mt-2 w-full md:w-64 bg-zinc-950/95 border border-[var(--glass-border)] rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-[99] overflow-hidden"
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 mt-2 w-full md:w-64 bg-[#0d0f14]/95 border border-white/[0.08] rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl z-[999] overflow-hidden"
+            style={{ top: '100%' }}
           >
             {/* Search Input inside Dropdown */}
             <div className="p-3 border-b border-white/5 relative flex items-center">
@@ -96,10 +97,11 @@ export default function SymbolMultiSelect({
                 placeholder="Search symbol..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl pl-9 pr-8 py-2 text-xs font-mono text-zinc-900 dark:text-white outline-none focus:border-blue-500/40 transition-all"
+                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl pl-9 pr-8 py-2 text-xs font-mono text-zinc-900 dark:text-white outline-none focus:border-blue-500/40 focus:shadow-[0_0_10px_rgba(59,130,246,0.1)] transition-all"
               />
               {search && (
                 <button
+                  type="button"
                   onClick={() => setSearch('')}
                   className="absolute right-5 p-1 text-zinc-500 hover:text-zinc-300"
                 >
@@ -109,25 +111,25 @@ export default function SymbolMultiSelect({
             </div>
 
             {/* Quick Actions */}
-            <div className="flex justify-between items-center px-4 py-2 bg-white/[0.02] border-b border-white/5 text-[9px] font-black uppercase tracking-wider text-zinc-500">
+            <div className="flex justify-between items-center px-4 py-2 bg-white/[0.01] border-b border-white/5 text-[9px] font-black uppercase tracking-wider text-zinc-500">
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="hover:text-blue-400 transition-colors"
+                className="hover:text-blue-400 transition-colors cursor-pointer"
               >
                 Select All
               </button>
               <button
                 type="button"
                 onClick={handleClearAll}
-                className="hover:text-red-400 transition-colors"
+                className="hover:text-red-400 transition-colors cursor-pointer"
               >
                 Clear Filters
               </button>
             </div>
 
             {/* Symbols Checklist List */}
-            <div className="max-h-60 overflow-y-auto py-2 custom-scrollbar">
+            <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
               {filteredSymbols.length === 0 ? (
                 <div className="px-4 py-6 text-center text-[10px] uppercase font-bold text-zinc-600">
                   No symbols found
@@ -140,14 +142,14 @@ export default function SymbolMultiSelect({
                       key={sym}
                       type="button"
                       onClick={() => toggleSymbol(sym)}
-                      className="w-full px-4 py-2 hover:bg-white/[0.05] transition-colors flex items-center justify-between text-left font-mono text-[11px]"
+                      className="w-full px-4 py-2 hover:bg-white/[0.05] transition-colors flex items-center justify-between text-left font-mono text-[11px] cursor-pointer"
                     >
-                      <span className={`font-bold ${isChecked ? 'text-blue-400 font-black' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                      <span className={`font-bold transition-colors ${isChecked ? 'text-blue-400 font-black font-mono' : 'text-zinc-400 dark:text-zinc-500'}`}>
                         {sym}
                       </span>
                       <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
                         isChecked 
-                          ? 'bg-blue-500/20 border-blue-500 text-blue-400' 
+                          ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.2)]' 
                           : 'border-white/20 text-transparent'
                       }`}>
                         <Check size={10} strokeWidth={4} />
