@@ -25,8 +25,11 @@ import {
   Layers,
   AlertCircle,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  FileSpreadsheet
 } from 'lucide-react';
+import SymbolMultiSelect from '@/components/SymbolMultiSelect';
+import { exportToCSV } from '@/lib/csv-exporter';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -160,6 +163,25 @@ export default function PerformancePage() {
     direction: 'desc'
   });
 
+  // Symbol multi-select filter states
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
+  const [uniqueSymbols, setUniqueSymbols] = useState<string[]>([]);
+
+  // Fetch unique symbols from historical signals database on mount
+  useEffect(() => {
+    async function fetchUniqueSymbols() {
+      const { data } = await supabase
+        .from('signals')
+        .select('symbol')
+        .eq('is_active', false);
+      if (data) {
+        const syms = Array.from(new Set(data.map((s: any) => s.symbol.toUpperCase()))).sort();
+        setUniqueSymbols(syms);
+      }
+    }
+    fetchUniqueSymbols();
+  }, []);
+
   const handleSort = (key: string) => {
     setSortConfig(prev => ({
       key,
@@ -190,6 +212,9 @@ export default function PerformancePage() {
       if (tfAlignment !== 'ALL') {
         query = query.eq('tf_alignment', tfAlignment);
       }
+      if (selectedSymbols.length > 0) {
+        query = query.in('symbol', selectedSymbols);
+      }
       if (dateFrom) {
         query = query.gte('created_at', new Date(dateFrom).toISOString());
       }
@@ -215,6 +240,7 @@ export default function PerformancePage() {
         if (searchTerm) statsQuery = statsQuery.ilike('symbol', `%${searchTerm}%`);
         if (assetClass !== 'ALL') statsQuery = statsQuery.eq('category', assetClass);
         if (tfAlignment !== 'ALL') statsQuery = statsQuery.eq('tf_alignment', tfAlignment);
+        if (selectedSymbols.length > 0) statsQuery = statsQuery.in('symbol', selectedSymbols);
         if (dateFrom) statsQuery = statsQuery.gte('created_at', new Date(dateFrom).toISOString());
         if (dateTo) {
           const toDate = new Date(dateTo);
@@ -266,7 +292,7 @@ export default function PerformancePage() {
         setStats(calculatedStats);
         setTotalCount(count || 0);
         
-        if (page === 1 && !searchTerm && assetClass === 'ALL' && tfAlignment === 'ALL') {
+        if (page === 1 && !searchTerm && assetClass === 'ALL' && tfAlignment === 'ALL' && selectedSymbols.length === 0) {
           localStorage.setItem('perf_history_cache', JSON.stringify(data));
           localStorage.setItem('perf_stats_cache', JSON.stringify(calculatedStats));
         }
@@ -276,14 +302,59 @@ export default function PerformancePage() {
     } finally {
       setLoading(false);
     }
-  }, [user, searchTerm, assetClass, dateFrom, dateTo, tfAlignment]);
+  }, [user, searchTerm, assetClass, dateFrom, dateTo, tfAlignment, selectedSymbols, sortConfig]);
+
+  const handleDownloadCSV = async () => {
+    let query = supabase.from('signals').select('*');
+    query = query.eq('is_active', false);
+    
+    if (searchTerm) query = query.ilike('symbol', `%${searchTerm}%`);
+    if (assetClass !== 'ALL') query = query.eq('category', assetClass);
+    if (tfAlignment !== 'ALL') query = query.eq('tf_alignment', tfAlignment);
+    if (selectedSymbols.length > 0) query = query.in('symbol', selectedSymbols);
+    
+    if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setDate(toDate.getDate() + 1);
+      query = query.lte('created_at', toDate.toISOString());
+    }
+    
+    query = query.order('created_at', { ascending: false });
+
+    setLoading(true);
+    const { data, error } = await query;
+    setLoading(false);
+
+    if (error) {
+      console.error("Export Error:", error);
+      alert("Failed to export data.");
+      return;
+    }
+
+    if (data) {
+      const headers = [
+        { key: 'symbol', label: 'Symbol' },
+        { key: 'category', label: 'Asset Class' },
+        { key: 'side', label: 'Side' },
+        { key: 'status', label: 'Outcome Status' },
+        { key: 'entry_price', label: 'Entry Price' },
+        { key: 'sl', label: 'Stop Loss' },
+        { key: 'tp', label: 'Take Profit 1' },
+        { key: 'tp_secondary', label: 'Take Profit 2' },
+        { key: 'confluences', label: 'Confluences' },
+        { key: 'created_at', label: 'Execution Date' }
+      ];
+      exportToCSV(data, headers, "Performance_Analytics_Report");
+    }
+  };
 
   useEffect(() => {
     const delay = setTimeout(() => fetchPerformance(currentPage), 400);
     return () => clearTimeout(delay);
   }, [fetchPerformance, currentPage, sortConfig]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo, assetClass, tfAlignment]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo, assetClass, tfAlignment, selectedSymbols]);
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
@@ -321,26 +392,26 @@ export default function PerformancePage() {
               </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
+            <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
               {/* Date Filters */}
               <div className="flex gap-2">
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From</label>
-                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer" />
+                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer h-[42px]" />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To</label>
-                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer" />
+                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer h-[42px]" />
                 </div>
                 {(dateFrom || dateTo) && (
-                  <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="self-end mb-1 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-colors"><X size={16} /></button>
+                  <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="self-end mb-0.5 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-colors h-[42px] flex items-center justify-center"><X size={16} /></button>
                 )}
               </div>
 
               {/* Asset Class Filter */}
-              <div className="flex flex-col gap-1 w-full md:w-48">
+              <div className="flex flex-col gap-1 w-full md:w-36">
                 <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
-                <select value={assetClass} onChange={(e) => setAssetClass(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full">
+                <select value={assetClass} onChange={(e) => setAssetClass(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]">
                   <option value="ALL" className="">ALL ASSETS</option>
                   <option value="CRYPTO" className="">CRYPTO</option>
                   <option value="FOREX" className="">FOREX</option>
@@ -350,9 +421,9 @@ export default function PerformancePage() {
               </div>
 
               {/* Timeframe Alignment Filter */}
-              <div className="flex flex-col gap-1 w-full md:w-48">
+              <div className="flex flex-col gap-1 w-full md:w-44">
                 <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe Alignment</label>
-                <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full">
+                <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]">
                   <option value="ALL">ALL ALIGNMENTS</option>
                   <option value="M5/H1">5M - 1H Alignment</option>
                   <option value="M15/H4">15M - 4H Alignment</option>
@@ -361,10 +432,24 @@ export default function PerformancePage() {
                 </select>
               </div>
 
-              {/* Search Input */}
-              <div className="relative flex-grow md:w-64 self-end h-[42px] mb-0.5">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
-                <input type="text" placeholder="Filter Symbol..." className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white focus:border-blue-500/50 hover:border-white/20 outline-none transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              {/* Symbol Selector checklist */}
+              <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
+
+              {/* Search and Download Button */}
+              <div className="flex gap-2 w-full md:w-auto items-end h-[42px] mb-0.5">
+                <div className="relative flex-grow md:w-48 h-full">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
+                  <input type="text" placeholder="Filter Symbol..." className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white focus:border-blue-500/50 hover:border-white/20 outline-none transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </div>
+                
+                {/* Excel CSV Exporter Button */}
+                <button
+                  onClick={handleDownloadCSV}
+                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)] h-full shrink-0"
+                  title="Download Spreadsheet"
+                >
+                  <FileSpreadsheet size={18} />
+                </button>
               </div>
             </div>
           </div>

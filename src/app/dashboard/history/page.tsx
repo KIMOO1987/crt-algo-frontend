@@ -9,9 +9,11 @@ import SignalChart from '@/components/SignalChart';
 import { 
   Search, Activity, Target, Shield, Clock, Zap, 
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
-  ArrowUpRight, Layout, AlertCircle
+  ArrowUpRight, Layout, AlertCircle, FileSpreadsheet
 } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
+import SymbolMultiSelect from '@/components/SymbolMultiSelect';
+import { exportToCSV } from '@/lib/csv-exporter';
 
 
 
@@ -144,6 +146,25 @@ export default function SignalsPage() {
   const [assetClass, setAssetClass] = useState('ALL');
   const [tfAlignment, setTfAlignment] = useState('ALL');
 
+  // Symbol multi-select filter states
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
+  const [uniqueSymbols, setUniqueSymbols] = useState<string[]>([]);
+
+  // Fetch unique symbols from historical signals database on mount
+  useEffect(() => {
+    async function fetchUniqueSymbols() {
+      const { data } = await supabase
+        .from('signals')
+        .select('symbol')
+        .eq('is_active', false);
+      if (data) {
+        const syms = Array.from(new Set(data.map((s: any) => s.symbol.toUpperCase()))).sort();
+        setUniqueSymbols(syms);
+      }
+    }
+    fetchUniqueSymbols();
+  }, []);
+
   const fetchSignals = useCallback(async (page: number, isSilent = false) => {
     if (!isSilent) setLoading(true);
 
@@ -162,6 +183,10 @@ export default function SignalsPage() {
 
     if (tfAlignment !== 'ALL') {
       query = query.eq('tf_alignment', tfAlignment);
+    }
+
+    if (selectedSymbols.length > 0) {
+      query = query.in('symbol', selectedSymbols);
     }
 
     if (dateFrom) {
@@ -191,17 +216,66 @@ export default function SignalsPage() {
     if (data) {
       setSignals(data);
       setTotalCount(count || 0);
-      if (page === 1 && !searchTerm && assetClass === 'ALL' && tfAlignment === 'ALL') localStorage.setItem('history_cache', JSON.stringify(data));
+      if (page === 1 && !searchTerm && assetClass === 'ALL' && tfAlignment === 'ALL' && selectedSymbols.length === 0) {
+        localStorage.setItem('history_cache', JSON.stringify(data));
+      }
     }
     setLoading(false);
-  }, [searchTerm, assetClass, dateFrom, dateTo, tfAlignment]);
+  }, [searchTerm, assetClass, dateFrom, dateTo, tfAlignment, selectedSymbols]);
+
+  const handleDownloadCSV = async () => {
+    let query = supabase.from('signals').select('*');
+    query = query.eq('is_active', false);
+    
+    if (searchTerm) query = query.ilike('symbol', `%${searchTerm}%`);
+    if (assetClass !== 'ALL') query = query.eq('category', assetClass);
+    if (tfAlignment !== 'ALL') query = query.eq('tf_alignment', tfAlignment);
+    if (selectedSymbols.length > 0) query = query.in('symbol', selectedSymbols);
+    
+    if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setDate(toDate.getDate() + 1);
+      query = query.lte('created_at', toDate.toISOString());
+    }
+    
+    query = query.order('created_at', { ascending: false });
+
+    setLoading(true);
+    const { data, error } = await query;
+    setLoading(false);
+
+    if (error) {
+      console.error("Export Error:", error);
+      alert("Failed to export data.");
+      return;
+    }
+
+    if (data) {
+      const headers = [
+        { key: 'symbol', label: 'Symbol' },
+        { key: 'side', label: 'Side' },
+        { key: 'status', label: 'Status' },
+        { key: 'strategy', label: 'Strategy' },
+        { key: 'entry_price', label: 'Entry Price' },
+        { key: 'sl', label: 'Stop Loss' },
+        { key: 'tp', label: 'Take Profit 1' },
+        { key: 'tp_secondary', label: 'Take Profit 2' },
+        { key: 'tf_alignment', label: 'Timeframe Alignment' },
+        { key: 'category', label: 'Asset Class' },
+        { key: 'confluences', label: 'Confluences' },
+        { key: 'created_at', label: 'Date Executed' }
+      ];
+      exportToCSV(data, headers, "Trade_History_Report");
+    }
+  };
 
   useEffect(() => {
     const delay = setTimeout(() => fetchSignals(currentPage), 400);
     return () => clearTimeout(delay);
   }, [fetchSignals, currentPage]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo, assetClass, tfAlignment]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo, assetClass, tfAlignment, selectedSymbols]);
 
   if (authLoading || (loading && signals.length === 0)) {
     return (
@@ -231,28 +305,57 @@ export default function SignalsPage() {
               <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 dark:text-zinc-500 font-bold mt-3 leading-none">• CRT PROTOCOL • REAL-TIME INSTITUTIONAL SIGNALS •</p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
+            <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
               <div className="flex gap-2">
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none" />
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none" />
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From</label>
+                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none h-[42px]" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To</label>
+                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none h-[42px]" />
+                </div>
               </div>
-              <select value={assetClass} onChange={(e) => setAssetClass(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none">
-                <option value="ALL">ALL ASSETS</option>
-                <option value="CRYPTO">CRYPTO</option>
-                <option value="FOREX">FOREX</option>
-                <option value="INDICES">INDICES</option>
-                <option value="METALS">METALS</option>
-              </select>
-              <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none">
-                <option value="ALL">ALL ALIGNMENTS</option>
-                <option value="M5/H1">5M - 1H Alignment</option>
-                <option value="M15/H4">15M - 4H Alignment</option>
-                <option value="M30/H6">30M - 6H Alignment</option>
-                <option value="H1/D1">1H - 1D Alignment</option>
-              </select>
-              <div className="relative flex-grow md:w-64 h-[42px]">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
-                <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search symbol..." className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white outline-none" />
+              
+              <div className="flex flex-col gap-1 w-full md:w-36">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
+                <select value={assetClass} onChange={(e) => setAssetClass(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none h-[42px] w-full cursor-pointer">
+                  <option value="ALL">ALL ASSETS</option>
+                  <option value="CRYPTO">CRYPTO</option>
+                  <option value="FOREX">FOREX</option>
+                  <option value="INDICES">INDICES</option>
+                  <option value="METALS">METALS</option>
+                </select>
+              </div>
+              
+              <div className="flex flex-col gap-1 w-full md:w-44">
+                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe</label>
+                <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none h-[42px] w-full cursor-pointer">
+                  <option value="ALL">ALL ALIGNMENTS</option>
+                  <option value="M5/H1">5M - 1H Alignment</option>
+                  <option value="M15/H4">15M - 4H Alignment</option>
+                  <option value="M30/H6">30M - 6H Alignment</option>
+                  <option value="H1/D1">1H - 1D Alignment</option>
+                </select>
+              </div>
+
+              {/* Symbol Selector checklist */}
+              <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
+
+              <div className="flex gap-2 w-full md:w-auto items-end h-[42px]">
+                <div className="relative flex-grow md:w-48 h-full">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
+                  <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search symbol..." className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white outline-none" />
+                </div>
+                
+                {/* Excel CSV Exporter Button */}
+                <button
+                  onClick={handleDownloadCSV}
+                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)] h-full shrink-0"
+                  title="Download Spreadsheet"
+                >
+                  <FileSpreadsheet size={18} />
+                </button>
               </div>
             </div>
           </div>

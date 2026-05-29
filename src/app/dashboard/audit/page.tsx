@@ -4,8 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/hooks/useAuth';
 import AccessGuard from '@/components/AccessGuard';
-import { Search, Activity, Zap, TrendingUp, Layers, Target, Wallet, BarChart3, AlertCircle, ChevronUp, ChevronDown, Calendar } from 'lucide-react';
+import { Search, Activity, Zap, TrendingUp, Layers, Target, Wallet, BarChart3, AlertCircle, ChevronUp, ChevronDown, Calendar, FileSpreadsheet } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
+import SymbolMultiSelect from '@/components/SymbolMultiSelect';
+import { exportToCSV } from '@/lib/csv-exporter';
 
 // Sub-component remains the same as your original
 function AnalysisCard({ title, symbol, value, subValue, colorClass, icon: Icon }: any) {
@@ -55,6 +57,14 @@ export default function SymbolAudit() {
     key: 'totalRR',
     direction: 'desc'
   });
+
+  // Symbol multi-select filter states
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
+
+  // Dynamically extract unique symbols from the aggregated stats
+  const uniqueSymbols = useMemo(() => {
+    return Array.from(new Set(stats.map((s: any) => s.symbol.toUpperCase()))).sort();
+  }, [stats]);
 
   const handleSort = (key: string) => {
     setSortConfig(prev => ({
@@ -162,7 +172,8 @@ export default function SymbolAudit() {
     const filtered = stats.filter(s => {
       const searchMatch = s.symbol.toUpperCase().includes(search.toUpperCase());
       const assetMatch = assetClass === 'ALL' || getSymbolCategory(s.symbol) === assetClass;
-      return searchMatch && assetMatch;
+      const symbolMatch = selectedSymbols.length === 0 || selectedSymbols.includes(s.symbol.toUpperCase());
+      return searchMatch && assetMatch && symbolMatch;
     });
 
     return filtered.sort((a, b) => {
@@ -174,7 +185,20 @@ export default function SymbolAudit() {
       if (valA > valB) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [stats, search, assetClass, sortConfig]);
+  }, [stats, search, assetClass, selectedSymbols, sortConfig]);
+
+  const handleDownloadCSV = () => {
+    const headers = [
+      { key: 'symbol', label: 'Symbol' },
+      { key: 'trades', label: 'Total Executions' },
+      { key: 'wins', label: 'Wins' },
+      { key: 'losses', label: 'Losses' },
+      { key: 'be', label: 'Breakeven (BE)' },
+      { key: 'winRate', label: 'Win Rate %' },
+      { key: 'totalRR', label: 'Net Realized R:R' }
+    ];
+    exportToCSV(filteredStats, headers, "Symbol_Audit_Analytics_Report");
+  };
 
   // Derived metrics for Top Cards
   const mostProfitable = useMemo(() => [...filteredStats].sort((a, b) => b.totalRR - a.totalRR)[0], [filteredStats]);
@@ -227,14 +251,14 @@ export default function SymbolAudit() {
             </div>
 
             <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
-              <div className="flex flex-col gap-1 w-full md:w-48">
+              <div className="flex flex-col gap-1 w-full md:w-36">
                 <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
                 <div className="relative">
                   <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
                   <select
                     value={assetClass}
                     onChange={(e) => setAssetClass(e.target.value)}
-                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full"
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]"
                   >
                     <option value="ALL">ALL ASSETS</option>
                     <option value="CRYPTO">CRYPTO</option>
@@ -245,14 +269,14 @@ export default function SymbolAudit() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1 w-full md:w-48">
+              <div className="flex flex-col gap-1 w-full md:w-44">
                 <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe Alignment</label>
                 <div className="relative">
                   <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
                   <select
                     value={tfAlignment}
                     onChange={(e) => setTfAlignment(e.target.value)}
-                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full"
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]"
                   >
                     <option value="ALL">ALL ALIGNMENTS</option>
                     <option value="M5/H1">5M - 1H Alignment</option>
@@ -263,7 +287,7 @@ export default function SymbolAudit() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1 w-full md:w-40">
+              <div className="flex flex-col gap-1 w-full md:w-36">
                 <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From Date</label>
                 <div className="relative">
                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
@@ -271,12 +295,12 @@ export default function SymbolAudit() {
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full"
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full h-[42px]"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1 w-full md:w-40">
+              <div className="flex flex-col gap-1 w-full md:w-36">
                 <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To Date</label>
                 <div className="relative">
                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
@@ -284,18 +308,34 @@ export default function SymbolAudit() {
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full"
+                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full h-[42px]"
                   />
                 </div>
               </div>
 
-              <div className="relative flex-grow md:w-64 h-[42px] mb-0.5">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
-                <input
-                  type="text" placeholder="Search symbol..."
-                  className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white focus:border-blue-500/50 hover:border-white/20 outline-none transition-all"
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+              {/* Symbol Selector checklist */}
+              <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
+
+              {/* Search and Download Button */}
+              <div className="flex gap-2 w-full md:w-auto items-end h-[42px] mb-0.5">
+                <div className="relative flex-grow md:w-48 h-full">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
+                  <input
+                    type="text" placeholder="Search symbol..."
+                    value={search}
+                    className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white focus:border-blue-500/50 hover:border-white/20 outline-none transition-all"
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                
+                {/* Excel CSV Exporter Button */}
+                <button
+                  onClick={handleDownloadCSV}
+                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)] h-full shrink-0"
+                  title="Download Spreadsheet"
+                >
+                  <FileSpreadsheet size={18} />
+                </button>
               </div>
             </div>
           </div>
