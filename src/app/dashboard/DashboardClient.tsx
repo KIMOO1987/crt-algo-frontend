@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import {
   TrendingUp, Zap, Star, Activity, BarChart3, Target, Layers,
@@ -12,7 +12,7 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip,
   PieChart, Pie, Cell
 } from 'recharts';
-import { motion, Variants } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -41,18 +41,16 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
   const [dateTo, setDateTo] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [copied, setCopied] = useState(false); // <-- NEW STATE
+  const [copied, setCopied] = useState(false); 
   
-    // --- NEW COPY FUNCTION ---
-    const handleCopyLicense = () => {
-      if (userProfile?.id) {
-        navigator.clipboard.writeText(userProfile.id);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
-      }
-    };
+  const handleCopyLicense = () => {
+    if (userProfile?.id) {
+      navigator.clipboard.writeText(userProfile.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); 
+    }
+  };
 
-  
   const [chartData, setChartData] = useState<any[]>([]);
   const [recentSignals, setRecentSignals] = useState<any[]>([]);
   const [realStats, setRealStats] = useState<any>({
@@ -93,25 +91,20 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
     setIsInitialLoad(false);
   }, [userProfile?.id, accountSize, riskValue, rewardValue, timeframe, assetClass, tfAlignment, dateFrom, dateTo]);
 
-  // --- EXACT LOCATION OF THE CODE YOU ASKED FOR ---
   useEffect(() => {
-    // 1. Fetch immediately (with a small 500ms delay to wait for typing to finish)
     const delayDebounce = setTimeout(() => {
         fetchData();
     }, 500);
 
-    // 2. Change 30000 (30s) to 300000 (5 mins) to stop resource exhaustion
     const interval = setInterval(() => {
-        fetchData(true); // 'true' means silent refresh (no loading spinner)
+        fetchData(true); 
     }, 300000); 
 
-    // 3. Cleanup on unmount or setting change
     return () => {
         clearTimeout(delayDebounce);
         clearInterval(interval);
     };
-  }, [fetchData]); // Re-runs when account size, risk, or timeframe changes
-  // -----------------------------------------------
+  }, [fetchData]); 
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -130,10 +123,7 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
   };
 
   return (
-    <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72 min-h-screen font-sans overflow-x-hidden">
-      
-      {/* Ambience is now handled by layout.tsx, removed local ambience to prevent overlap */}
-
+    <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72 min-h-screen font-sans overflow-x-hidden text-zinc-900 dark:text-white">
       <div className="max-w-[1700px] mx-auto relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
           <div>
@@ -147,23 +137,21 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-10 p-6 md:p-10 rounded-[2.5rem] glass-panel preserve-3d"
+          className="mb-10 p-6 md:p-10 rounded-[2.5rem] bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] shadow-2xl backdrop-blur-md"
         >
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[var(--glass-border)] pb-8 mb-8">
               <div>
                   <div className="flex flex-wrap items-center gap-4 mb-3">
-                     <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter">{userProfile?.full_name || 'TRADER'}</h2>
+                     <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter italic">{userProfile?.full_name || 'TRADER'}</h2>
                      <span className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/40 text-purple-600 dark:text-purple-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest drop-shadow-sm">{getTierDisplay()}</span>
                   </div>
                   
-                  {/* Email Row */}
                   <div className="flex items-center gap-2 opacity-70 mb-2">
                      <Mail size={14} className="text-purple-500" />
                      <span className="text-[11px] font-bold tracking-widest uppercase font-mono">{userProfile?.email}</span>
                   </div>
 
-                  {/* License Key / UUID Row */}
-                  <div className="flex items-center gap-2 opacity-80 bg-[var(--input-bg)] border border-[var(--glass-border)] w-fit px-4 py-2 rounded-full shadow-inner">
+                  <div className="flex items-center gap-2 opacity-80 bg-white/[0.02] border border-[var(--glass-border)] w-fit px-4 py-2 rounded-full shadow-inner">
                      <Key size={14} className="text-pink-500" />
                      <span className="text-[11px] font-bold tracking-widest uppercase font-mono">
                         LICENSE: <span className="opacity-70">{userProfile?.id || 'NO-KEY-FOUND'}</span>
@@ -192,7 +180,7 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
                 <InputBox label="Account Size" icon={<Wallet size={16}/>} value={accountSize} onChange={setAccountSize} prefix="$" color="emerald" />
                 <InputBox label="Risk per SL" icon={<Percent size={16}/>} value={riskValue} onChange={setRiskValue} suffix="R" color="red" />
                 <InputBox label="Reward per TP" icon={<TrendingUp size={16}/>} value={rewardValue} onChange={setRewardValue} suffix="R" color="blue" />
-                <div className="flex items-end">
+                <div className="flex items-end h-[74px]">
                    <button 
                      onClick={handleSaveSettings} 
                      disabled={isSaving} 
@@ -222,7 +210,7 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
 
         {/* MAIN STATS GRID */}
         {isInitialLoad ? (
-           <div className="w-full py-24 flex flex-col items-center justify-center glass-panel rounded-[2.5rem] animate-pulse mb-12"><Activity size={40} className="opacity-50 mb-4" /><p className="text-xs font-black uppercase opacity-70">Syncing Intelligence...</p></div>
+           <div className="w-full py-24 flex flex-col items-center justify-center bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] rounded-[2.5rem] animate-pulse mb-12"><Activity size={40} className="opacity-50 mb-4" /><p className="text-xs font-black uppercase opacity-70">Syncing Intelligence...</p></div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="show">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6 mb-8 perspective-1000">
@@ -249,7 +237,7 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12 perspective-1000">
-                <motion.div variants={itemVariants} className="lg:col-span-2 glass-panel p-8 rounded-[2.5rem]">
+                <motion.div variants={itemVariants} className="lg:col-span-2 bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-8 rounded-[2.5rem]">
                    <h3 className="text-xl font-black italic tracking-tighter uppercase mb-6">Equity Curve</h3>
                    <div className="h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -262,7 +250,7 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
                       </ResponsiveContainer>
                    </div>
                 </motion.div>
-                <motion.div variants={itemVariants} className="glass-panel p-8 rounded-[2.5rem] flex flex-col justify-center text-center">
+                <motion.div variants={itemVariants} className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-8 rounded-[2.5rem] flex flex-col justify-center text-center">
                    <h3 className="text-xl font-black italic tracking-tighter uppercase mb-6">Outcome Split</h3>
                    <div className="h-[250px]">
                       <ResponsiveContainer width="100%" height="100%">
@@ -283,7 +271,7 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
   );
 }
 
-// Reusable Components
+// Reusable Custom Styled Components
 function InputBox({ label, icon, value, onChange, prefix, suffix, color }: any) {
   const getFocusColors = (color: string) => {
     switch (color) {
@@ -314,19 +302,69 @@ function InputBox({ label, icon, value, onChange, prefix, suffix, color }: any) 
 }
 
 function SelectBox({ label, value, onChange, options }: any) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selected = options.find((o: any) => o.v === value);
+
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full relative" ref={dropdownRef}>
        <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2">{label}</span>
-       <div className="relative w-full h-[50px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-purple-500/40 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.15)] rounded-2xl flex items-center transition-all duration-300">
-          <select 
-            value={value} 
-            onChange={(e) => onChange(e.target.value)} 
-            className="bg-transparent font-black text-xs font-mono w-full h-full outline-none appearance-none cursor-pointer px-4 text-zinc-900 dark:text-white relative z-10"
-          >
-            {options.map((o: any) => <option key={o.v} value={o.v} className="bg-zinc-950 text-white">{o.l}</option>)}
-          </select>
-          <ChevronDown size={14} className="absolute right-4 text-zinc-500 pointer-events-none z-0" />
-       </div>
+       <button 
+         type="button"
+         onClick={() => setIsOpen(!isOpen)}
+         className="w-full h-[50px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus:border-purple-500/40 focus:shadow-[0_0_15px_rgba(168,85,247,0.15)] rounded-2xl flex items-center justify-between px-4 transition-all duration-300 text-xs font-mono font-bold text-zinc-900 dark:text-white cursor-pointer"
+       >
+          <span className="truncate">{selected ? selected.l : "Select option..."}</span>
+          <ChevronDown size={14} className={`text-zinc-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+       </button>
+       
+       <AnimatePresence>
+          {isOpen && (
+             <motion.div
+               initial={{ opacity: 0, y: 8, scale: 0.95 }}
+               animate={{ opacity: 1, y: 0, scale: 1 }}
+               exit={{ opacity: 0, y: 8, scale: 0.95 }}
+               transition={{ duration: 0.15 }}
+               className="absolute left-0 right-0 mt-2 bg-[#0d0f14]/95 border border-white/[0.08] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.85)] backdrop-blur-2xl z-[999] overflow-hidden"
+               style={{ top: '100%' }}
+             >
+                <div className="py-1">
+                   {options.map((opt: any) => {
+                      const isSel = opt.v === value;
+                      return (
+                         <button
+                           key={opt.v}
+                           type="button"
+                           onClick={() => {
+                              onChange(opt.v);
+                              setIsOpen(false);
+                           }}
+                           className={`w-full px-4 py-3 hover:bg-white/[0.05] transition-colors flex items-center justify-between text-left font-mono text-xs cursor-pointer ${
+                              isSel ? 'text-purple-400 font-black bg-purple-500/[0.03]' : 'text-zinc-400'
+                           }`}
+                         >
+                            <span className="truncate">{opt.l}</span>
+                            {isSel && (
+                               <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
+                            )}
+                         </button>
+                      );
+                   })}
+                </div>
+             </motion.div>
+          )}
+       </AnimatePresence>
     </div>
   );
 }
@@ -341,7 +379,7 @@ function DateInput({ label, value, onChange, icon }: any) {
              type="date" 
              value={value} 
              onChange={(e) => onChange(e.target.value)} 
-             className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none appearance-none cursor-pointer text-zinc-900 dark:text-white [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-40 [&::-webkit-calendar-picker-indicator]:hover:opacity-100" 
+             className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none cursor-pointer text-zinc-900 dark:text-white relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-20" 
           />
        </div>
     </div>
@@ -350,7 +388,7 @@ function DateInput({ label, value, onChange, icon }: any) {
 
 function StatCard({ label, value, icon, sub, color = "text-inherit" }: any) {
   return (
-    <motion.div variants={itemVariants} whileHover={{ scale: 1.05, rotateX: 5, rotateY: -5, z: 20 }} className="relative overflow-hidden glass-panel p-6 transition-colors duration-300 group preserve-3d rounded-[2rem]">
+    <motion.div variants={itemVariants} whileHover={{ scale: 1.04, rotateX: 3, rotateY: -3, z: 10 }} className="relative overflow-hidden bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-6 transition-colors duration-300 group preserve-3d rounded-[2rem] shadow-2xl">
        <div className="flex justify-between items-start mb-6 relative z-10">
           <p className="text-[9px] font-bold opacity-70 uppercase tracking-widest">{label}</p>
           <div className={`${color} opacity-60 drop-shadow-md`}>{icon}</div>

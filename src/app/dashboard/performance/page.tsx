@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import AccessGuard from '@/components/AccessGuard';
 import SignalChart from '@/components/SignalChart';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getSymbolCategory, normalizeSymbol } from '@/lib/symbol-mapper';
+import { getSymbolCategory, getSymbolCategory as getCat } from '@/lib/symbol-mapper';
 import { 
   TrendingUp, 
   Target, 
@@ -26,16 +26,16 @@ import {
   AlertCircle,
   ChevronUp,
   ChevronDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Calendar
 } from 'lucide-react';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
+import CustomSelect from '@/components/CustomSelect';
 import { exportToCSV } from '@/lib/csv-exporter';
 
 const ITEMS_PER_PAGE = 20;
 
 // --- 1. UI HELPERS ---
-
-
 const DetailBox = ({ label, value, color = "text-zinc-900 dark:text-white", highlight = false }: any) => (
   <div className={`p-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] ${highlight ? 'border-blue-500/20 bg-blue-500/[0.02]' : ''}`}>
     <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">{label}</p>
@@ -82,7 +82,7 @@ const SignalModal = ({ signal, onClose }: { signal: any, onClose: () => void }) 
   return (
     <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 /80 backdrop-blur-2xl"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 backdrop-blur-2xl bg-black/60"
       onClick={onClose}
     >
       <motion.div 
@@ -97,7 +97,7 @@ const SignalModal = ({ signal, onClose }: { signal: any, onClose: () => void }) 
               <h2 className="text-3xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white drop-shadow-md">{signal.symbol}</h2>
               <p className="text-[10px] text-blue-500 font-bold tracking-[0.2em] mt-1">PERFORMANCE AUDIT</p>
             </div>
-            <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all"><X size={20} className="text-zinc-600 dark:text-zinc-500" /></button>
+            <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-pointer"><X size={20} className="text-zinc-600 dark:text-zinc-500" /></button>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-8">
             <DetailBox label="Execution Date" value={new Date(signal.created_at).toLocaleDateString()} />
@@ -126,7 +126,6 @@ const SignalModal = ({ signal, onClose }: { signal: any, onClose: () => void }) 
 export default function PerformancePage() {
   const { user, loading: authLoading } = useAuth();
   
-  // Instant Hydration from localStorage
   const [history, setHistory] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('perf_history_cache');
@@ -163,11 +162,9 @@ export default function PerformancePage() {
     direction: 'desc'
   });
 
-  // Symbol multi-select filter states
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
   const [uniqueSymbols, setUniqueSymbols] = useState<string[]>([]);
 
-  // Fetch unique symbols from historical signals database on mount
   useEffect(() => {
     async function fetchUniqueSymbols() {
       const { data } = await supabase
@@ -197,27 +194,15 @@ export default function PerformancePage() {
     if (!isSilent) setLoading(true);
 
     try {
-      // 1. Fetch RAW data directly to include PUBLIC signals (user_id is NULL)
       let query = supabase.from('signals').select('*', { count: 'exact' });
-
-      // Only show completed/inactive signals in history
       query = query.eq('is_active', false);
 
-      if (searchTerm) {
-        query = query.ilike('symbol', `%${searchTerm}%`);
-      }
-      if (assetClass !== 'ALL') {
-        query = query.eq('category', assetClass);
-      }
-      if (tfAlignment !== 'ALL') {
-        query = query.eq('tf_alignment', tfAlignment);
-      }
-      if (selectedSymbols.length > 0) {
-        query = query.in('symbol', selectedSymbols);
-      }
-      if (dateFrom) {
-        query = query.gte('created_at', new Date(dateFrom).toISOString());
-      }
+      if (searchTerm) query = query.ilike('symbol', `%${searchTerm}%`);
+      if (assetClass !== 'ALL') query = query.eq('category', assetClass);
+      if (tfAlignment !== 'ALL') query = query.eq('tf_alignment', tfAlignment);
+      if (selectedSymbols.length > 0) query = query.in('symbol', selectedSymbols);
+      
+      if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
       if (dateTo) {
         const toDate = new Date(dateTo);
         toDate.setDate(toDate.getDate() + 1);
@@ -230,8 +215,6 @@ export default function PerformancePage() {
         .range(from, from + ITEMS_PER_PAGE - 1);
 
       if (data) {
-        // 2. Fetch ALL signals for this user/public to calculate AGGREGATE stats
-        // We apply the same filters here so stats reflect the current view
         let statsQuery = supabase
           .from('signals')
           .select('status, entry_price, sl, tp, tp_secondary, symbol, category')
@@ -253,7 +236,6 @@ export default function PerformancePage() {
         let totalNetR = 0;
         let wins = 0;
         let total = allData?.length || 0;
-        let profitFactor = 0;
         let totalWinR = 0;
         let totalLossR = 0;
 
@@ -371,7 +353,7 @@ export default function PerformancePage() {
 
   return (
     <AccessGuard requiredTier={1} tierName="PRO">
-      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
+      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72 min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
         
         {/* Ambient Glowing Backgrounds */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -394,61 +376,89 @@ export default function PerformancePage() {
 
             <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
               {/* Date Filters */}
-              <div className="flex gap-2">
-                <div className="flex flex-col gap-1">
+              <div className="flex gap-2 w-full md:w-auto">
+                <div className="flex flex-col gap-1 w-full md:w-36">
                   <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From</label>
-                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer h-[42px]" />
+                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
+                    <Calendar size={14} className="opacity-60 mr-2 shrink-0 text-blue-400" />
+                    <input 
+                      type="date" 
+                      value={dateFrom} 
+                      onChange={(e) => setDateFrom(e.target.value)} 
+                      className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none cursor-pointer text-zinc-900 dark:text-white relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-20" 
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 w-full md:w-36">
                   <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To</label>
-                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer h-[42px]" />
+                  <div className="relative w-full h-[42px] bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
+                    <Calendar size={14} className="opacity-60 mr-2 shrink-0 text-blue-400" />
+                    <input 
+                      type="date" 
+                      value={dateTo} 
+                      onChange={(e) => setDateTo(e.target.value)} 
+                      className="bg-transparent font-black text-[11px] font-mono w-full h-full outline-none cursor-pointer text-zinc-900 dark:text-white relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:z-20" 
+                    />
+                  </div>
                 </div>
                 {(dateFrom || dateTo) && (
-                  <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="self-end mb-0.5 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-colors h-[42px] flex items-center justify-center"><X size={16} /></button>
+                  <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="self-end mb-0.5 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 transition-colors h-[42px] flex items-center justify-center cursor-pointer"><X size={16} /></button>
                 )}
               </div>
 
               {/* Asset Class Filter */}
-              <div className="flex flex-col gap-1 w-full md:w-36">
-                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
-                <select value={assetClass} onChange={(e) => setAssetClass(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]">
-                  <option value="ALL" className="">ALL ASSETS</option>
-                  <option value="CRYPTO" className="">CRYPTO</option>
-                  <option value="FOREX" className="">FOREX</option>
-                  <option value="INDICES" className="">INDICES</option>
-                  <option value="METALS" className="">METALS</option>
-                </select>
-              </div>
+              <CustomSelect
+                label="Asset Class"
+                value={assetClass}
+                onChange={setAssetClass}
+                containerClassName="w-full md:w-36"
+                options={[
+                  { v: "ALL", l: "ALL ASSETS" },
+                  { v: "CRYPTO", l: "CRYPTO" },
+                  { v: "FOREX", l: "FOREX" },
+                  { v: "INDICES", l: "INDICES" },
+                  { v: "METALS", l: "METALS" }
+                ]}
+              />
 
               {/* Timeframe Alignment Filter */}
-              <div className="flex flex-col gap-1 w-full md:w-44">
-                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe Alignment</label>
-                <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]">
-                  <option value="ALL">ALL ALIGNMENTS</option>
-                  <option value="M5/H1">5M - 1H Alignment</option>
-                  <option value="M15/H4">15M - 4H Alignment</option>
-                  <option value="M30/H6">30M - 6H Alignment</option>
-                  <option value="H1/D1">1H - 1D Alignment</option>
-                </select>
-              </div>
+              <CustomSelect
+                label="Timeframe Alignment"
+                value={tfAlignment}
+                onChange={setTfAlignment}
+                containerClassName="w-full md:w-44"
+                options={[
+                  { v: "ALL", l: "ALL ALIGNMENTS" },
+                  { v: "M5/H1", l: "5M - 1H Alignment" },
+                  { v: "M15/H4", l: "15M - 4H Alignment" },
+                  { v: "M30/H6", l: "30M - 6H Alignment" },
+                  { v: "H1/D1", l: "1H - 1D Alignment" }
+                ]}
+              />
 
               {/* Symbol Selector checklist */}
               <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
 
               {/* Search and Download Button */}
               <div className="flex gap-2 w-full md:w-auto items-end h-[42px] mb-0.5">
-                <div className="relative flex-grow md:w-48 h-full">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
-                  <input type="text" placeholder="Filter Symbol..." className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white focus:border-blue-500/50 hover:border-white/20 outline-none transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <div className="relative flex-grow md:w-48 h-full bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl flex items-center px-4 transition-all duration-300">
+                  <Search className="text-zinc-600 dark:text-zinc-500 mr-2 shrink-0" size={14} />
+                  <input 
+                    type="text" 
+                    placeholder="Filter Symbol..." 
+                    className="bg-transparent font-black text-xs font-mono w-full outline-none text-zinc-900 dark:text-white" 
+                    value={searchTerm} 
+                    onChange={(e) => setSearchTerm(e.target.value)} 
+                  />
                 </div>
                 
                 {/* Excel CSV Exporter Button */}
                 <button
                   onClick={handleDownloadCSV}
-                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)] h-full shrink-0"
+                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all duration-300 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] h-full shrink-0 hover:scale-105 active:scale-95 cursor-pointer animate-none"
                   title="Download Spreadsheet"
                 >
-                  <FileSpreadsheet size={18} />
+                  <FileSpreadsheet size={16} />
                 </button>
               </div>
             </div>
@@ -527,7 +537,7 @@ export default function PerformancePage() {
                           </td>
                           <td className="py-6 hidden md:table-cell text-xs font-mono text-zinc-600 dark:text-zinc-500">{new Date(signal.created_at).toLocaleDateString()}</td>
                           <td className="px-6 md:px-8 py-6 text-center">
-                            <button className="p-2 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.08] hover:text-zinc-900 dark:text-white transition-all">
+                            <button className="p-2 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.08] hover:text-zinc-900 dark:text-white transition-all cursor-pointer">
                               <ChevronRight size={18} />
                             </button>
                           </td>
@@ -552,11 +562,11 @@ export default function PerformancePage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-8 mb-4 flex justify-center items-center gap-4">
-              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-900 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"><ChevronLeft size={20} /></button>
+              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-900 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"><ChevronLeft size={20} /></button>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase text-zinc-600 dark:text-zinc-500 tracking-widest">Page {currentPage} of {totalPages}</span>
               </div>
-              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-900 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"><ChevronRightIcon size={20} /></button>
+              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-900 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"><ChevronRightIcon size={20} /></button>
             </div>
           )}
 
