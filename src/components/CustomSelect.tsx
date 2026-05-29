@@ -1,112 +1,76 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-interface Option {
-  v: string;
-  l: string;
+interface SelectOption {
+  value: string;
+  label: string;
 }
 
 interface CustomSelectProps {
-  label?: string;
+  label: string;
+  icon?: React.ReactNode;
   value: string;
   onChange: (val: string) => void;
-  options: Option[];
-  icon?: React.ReactNode;
-  placeholder?: string;
-  className?: string;
-  containerClassName?: string;
+  options: SelectOption[];
+  widthClass?: string;
 }
 
-export default function CustomSelect({
-  label,
-  value,
-  onChange,
-  options,
-  icon,
-  placeholder = "Select option...",
-  className = "",
-  containerClassName = ""
-}: CustomSelectProps) {
+export default function CustomSelect({ label, icon, value, onChange, options, widthClass = "w-full" }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedOption = options.find(opt => opt.v === value);
-  const displayLabel = selectedOption ? selectedOption.l : placeholder;
+  const currentOption = options.find(o => o.value === value) || options[0];
 
   return (
-    <div className={`relative flex flex-col w-full ${containerClassName}`} ref={dropdownRef}>
-      {label && (
-        <span className="text-[9px] font-black uppercase opacity-70 tracking-widest mb-1.5 ml-2 block">
-          {label}
-        </span>
-      )}
-      
-      {/* Trigger Button */}
+    <div className={`flex flex-col gap-1.5 ${widthClass} relative`} ref={ref}>
+      <span className="text-[10px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider ml-1 select-none">
+        {label}
+      </span>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 focus:border-blue-500/40 focus:shadow-[0_0_15px_rgba(59,130,246,0.15)] rounded-xl px-4 flex items-center justify-between text-xs font-mono font-bold text-zinc-900 dark:text-white transition-all duration-300 h-[42px] cursor-pointer ${className}`}
+        className="input-modern w-full h-[42px] py-0 font-bold uppercase tracking-wider text-left flex justify-between items-center select-none text-xs pr-4 pl-4 relative cursor-pointer"
       >
-        <div className="flex items-center gap-2 truncate">
-          {icon && <span className="opacity-60 shrink-0 flex items-center">{icon}</span>}
-          <span className="truncate">{displayLabel}</span>
-        </div>
-        <ChevronDown size={14} className={`text-zinc-500 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="flex items-center gap-2 truncate">
+          {icon && <span className="opacity-60">{icon}</span>}
+          {currentOption?.label}
+        </span>
+        <ChevronDown size={14} className="text-zinc-550 dark:text-zinc-400 transition-transform duration-200 shrink-0" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
       </button>
 
-      {/* Floating Options Dropdown */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.95 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute left-0 right-0 mt-2 bg-[#0d0f14]/95 border border-white/[0.08] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-[999] overflow-hidden max-h-60 overflow-y-auto custom-scrollbar"
-            style={{ top: '100%' }}
-          >
-            <div className="py-1">
-              {options.map((opt) => {
-                const isSelected = opt.v === value;
-                return (
-                  <button
-                    key={opt.v}
-                    type="button"
-                    onClick={() => {
-                      onChange(opt.v);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full px-4 py-3 hover:bg-white/[0.05] transition-colors flex items-center justify-between text-left font-mono text-xs ${
-                      isSelected 
-                        ? 'text-blue-400 font-black bg-blue-500/[0.03]' 
-                        : 'text-zinc-400 dark:text-zinc-500'
-                    }`}
-                  >
-                    <span className="truncate">{opt.l}</span>
-                    {isSelected && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isOpen && (
+        <div className="absolute top-[calc(100%+6px)] left-0 z-50 w-full bg-white dark:bg-[#0a0d14] border border-zinc-200 dark:border-white/5 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-1.5 space-y-0.5 max-h-60 overflow-y-auto custom-scrollbar select-none">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className={`w-full flex items-center px-3.5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer text-left transition-all ${
+                opt.value === value 
+                  ? 'bg-orange-500/10 text-orange-500 font-extrabold border border-orange-500/20' 
+                  : 'text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-white border border-transparent'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

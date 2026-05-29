@@ -2,18 +2,26 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, LineStyle, CandlestickSeries } from 'lightweight-charts';
-import { normalizeSymbol, getSymbolCategory, SYMBOL_MAP } from '@/lib/symbol-mapper';
+import { normalizeSymbol } from '@/lib/symbol-mapper';
+import { useTheme } from 'next-themes';
 
 export default function SignalChart({ symbol, signal, onLoaded }: { symbol: string, signal?: any, onLoaded?: () => void }) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
+    // Detect dark mode based on document class list or theme variable
+    const isDark = document.documentElement.classList.contains('dark') || theme === 'dark';
+    const bgColor = isDark ? '#0b0d14' : '#ffffff';
+    const textColor = isDark ? '#94a3b8' : '#475569';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(15, 23, 42, 0.04)';
+
     const chart = createChart(chartContainerRef.current, {
-      layout: { background: { type: ColorType.Solid, color: '#05070a' }, textColor: '#d1d5db', fontSize: 11 },
-      grid: { vertLines: { color: 'rgba(255, 255, 255, 0.02)' }, horzLines: { color: 'rgba(255, 255, 255, 0.02)' } },
+      layout: { background: { type: ColorType.Solid, color: bgColor }, textColor: textColor, fontSize: 11 },
+      grid: { vertLines: { color: gridColor }, horzLines: { color: gridColor } },
       crosshair: { mode: 1 },
       timeScale: { timeVisible: true, secondsVisible: false },
       width: chartContainerRef.current.clientWidth,
@@ -76,16 +84,15 @@ export default function SignalChart({ symbol, signal, onLoaded }: { symbol: stri
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
-  }, [symbol, signal]);
+  }, [symbol, signal, theme]);
 
   return (
-    <div className="w-full h-[400px] md:h-[500px] lg:h-full lg:min-h-[450px] relative bg-[#05070a] group overflow-hidden">
+    <div className="w-full h-[400px] md:h-[500px] lg:h-full lg:min-h-[450px] relative bg-[var(--bg-surface)] group overflow-hidden">
       {loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#05070a]/50 backdrop-blur-sm">
-          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-surface)]/50 backdrop-blur-sm">
+          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
-
 
       <div ref={chartContainerRef} className="w-full h-full" />
     </div>
