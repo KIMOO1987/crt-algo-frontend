@@ -9,7 +9,7 @@ import {
   TrendingDown, Layout, Target, Shield, AlertCircle, Calendar
 } from 'lucide-react';
 import SignalModal from '@/components/SignalModal';
-import CustomSelect from '@/components/CustomSelect';
+import CustomSelect from '@/components/customselect';
 import SymbolMultiSelectComponent from '@/components/SymbolMultiSelect';
 
 import { normalizeSymbol, getSymbolCategory, deduplicateSignals, SYMBOL_MAP } from '@/lib/symbol-mapper';

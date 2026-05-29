@@ -7,10 +7,10 @@ import {
   ShieldAlert, ShieldCheck, Activity, Wallet, Percent, 
   Target, Lock, Save, Settings2, BarChart3, TrendingUp, CheckCircle, 
   XCircle, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownRight, Flame,
-  PlayCircle, Compass, Award, GitBranch, ChevronDown
+  PlayCircle, Compass, Award, GitBranch, ChevronDown, Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CustomSelect from '@/components/CustomSelect';
+import CustomSelect from '@/components/customselect';
 
 const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
 

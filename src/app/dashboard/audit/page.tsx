@@ -7,7 +7,7 @@ import AccessGuard from '@/components/AccessGuard';
 import { Search, Activity, Zap, TrendingUp, Layers, Target, Wallet, BarChart3, AlertCircle, ChevronUp, ChevronDown, Calendar, FileSpreadsheet } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
-import CustomSelect from '@/components/CustomSelect';
+import CustomSelect from '@/components/customselect';
 import { exportToCSV } from '@/lib/csv-exporter';
 
 function AnalysisCard({ title, symbol, value, subValue, colorClass, icon: Icon }: any) {

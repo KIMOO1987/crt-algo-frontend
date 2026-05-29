@@ -30,7 +30,7 @@ import {
   Calendar
 } from 'lucide-react';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
-import CustomSelect from '@/components/CustomSelect';
+import CustomSelect from '@/components/customselect';
 import { exportToCSV } from '@/lib/csv-exporter';
 
 const ITEMS_PER_PAGE = 20;

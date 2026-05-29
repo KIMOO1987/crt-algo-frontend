@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import AccessGuard from '@/components/AccessGuard';
 import { Shield, Activity, Radio, Search, Layers, ChevronRight, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CustomSelect from '@/components/CustomSelect';
+import CustomSelect from '@/components/customselect';
 import Link from 'next/link';
 
 export default function RadarPage() {
