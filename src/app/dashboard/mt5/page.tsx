@@ -175,15 +175,7 @@ export default function MT5Dashboard() {
 
   return (
     <AccessGuard requiredTier={2} tierName="PRO">
-      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
-
-        {/* Ambient Glowing Backgrounds */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[150px] rounded-full mix-blend-screen" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] rounded-full mix-blend-screen" />
-        </div>
-
-        <div className="max-w-[1700px] mx-auto relative z-10 space-y-6 md:space-y-8">
+      <div className="w-full relative z-10 space-y-6 md:space-y-8">
 
           {/* Header Section */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 md:mb-12">
@@ -211,7 +203,7 @@ export default function MT5Dashboard() {
             <div className="space-y-6 md:space-y-8">
 
               {/* Terminal Control Panel */}
-              <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-6 md:p-8 rounded-[2.5rem] shadow-2xl backdrop-blur-md">
+              <div className="glass-panel p-6 md:p-8">
                 <h2 className="text-[11px] font-black text-zinc-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-3">
                   <Settings2 size={16} className="text-blue-400" /> Engine Controls
                 </h2>
@@ -256,7 +248,7 @@ export default function MT5Dashboard() {
             {/* Tier Comparison Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Pro Tier Card */}
-              <div className="group relative bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 border border-white/5 p-8 md:p-12 rounded-[3rem] overflow-hidden">
+              <div className="group relative glass-panel p-8 md:p-12 overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                   <ShieldCheck size={120} className="text-blue-400" />
                 </div>
@@ -292,7 +284,7 @@ export default function MT5Dashboard() {
               </div>
 
               {/* Ultimate Tier Card */}
-              <div className="group relative bg-gradient-to-br from-blue-600/10 to-indigo-600/5 border border-blue-500/20 p-8 md:p-12 rounded-[3rem] overflow-hidden shadow-[0_0_50px_rgba(59,130,246,0.1)]">
+              <div className="group relative glass-panel p-8 md:p-12 overflow-hidden border-blue-500/20 shadow-[0_0_50px_rgba(59,130,246,0.15)]">
                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                   <Terminal size={120} className="text-indigo-400" />
                 </div>
@@ -329,7 +321,7 @@ export default function MT5Dashboard() {
             </div>
 
             {/* Installation Guide */}
-            <div className="bg-zinc-900/30 border border-white/5 rounded-[3rem] p-8 md:p-16">
+            <div className="glass-panel p-8 md:p-16">
               <div className="max-w-4xl mx-auto space-y-12">
                 <div className="space-y-4">
                   <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase">Installation <span className="text-blue-500">Protocol</span></h3>
@@ -360,7 +352,6 @@ export default function MT5Dashboard() {
             </div>
           </div>
 
-        </div>
       </div>
     </AccessGuard>
 

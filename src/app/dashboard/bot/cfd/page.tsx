@@ -32,13 +32,7 @@ const staggerContainer = {
 export default function CFDBotDocumentation() {
   return (
     <AccessGuard requiredTier={2} tierName="PRO">
-      <div className="min-h-screen lg:ml-72 bg-transparent text-zinc-900 dark:text-zinc-100 pb-20 overflow-x-hidden">
-        
-        {/* Dynamic Background Elements */}
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full" />
-          <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-600/5 blur-[120px] rounded-full" />
-        </div>
+      <div className="w-full relative z-10 text-zinc-900 dark:text-zinc-100 pb-20">
 
         {/* Hero Section */}
         <div className="relative pt-16 pb-24 px-8 lg:px-16 border-b border-[var(--glass-border)] mb-16 z-10">

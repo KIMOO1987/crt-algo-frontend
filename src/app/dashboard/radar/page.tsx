@@ -5,6 +5,7 @@ import { normalizeSymbol, getSymbolCategory, deduplicateSignals, getMappedSymbol
 import { fetchMarketQuote } from '@/lib/market-data';
 import { supabase } from '@/lib/supabaseClient';
 import AccessGuard from '@/components/AccessGuard';
+import CustomSelect from '@/components/CustomSelect';
 import { Shield, Activity, Radio, Search, Layers, ChevronRight, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -219,62 +220,48 @@ export default function RadarPage() {
 
   return (
     <AccessGuard requiredTier={1} tierName="PRO">
-      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
-
-        {/* Ambient Glowing Backgrounds */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[150px] rounded-full mix-blend-screen" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] rounded-full mix-blend-screen" />
-        </div>
-
-        <div className="max-w-[1700px] mx-auto relative z-10 space-y-6 md:space-y-8">
-          {/* Header & Filters */}
-          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-6">
+      <div className="w-full relative z-10 space-y-6 md:space-y-8">
+          {/* Header Section */}
+          <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl md:text-4xl font-black tracking-tighter italic flex items-center gap-3 uppercase text-zinc-900 dark:text-white">
                 Alpha<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Radar</span>
                 <div className={`w-2.5 h-2.5 rounded-full ${isLoading ? 'bg-amber-400 animate-spin' : 'bg-blue-400 animate-pulse'} shadow-[0_0_10px_rgba(96,165,250,0.8)] mt-1`} />
               </h1>
-              <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 dark:text-zinc-500 font-bold mt-3 leading-none">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-650 dark:text-zinc-400 font-bold mt-3 leading-none">
                 • INSTITUTIONAL LIQUIDITY SCANNER • GLOBAL STREAM •
               </p>
             </div>
+          </div>
 
-            <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
-              <div className="flex flex-col gap-1 w-full md:w-48">
-                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
-                <div className="relative">
-                  <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
-                  <select
-                    value={assetClass}
-                    onChange={(e) => setAssetClass(e.target.value)}
-                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full"
-                  >
-                    <option value="ALL">ALL ASSETS</option>
-                    <option value="CRYPTO">CRYPTO</option>
-                    <option value="FOREX">FOREX</option>
-                    <option value="INDICES">INDICES</option>
-                    <option value="METALS">METALS</option>
-                  </select>
-                </div>
-              </div>
+          {/* Filters Bar */}
+          <div className="glass-panel p-4 md:p-5 w-full grid grid-cols-1 sm:grid-cols-2 gap-4 items-end shadow-lg">
+            <CustomSelect
+              label="Asset Class"
+              icon={<Layers size={14} />}
+              value={assetClass}
+              onChange={setAssetClass}
+              options={[
+                { value: 'ALL', label: 'ALL ASSETS' },
+                { value: 'CRYPTO', label: 'CRYPTO' },
+                { value: 'FOREX', label: 'FOREX' },
+                { value: 'INDICES', label: 'INDICES' },
+                { value: 'METALS', label: 'METALS' }
+              ]}
+            />
 
-              <div className="relative flex-grow md:w-64 self-end h-[42px] mb-0.5">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
-                <input
-                  type="text"
-                  placeholder="Search stream..."
-                  className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white focus:border-blue-500/50 hover:border-white/20 outline-none transition-all"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="flex flex-col gap-1.5 w-full">
+              <span className="text-[10px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider ml-1">Search Stream</span>
+              <div className="relative w-full h-[42px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+                <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search stream..." className="w-full h-full pl-9 pr-3 input-modern text-xs font-semibold text-foreground bg-[var(--input-bg)] border border-[var(--input-border)] outline-none" />
               </div>
             </div>
           </div>
 
           {/* Live Signal Stream */}
           <div className="w-full">
-            <div className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-md">
+            <div className="glass-panel overflow-hidden shadow-2xl">
               <div className="p-5 md:p-8 border-b border-[var(--glass-border)] flex justify-between items-center bg-[var(--glass-bg)]">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-400">Scanner Stream</h3>
                 <div className="flex items-center gap-2">
@@ -429,7 +416,7 @@ export default function RadarPage() {
 
           {/* Footer Security Shield */}
           <div className="w-full mt-4">
-            <div className="bg-gradient-to-r from-emerald-500/[0.05] to-transparent border border-emerald-500/10 p-6 md:p-8 rounded-[2rem] flex flex-col md:flex-row items-start md:items-center gap-6 shadow-[0_0_30px_rgba(16,185,129,0.05)]">
+            <div className="glass-panel bg-gradient-to-r from-emerald-500/[0.05] to-transparent border-emerald-500/10 p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-6 shadow-[0_0_30px_rgba(16,185,129,0.05)]">
               <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 shrink-0">
                 <Shield size={24} className="text-emerald-400" />
               </div>
@@ -443,7 +430,6 @@ export default function RadarPage() {
               </div>
             </div>
           </div>
-        </div>
       </div>
     </AccessGuard>
   );

@@ -59,14 +59,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <Providers>
-      <div className="flex min-h-screen relative overflow-hidden">
+      <div className="flex min-h-screen relative overflow-hidden bg-background">
         <Sidebar tier={userTier} role={userRole} />
         
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
           <MobileNav tier={userTier} role={userRole} />
 
           <main id="main-scroll-container" className="flex-1 overflow-y-auto w-full custom-scrollbar relative">
-            <div className="h-full w-full px-4 md:px-0 flex flex-col">
+            <div className="h-full w-full p-4 md:p-8 lg:p-10 flex flex-col max-w-[1700px] mx-auto">
               <div className="h-20 shrink-0 lg:hidden w-full"></div>
               {children}
             </div>

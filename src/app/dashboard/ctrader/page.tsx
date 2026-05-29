@@ -196,15 +196,7 @@ export default function CTraderDashboard() {
   const fullUrl = botToken ? `${apiBaseUrl}?botId=${botToken}` : "Generating Token...";
 
   return (
-    <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72 min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
-
-      {/* Ambient Glowing Backgrounds */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-cyan-600/10 blur-[150px] rounded-full mix-blend-screen" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[150px] rounded-full mix-blend-screen" />
-      </div>
-
-      <div className="max-w-[1700px] mx-auto relative z-10 space-y-6 md:space-y-8">
+    <div className="w-full relative z-10 space-y-6 md:space-y-8 text-zinc-900 dark:text-white font-sans">
 
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 md:mb-12">
@@ -371,7 +363,6 @@ export default function CTraderDashboard() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

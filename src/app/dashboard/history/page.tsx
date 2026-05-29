@@ -6,10 +6,11 @@ import { useAuth } from '@/hooks/useAuth';
 import AccessGuard from '@/components/AccessGuard';
 import { motion, AnimatePresence } from 'framer-motion';
 import SignalChart from '@/components/SignalChart';
+import CustomSelect from '@/components/CustomSelect';
 import { 
   Search, Activity, Target, Shield, Clock, Zap, 
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
-  ArrowUpRight, Layout, AlertCircle, FileSpreadsheet
+  ArrowUpRight, Layout, AlertCircle, FileSpreadsheet, ChevronDown
 } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
@@ -87,45 +88,45 @@ const SignalCard = ({ signal, onClick }: { signal: any, onClick: () => void }) =
   return (
     <motion.div 
       id={`signal-card-${signal.id}`}
-      layout onClick={onClick} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-6 md:p-8 rounded-[2.5rem] hover:border-white/[0.1] hover:bg-white/[0.06] transition-all duration-500 group shadow-2xl flex flex-col justify-between min-h-[500px] cursor-pointer"
+      layout onClick={onClick} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden glass-panel p-6 md:p-8 hover:border-orange-500/20 hover:shadow-lg transition-all duration-300 group flex flex-col justify-between min-h-[480px] cursor-pointer"
     >
-      <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[120px] opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity duration-700 ${isBuy ? 'bg-emerald-500' : 'bg-red-500'}`} />
+      <div className={`absolute -top-24 -right-24 w-64 h-64 blur-[120px] opacity-10 dark:opacity-15 pointer-events-none group-hover:opacity-20 transition-opacity duration-700 ${isBuy ? 'bg-emerald-500' : 'bg-red-500'}`} />
       <div className="relative z-10">
-        <div className="flex justify-between items-start mb-8 border-b border-[var(--glass-border)] pb-6">
+        <div className="flex justify-between items-start mb-6 border-b border-[var(--glass-border)] pb-4.5">
           <div>
-            <h3 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter italic uppercase drop-shadow-md">{signal.symbol}</h3>
-            <p className="text-[10px] font-bold text-zinc-600 dark:text-zinc-500 uppercase tracking-widest mt-2 flex items-center gap-2">{signal.strategy || 'KIMOO CRT PRO'} • {signal.tf_alignment || '5M'}</p>
+            <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight uppercase">{signal.symbol}</h3>
+            <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-1.5 flex items-center gap-1.5">{signal.strategy || 'KIMOO CRT PRO'} • {signal.tf_alignment || '5M'}</p>
           </div>
-          <div className={`px-4 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg ${isBuy ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+          <div className={`px-3 py-1 rounded-lg border text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${isBuy ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-555' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
             {isBuy ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {isBuy ? 'BULLISH' : 'BEARISH'}
           </div>
         </div>
-        <div className="space-y-1.5 mb-8">
-          <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl p-4 mb-4 flex justify-between items-center group-hover:border-white/[0.1] transition-colors">
-            <div className="flex items-center gap-3 text-[10px] font-black text-zinc-600 dark:text-zinc-500 uppercase tracking-widest"><Activity size={14} className="text-blue-400 animate-pulse"/> Status</div>
-            <span className="text-xs font-black uppercase tracking-widest text-blue-400">{getDisplayStatus(signal.status)}</span>
+        <div className="space-y-1.5 mb-6">
+          <div className="bg-[var(--input-bg)] border border-[var(--glass-border)] rounded-xl p-3.5 mb-4 flex justify-between items-center group-hover:border-orange-500/10 transition-colors">
+            <div className="flex items-center gap-2.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider"><Activity size={13} className="text-orange-500 animate-pulse"/> Status</div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-500">{getDisplayStatus(signal.status)}</span>
           </div>
-          <TradeDataRow icon={<TrendingUp size={12} className="text-indigo-400"/>} label="Trade R:R" value={getDynamicRR(signal)} valueClass="text-indigo-400" />
-          <TradeDataRow icon={<Zap size={12} className="text-amber-400"/>} label="Entry Region" value={Number(signal.entry_price || 0).toFixed(5)} />
+          <TradeDataRow icon={<TrendingUp size={12} className="text-indigo-400"/>} label="Trade R:R" value={getDynamicRR(signal)} valueClass="text-indigo-500" />
+          <TradeDataRow icon={<Zap size={12} className="text-amber-500"/>} label="Entry Region" value={Number(signal.entry_price || 0).toFixed(5)} />
           <TradeDataRow icon={<Shield size={12} className="text-red-400"/>} label="Invalidation" value={Number(signal.sl || 0).toFixed(5)} valueClass="text-red-400" />
           <div className="my-2 border-t border-[var(--glass-border)]" />
-          <TradeDataRow icon={<Target size={12} className="text-emerald-400"/>} label="TP-1 (EQ)" value={`${Number(signal.tp || 0).toFixed(5)} (${calculateTargetRR(signal.tp, signal.entry_price, signal.sl)})`} valueClass="text-emerald-400" />
-          <TradeDataRow icon={<Zap size={12} className="text-yellow-500"/>} label="TP-2 (TARGET)" value={signal.tp_secondary ? `${Number(signal.tp_secondary).toFixed(5)} (${calculateTargetRR(signal.tp_secondary, signal.entry_price, signal.sl)})` : '---'} valueClass="text-yellow-500" />
+          <TradeDataRow icon={<Target size={12} className="text-emerald-500"/>} label="TP-1 (EQ)" value={`${Number(signal.tp || 0).toFixed(5)} (${calculateTargetRR(signal.tp, signal.entry_price, signal.sl)})`} valueClass="text-emerald-500" />
+          <TradeDataRow icon={<Zap size={12} className="text-amber-500"/>} label="TP-2 (TARGET)" value={signal.tp_secondary ? `${Number(signal.tp_secondary).toFixed(5)} (${calculateTargetRR(signal.tp_secondary, signal.entry_price, signal.sl)})` : '---'} valueClass="text-amber-500" />
           <div className="my-2 border-t border-[var(--glass-border)]" />
-          <TradeDataRow icon={<Layout size={12} className="text-zinc-600 dark:text-zinc-500"/>} label="Confluences" value={signal.confluences || 'Institutional Bias Confirmed'} valueClass="text-zinc-700 dark:text-zinc-400 text-[11px] italic" />
-          <div className="flex justify-between items-center pt-4 mt-2">
-            <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Time Elapsed</span>
-            <span className="text-[10px] font-mono text-zinc-700 dark:text-zinc-400 font-black uppercase flex items-center gap-2 bg-[var(--glass-bg)] px-3 py-1.5 rounded-lg border border-[var(--glass-border)]"><Clock size={12} /> {getTimeAgo(signal.created_at)}</span>
+          <TradeDataRow icon={<Layout size={12} className="text-zinc-500"/>} label="Confluences" value={signal.confluences || 'Institutional Bias Confirmed'} valueClass="text-zinc-650 dark:text-zinc-400 text-[11px] italic" />
+          <div className="flex justify-between items-center pt-3.5 mt-1.5">
+            <span className="text-[9px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider">Time Elapsed</span>
+            <span className="text-[10px] font-mono text-zinc-650 dark:text-zinc-400 font-bold uppercase flex items-center gap-1.5 bg-[var(--input-bg)] px-2.5 py-1 rounded-lg border border-[var(--glass-border)]"><Clock size={11} /> {getTimeAgo(signal.created_at)}</span>
           </div>
         </div>
       </div>
       
-      <div className="flex flex-col gap-3 mt-4">
-        <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="action-btn relative z-10 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-zinc-900 dark:text-white py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] active:scale-95 flex items-center justify-center gap-3 border border-blue-500/30 group/btn">
-          <Layout size={16} className="text-blue-200 group-hover/btn:text-zinc-900 dark:text-white transition-colors" /> 
+      <div className="flex flex-col mt-2">
+        <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="btn-modern w-full flex items-center justify-center gap-2 text-xs py-3 h-[42px] border border-orange-500/20">
+          <Layout size={14} className="text-white" /> 
           Open Live Setup 
-          <ArrowUpRight size={16} className="text-blue-200 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+          <ArrowUpRight size={14} className="text-white transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
         </button>
       </div>
     </motion.div>
@@ -290,101 +291,99 @@ export default function SignalsPage() {
 
   return (
     <AccessGuard requiredTier={1} tierName="PRO">
-      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[150px]" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px]" />
+      <div className="w-full relative z-10 space-y-6 md:space-y-8">        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight uppercase text-zinc-900 dark:text-white">
+              Alpha<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">Terminal</span>
+            </h1>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400 font-bold mt-2">• CRT PROTOCOL • REAL-TIME INSTITUTIONAL SIGNALS •</p>
+          </div>
         </div>
 
-        <div className="max-w-[1700px] mx-auto relative z-10 flex flex-col min-h-screen space-y-8">
-          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-6">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-black tracking-tighter italic flex items-center gap-3 uppercase text-zinc-900 dark:text-white">
-                Alpha<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Terminal</span>
-              </h1>
-              <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 dark:text-zinc-500 font-bold mt-3 leading-none">• CRT PROTOCOL • REAL-TIME INSTITUTIONAL SIGNALS •</p>
-            </div>
-
-            <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
-              <div className="flex gap-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From</label>
-                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none h-[42px]" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To</label>
-                  <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono text-zinc-900 dark:text-white outline-none h-[42px]" />
-                </div>
-              </div>
-              
-              <div className="flex flex-col gap-1 w-full md:w-36">
-                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
-                <select value={assetClass} onChange={(e) => setAssetClass(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none h-[42px] w-full cursor-pointer">
-                  <option value="ALL">ALL ASSETS</option>
-                  <option value="CRYPTO">CRYPTO</option>
-                  <option value="FOREX">FOREX</option>
-                  <option value="INDICES">INDICES</option>
-                  <option value="METALS">METALS</option>
-                </select>
-              </div>
-              
-              <div className="flex flex-col gap-1 w-full md:w-44">
-                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe</label>
-                <select value={tfAlignment} onChange={(e) => setTfAlignment(e.target.value)} className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none appearance-none h-[42px] w-full cursor-pointer">
-                  <option value="ALL">ALL ALIGNMENTS</option>
-                  <option value="M5/H1">5M - 1H Alignment</option>
-                  <option value="M15/H4">15M - 4H Alignment</option>
-                  <option value="M30/H6">30M - 6H Alignment</option>
-                  <option value="H1/D1">1H - 1D Alignment</option>
-                </select>
-              </div>
-
-              {/* Symbol Selector checklist */}
-              <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
-
-              <div className="flex gap-2 w-full md:w-auto items-end h-[42px]">
-                <div className="relative flex-grow md:w-48 h-full">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
-                  <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search symbol..." className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white outline-none" />
-                </div>
-                
-                {/* Excel CSV Exporter Button */}
-                <button
-                  onClick={handleDownloadCSV}
-                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)] h-full shrink-0"
-                  title="Download Spreadsheet"
-                >
-                  <FileSpreadsheet size={18} />
-                </button>
-              </div>
-            </div>
+        <div className="glass-panel p-4 md:p-5 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 items-end shadow-lg">
+          <div className="flex flex-col gap-1.5 w-full">
+            <span className="text-[10px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider ml-1">From Date</span>
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input-modern h-[42px] px-4 text-xs font-semibold text-foreground bg-[var(--input-bg)] border border-[var(--input-border)] outline-none w-full cursor-pointer" />
+          </div>
+          <div className="flex flex-col gap-1.5 w-full">
+            <span className="text-[10px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider ml-1">To Date</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input-modern h-[42px] px-4 text-xs font-semibold text-foreground bg-[var(--input-bg)] border border-[var(--input-border)] outline-none w-full cursor-pointer" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 flex-grow">
-            <AnimatePresence mode="popLayout">
-              {signals.length > 0 ? signals.map((signal) => (
-                <SignalCard key={signal.id} signal={signal} onClick={() => setSelectedSignal(signal)} />
-              )) : (
-                <div className="col-span-full w-full flex flex-col items-center justify-center py-40 border border-dashed border-white/[0.1] rounded-[2.5rem] bg-[var(--glass-bg)]">
-                  <AlertCircle size={48} className="text-zinc-700 mb-6" />
-                  <h3 className="text-2xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white mb-2">No Intelligence Found</h3>
-                </div>
-              )}
-            </AnimatePresence>
+          <CustomSelect
+            label="Asset Class"
+            value={assetClass}
+            onChange={setAssetClass}
+            options={[
+              { value: 'ALL', label: 'ALL ASSETS' },
+              { value: 'CRYPTO', label: 'CRYPTO' },
+              { value: 'FOREX', label: 'FOREX' },
+              { value: 'INDICES', label: 'INDICES' },
+              { value: 'METALS', label: 'METALS' }
+            ]}
+          />
+
+          <CustomSelect
+            label="Timeframe"
+            value={tfAlignment}
+            onChange={setTfAlignment}
+            options={[
+              { value: 'ALL', label: 'ALL ALIGNMENTS' },
+              { value: 'M5/H1', label: '5M - 1H Alignment' },
+              { value: 'M15/H4', label: '15M - 4H Alignment' },
+              { value: 'M30/H6', label: '30M - 6H Alignment' },
+              { value: 'H1/D1', label: '1H - 1D Alignment' }
+            ]}
+          />
+
+          <div className="w-full flex flex-col gap-1.5">
+            <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
           </div>
 
-          {Math.ceil(totalCount / ITEMS_PER_PAGE) > 1 && (
-            <div className="mt-8 mb-4 flex justify-center items-center gap-4">
-              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500"><ChevronLeft size={20} /></button>
-              <span className="text-[10px] font-black uppercase text-zinc-600 dark:text-zinc-500 tracking-widest">Page {currentPage} of {Math.ceil(totalCount / ITEMS_PER_PAGE)}</span>
-              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / ITEMS_PER_PAGE)))} disabled={currentPage === Math.ceil(totalCount / ITEMS_PER_PAGE)} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500"><ChevronRight size={20} /></button>
+          <div className="flex flex-col gap-1.5 w-full">
+            <span className="text-[10px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider ml-1">Search & Export</span>
+            <div className="flex gap-2 w-full h-[42px]">
+              <div className="relative flex-grow h-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+                <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search symbol..." className="w-full h-full pl-9 pr-3 input-modern text-xs font-semibold text-foreground bg-[var(--input-bg)] border border-[var(--input-border)] outline-none" />
+              </div>
+              
+              <button
+                onClick={handleDownloadCSV}
+                className="p-3 bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 text-orange-500 hover:text-orange-400 transition-all rounded-xl flex items-center justify-center shadow-sm h-full shrink-0 cursor-pointer"
+                title="Download Spreadsheet"
+              >
+                <FileSpreadsheet size={16} />
+              </button>
             </div>
-          )}
+          </div>
+        </div>
 
-          <AnimatePresence>
-            {selectedSignal && <SignalModal signal={selectedSignal} onClose={() => setSelectedSignal(null)} />}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 flex-grow">
+          <AnimatePresence mode="popLayout">
+            {signals.length > 0 ? signals.map((signal) => (
+              <SignalCard key={signal.id} signal={signal} onClick={() => setSelectedSignal(signal)} />
+            )) : (
+              <div className="col-span-full w-full flex flex-col items-center justify-center py-40 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl bg-[var(--glass-bg)]">
+                <AlertCircle size={40} className="text-zinc-500 mb-4" />
+                <h3 className="text-xl font-bold tracking-tight uppercase text-zinc-900 dark:text-white mb-1.5">No Intelligence Found</h3>
+                <p className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest">Awaiting Order Block Displacement...</p>
+              </div>
+            )}
           </AnimatePresence>
         </div>
+
+        {Math.ceil(totalCount / ITEMS_PER_PAGE) > 1 && (
+          <div className="mt-8 mb-4 flex justify-center items-center gap-4">
+            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-500 hover:text-orange-500 transition-all cursor-pointer"><ChevronLeft size={18} /></button>
+            <span className="text-[10px] font-extrabold uppercase text-zinc-500 tracking-wider">Page {currentPage} of {Math.ceil(totalCount / ITEMS_PER_PAGE)}</span>
+            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / ITEMS_PER_PAGE)))} disabled={currentPage === Math.ceil(totalCount / ITEMS_PER_PAGE)} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-500 hover:text-orange-500 transition-all cursor-pointer"><ChevronRight size={18} /></button>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {selectedSignal && <SignalModal signal={selectedSignal} onClose={() => setSelectedSignal(null)} />}
+        </AnimatePresence>
       </div>
     </AccessGuard>
   );

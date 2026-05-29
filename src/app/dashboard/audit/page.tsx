@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/hooks/useAuth';
 import AccessGuard from '@/components/AccessGuard';
+import CustomSelect from '@/components/CustomSelect';
 import { Search, Activity, Zap, TrendingUp, Layers, Target, Wallet, BarChart3, AlertCircle, ChevronUp, ChevronDown, Calendar, FileSpreadsheet } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
@@ -232,109 +233,76 @@ export default function SymbolAudit() {
 
   return (
     <AccessGuard requiredTier={1} tierName="PRO">
-      <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
-        {/* Ambient Glowing Backgrounds */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[150px] rounded-full mix-blend-screen" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] rounded-full mix-blend-screen" />
-        </div>
-
-        <div className="max-w-[1700px] mx-auto relative z-10 flex flex-col min-h-screen space-y-8">
-          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-6">
+      <div className="w-full relative z-10 space-y-6 md:space-y-8 text-zinc-900 dark:text-white font-sans selection:bg-orange-500">
+          {/* Header Section */}
+          <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl md:text-4xl font-black tracking-tighter italic flex items-center gap-3 uppercase text-zinc-900 dark:text-white">
                 Symbol<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Audit</span>
               </h1>
-              <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-600 dark:text-zinc-500 font-bold mt-3 leading-none">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-650 dark:text-zinc-400 font-bold mt-3 leading-none">
                 • INSTITUTIONAL PERFORMANCE BREAKDOWN BY PAIR •
               </p>
             </div>
+          </div>
 
-            <div className="flex flex-col md:flex-row flex-wrap gap-4 w-full lg:w-auto items-end">
-              <div className="flex flex-col gap-1 w-full md:w-36">
-                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Asset Class</label>
-                <div className="relative">
-                  <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
-                  <select
-                    value={assetClass}
-                    onChange={(e) => setAssetClass(e.target.value)}
-                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]"
-                  >
-                    <option value="ALL">ALL ASSETS</option>
-                    <option value="CRYPTO">CRYPTO</option>
-                    <option value="FOREX">FOREX</option>
-                    <option value="INDICES">INDICES</option>
-                    <option value="METALS">METALS</option>
-                  </select>
-                </div>
-              </div>
+          {/* Filters Bar */}
+          <div className="glass-panel p-4 md:p-5 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 items-end shadow-lg">
+            <div className="flex flex-col gap-1.5 w-full">
+              <span className="text-[10px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider ml-1">From Date</span>
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input-modern h-[42px] px-4 text-xs font-semibold text-foreground bg-[var(--input-bg)] border border-[var(--input-border)] outline-none w-full cursor-pointer" />
+            </div>
+            <div className="flex flex-col gap-1.5 w-full">
+              <span className="text-[10px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider ml-1">To Date</span>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input-modern h-[42px] px-4 text-xs font-semibold text-foreground bg-[var(--input-bg)] border border-[var(--input-border)] outline-none w-full cursor-pointer" />
+            </div>
 
-              <div className="flex flex-col gap-1 w-full md:w-44">
-                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">Timeframe Alignment</label>
-                <div className="relative">
-                  <Activity className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
-                  <select
-                    value={tfAlignment}
-                    onChange={(e) => setTfAlignment(e.target.value)}
-                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer appearance-none w-full h-[42px]"
-                  >
-                    <option value="ALL">ALL ALIGNMENTS</option>
-                    <option value="M5/H1">5M - 1H Alignment</option>
-                    <option value="M15/H4">15M - 4H Alignment</option>
-                    <option value="M30/H6">30M - 6H Alignment</option>
-                    <option value="H1/D1">1H - 1D Alignment</option>
-                  </select>
-                </div>
-              </div>
+            <CustomSelect
+              label="Asset Class"
+              icon={<Layers size={14} />}
+              value={assetClass}
+              onChange={setAssetClass}
+              options={[
+                { value: 'ALL', label: 'ALL ASSETS' },
+                { value: 'CRYPTO', label: 'CRYPTO' },
+                { value: 'FOREX', label: 'FOREX' },
+                { value: 'INDICES', label: 'INDICES' },
+                { value: 'METALS', label: 'METALS' }
+              ]}
+            />
 
-              <div className="flex flex-col gap-1 w-full md:w-36">
-                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">From Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full h-[42px]"
-                  />
-                </div>
-              </div>
+            <CustomSelect
+              label="Timeframe"
+              icon={<Activity size={14} />}
+              value={tfAlignment}
+              onChange={setTfAlignment}
+              options={[
+                { value: 'ALL', label: 'ALL ALIGNMENTS' },
+                { value: 'M5/H1', label: '5M - 1H Alignment' },
+                { value: 'M15/H4', label: '15M - 4H Alignment' },
+                { value: 'M30/H6', label: '30M - 6H Alignment' },
+                { value: 'H1/D1', label: '1H - 1D Alignment' }
+              ]}
+            />
 
-              <div className="flex flex-col gap-1 w-full md:w-36">
-                <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest">To Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={14} />
-                  <input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-blue-500/50 hover:border-white/20 transition-all cursor-pointer w-full h-[42px]"
-                  />
-                </div>
-              </div>
-
-              {/* Symbol Selector checklist */}
+            <div className="w-full flex flex-col gap-1.5">
               <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
+            </div>
 
-              {/* Search and Download Button */}
-              <div className="flex gap-2 w-full md:w-auto items-end h-[42px] mb-0.5">
-                <div className="relative flex-grow md:w-48 h-full">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" size={16} />
-                  <input
-                    type="text" placeholder="Search symbol..."
-                    value={search}
-                    className="w-full h-full pl-12 pr-4 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-xs font-mono text-zinc-900 dark:text-white focus:border-blue-500/50 hover:border-white/20 outline-none transition-all"
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
+            <div className="flex flex-col gap-1.5 w-full">
+              <span className="text-[10px] font-bold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider ml-1">Search & Export</span>
+              <div className="flex gap-2 w-full h-[42px]">
+                <div className="relative flex-grow h-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search symbol..." className="w-full h-full pl-9 pr-3 input-modern text-xs font-semibold text-foreground bg-[var(--input-bg)] border border-[var(--input-border)] outline-none" />
                 </div>
                 
-                {/* Excel CSV Exporter Button */}
                 <button
                   onClick={handleDownloadCSV}
-                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)] h-full shrink-0"
+                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-500 hover:text-emerald-400 transition-all rounded-xl flex items-center justify-center shadow-sm h-full shrink-0 cursor-pointer"
                   title="Download Spreadsheet"
                 >
-                  <FileSpreadsheet size={18} />
+                  <FileSpreadsheet size={16} />
                 </button>
               </div>
             </div>
@@ -450,7 +418,6 @@ export default function SymbolAudit() {
             </div>
           </div>
         </div>
-      </div>
     </AccessGuard>
   );
 }

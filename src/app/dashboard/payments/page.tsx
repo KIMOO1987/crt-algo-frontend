@@ -151,15 +151,7 @@ export default function PaymentsPage() {
   );
 
   return (
-    <div className="relative p-4 md:p-12 lg:p-16 lg:ml-72  min-h-screen text-zinc-900 dark:text-white font-sans overflow-x-hidden">
-
-      {/* Ambient Glowing Backgrounds */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[150px] rounded-full mix-blend-screen" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] rounded-full mix-blend-screen" />
-      </div>
-
-      <div className="max-w-[1700px] mx-auto relative z-10">
+    <div className="w-full relative z-10">
         <div className="text-center mb-12 md:mb-20">
           <h1 className="text-3xl md:text-5xl font-black tracking-tighter italic flex items-center justify-center gap-3 uppercase text-zinc-900 dark:text-white">
             Upgrade to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Pro</span>
@@ -173,7 +165,7 @@ export default function PaymentsPage() {
           {/* 15-DAY FREE TRIAL CARD */}
           <div
             onClick={() => handleStartTrial()}
-            className={`relative p-8 md:p-10 flex flex-col cursor-pointer transition-all duration-500 group backdrop-blur-xl rounded-[2.5rem] border border-fuchsia-500/30 bg-fuchsia-500/5 hover:bg-fuchsia-500/10 shadow-[0_0_30px_rgba(217,70,239,0.1)] hover:shadow-[0_0_50px_rgba(217,70,239,0.2)] hover:md:-translate-y-4`}
+            className="relative p-8 md:p-10 flex flex-col cursor-pointer transition-all duration-500 group glass-panel border border-fuchsia-500/30 bg-fuchsia-500/5 hover:bg-fuchsia-500/10 shadow-[0_0_30px_rgba(217,70,239,0.1)] hover:shadow-[0_0_50px_rgba(217,70,239,0.2)] hover:md:-translate-y-4"
           >
             <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white text-[9px] font-black px-4 py-1.5 rounded-b-xl uppercase tracking-widest shadow-lg">
               Limited Offer
@@ -218,11 +210,11 @@ export default function PaymentsPage() {
             <div
               key={plan.id}
               onClick={() => setSelectedPlan(plan)}
-              className={`relative p-8 md:p-10 flex flex-col cursor-pointer transition-all duration-500 group backdrop-blur-xl rounded-[2.5rem] border ${selectedPlan?.id === plan.id
+              className={`relative p-8 md:p-10 flex flex-col cursor-pointer transition-all duration-500 group glass-panel ${selectedPlan?.id === plan.id
                 ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_50px_rgba(59,130,246,0.2)] transform md:-translate-y-4 z-10'
                 : recommendedPlan?.id === plan.id
                   ? 'bg-gradient-to-br from-white/[0.08] to-white/[0.02] border-white/20 shadow-2xl hover:border-white/30'
-                  : 'bg-gradient-to-br from-white/[0.04] to-white/[0.01] border-[var(--glass-border)] shadow-xl hover:border-[var(--glass-border)] hover:bg-white/[0.06]'
+                  : 'hover:bg-white/[0.06]'
                 }`}
             >
               {recommendedPlan?.id === plan.id && (
@@ -260,10 +252,9 @@ export default function PaymentsPage() {
             </div>
           ))}
         </div>
-
         {selectedPlan && (
-          <div className="fixed inset-0 /80 backdrop-blur-2xl z-[100] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
-            <div className="w-full max-w-xl p-8 md:p-10 bg-gradient-to-br from-[#0a0c10] to-[#030407] border border-[var(--glass-border)] rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] max-h-[90vh] overflow-y-auto relative">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
+            <div className="w-full max-w-xl p-8 md:p-10 glass-panel shadow-[0_0_100px_rgba(0,0,0,0.8)] max-h-[90vh] overflow-y-auto relative">
               <div className="absolute top-0 left-0 w-full h-full bg-blue-500/5 blur-[100px] pointer-events-none" />
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-8 border-b border-[var(--glass-border)] pb-6">
@@ -302,14 +293,14 @@ export default function PaymentsPage() {
                       value={cryptoHash}
                       onChange={(e) => setCryptoHash(e.target.value)}
                       placeholder="Paste your transaction hash (TxID) here..."
-                      className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-4 text-xs font-mono text-zinc-900 dark:text-white focus:border-orange-500/50 hover:border-white/20 outline-none transition-all"
+                      className="input-modern w-full font-mono focus:border-orange-500/50 hover:border-white/20"
                     />
                     <button
                       onClick={handleCryptoSubmit}
                       disabled={!cryptoHash || cryptoStatus !== 'idle'}
-                      className={`w-full py-5 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 active:scale-95 shadow-lg border flex items-center justify-center gap-3
-                        ${cryptoStatus === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_30px_rgba(52,211,153,0.2)]' : 'bg-gradient-to-r from-orange-600 to-red-600 text-white border-orange-500/30 hover:from-orange-500 hover:to-red-500 shadow-[0_0_30px_rgba(249,115,22,0.3)] hover:shadow-[0_0_40px_rgba(249,115,22,0.5)]'}
-                        ${cryptoStatus === 'submitting' ? 'opacity-70 cursor-not-allowed bg-none bg-white/[0.05] border-[var(--glass-border)] shadow-none text-zinc-600 dark:text-zinc-500' : ''}`}
+                      className={`btn-modern w-full flex items-center justify-center gap-3 py-4
+                        ${cryptoStatus === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_30px_rgba(52,211,153,0.2)]' : ''}
+                        ${cryptoStatus === 'submitting' ? 'opacity-70 cursor-not-allowed bg-none shadow-none text-zinc-500' : ''}`}
                     >
                       {cryptoStatus === 'idle' && <><ShieldCheck size={18} className="text-orange-200" /> Submit for Validation</>}
                       {cryptoStatus === 'submitting' && <Loader2 className="animate-spin text-zinc-700 dark:text-zinc-400" size={18} />}
@@ -331,6 +322,5 @@ export default function PaymentsPage() {
           </div>
         )}
       </div>
-    </div>
   );
 }

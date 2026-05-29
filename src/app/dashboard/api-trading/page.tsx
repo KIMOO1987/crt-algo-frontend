@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import CryptoJS from 'crypto-js';
+import CustomSelect from '@/components/CustomSelect';
 import { 
   ShieldAlert, ShieldCheck, Activity, Wallet, Percent, 
   Target, Lock, Save, Settings2, BarChart3, TrendingUp, CheckCircle, 
   XCircle, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownRight, Flame,
-  PlayCircle, Compass, Award, GitBranch
+  PlayCircle, Compass, Award, GitBranch, ChevronDown
 } from 'lucide-react';
 
 const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
@@ -101,10 +102,10 @@ function MultiSelectDropdown({ label, icon, options, selectedValues, onChange }:
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all text-left flex justify-between items-center select-none"
+        className="input-modern w-full h-[42px] py-0 font-bold uppercase tracking-wider text-left flex justify-between items-center select-none text-xs"
       >
         <span className="truncate pr-2">{getDisplayText()}</span>
-        <span className="text-zinc-500 text-[10px] transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+        <ChevronDown size={14} className="text-zinc-500 transition-transform duration-200" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
       </button>
 
       {isOpen && (
@@ -572,15 +573,7 @@ export default function MultiExchangeDashboard() {
   const activeMetrics = metrics[activeTab] || { total: 0, partialTps: 0, fullTps: 0, sls: 0, bes: 0, opening: 1000, closing: 1000, pnl: 0 };
 
   return (
-    <div className="p-4 md:p-12 lg:p-16 lg:ml-72 min-h-screen text-white font-sans selection:bg-orange-500 selection:text-white">
-      
-      {/* Background glow meshes */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-600/5 blur-[150px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-600/5 blur-[150px] rounded-full" />
-      </div>
-
-      <div className="max-w-[1700px] mx-auto relative z-10 space-y-8 md:space-y-10">
+    <div className="w-full relative z-10 space-y-8 md:space-y-10 text-white font-sans selection:bg-orange-500 selection:text-white">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-zinc-800 pb-8">
@@ -645,18 +638,17 @@ export default function MultiExchangeDashboard() {
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Activity size={12} /> Trend Alignment</label>
-              <select 
-                value={alignment} 
-                onChange={(e) => setAlignment(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-              >
-                <option value="Both">Both</option>
-                <option value="Aligned">Aligned Only</option>
-                <option value="Counter">Counter Only</option>
-              </select>
-            </div>
+            <CustomSelect
+              label="Trend Alignment"
+              icon={<Activity size={12} />}
+              value={alignment}
+              onChange={setAlignment}
+              options={[
+                { value: 'Both', label: 'Both' },
+                { value: 'Aligned', label: 'Aligned Only' },
+                { value: 'Counter', label: 'Counter Only' }
+              ]}
+            />
           </div>
 
           {/* Advanced Risk & Quality Filters Row */}
@@ -665,20 +657,17 @@ export default function MultiExchangeDashboard() {
               <ShieldCheck size={14} className="text-orange-500" /> Advanced Quality & Execution Filters
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                  <Compass size={12} /> Sweep Quality Filter
-                </label>
-                <select 
-                  value={sweepQuality} 
-                  onChange={(e) => setSweepQuality(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-black tracking-widest uppercase text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-                >
-                  <option value="All">All Sweeps (Bypass)</option>
-                  <option value="High">High</option>
-                  <option value="Normal">Normal</option>
-                </select>
-              </div>
+              <CustomSelect
+                label="Sweep Quality Filter"
+                icon={<Compass size={12} />}
+                value={sweepQuality}
+                onChange={setSweepQuality}
+                options={[
+                  { value: 'All', label: 'All Sweeps (Bypass)' },
+                  { value: 'High', label: 'High' },
+                  { value: 'Normal', label: 'Normal' }
+                ]}
+              />
               <MultiSelectDropdown
                 label="Grading Filter"
                 icon={<Award size={12} />}
@@ -821,7 +810,7 @@ export default function MultiExchangeDashboard() {
 
                 <button 
                   onClick={() => saveExchangeSettings(activeEx.id)}
-                  className="w-full py-4 bg-white hover:bg-zinc-200 text-black text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
+                  className="btn-modern w-full py-4 flex items-center justify-center gap-2"
                 >
                   <Save size={14} /> SAVE & SYNC {activeEx.name.toUpperCase()}
                 </button>
@@ -995,6 +984,5 @@ export default function MultiExchangeDashboard() {
         </div>
 
       </div>
-    </div>
   );
 }

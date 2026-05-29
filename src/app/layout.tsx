@@ -40,22 +40,22 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-        {/* 3D Ambient Background */}
+        {/* Premium Ambient Background (Dynamic Theme Adaptability) */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 perspective-1000">
-          {/* Main Glow - Vibrant Pink/Purple */}
+          {/* Purple Glow */}
           <div 
-            className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-fuchsia-600/20 blur-[120px] rounded-full mix-blend-screen animate-pulse"
-            style={{ animationDuration: '8s' }}
+            className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-fuchsia-500/8 dark:bg-fuchsia-600/15 blur-[120px] rounded-full mix-blend-normal dark:mix-blend-screen animate-pulse"
+            style={{ animationDuration: '12s' }}
           />
-          {/* Secondary Glow - Vibrant Violet */}
+          {/* Indigo/Violet Glow */}
           <div 
-            className="absolute top-[40%] -right-[10%] w-[50%] h-[50%] bg-violet-600/20 blur-[120px] rounded-full mix-blend-screen animate-pulse"
-            style={{ animationDuration: '10s', animationDelay: '2s' }}
+            className="absolute top-[30%] -right-[10%] w-[45%] h-[45%] bg-indigo-500/8 dark:bg-indigo-600/12 blur-[130px] rounded-full mix-blend-normal dark:mix-blend-screen animate-pulse"
+            style={{ animationDuration: '16s', animationDelay: '3s' }}
           />
-          {/* Subtle Bottom Glow - Vibrant Orange/Amber */}
+          {/* Warm Bronze/Orange Glow */}
           <div 
-            className="absolute -bottom-[20%] left-[20%] w-[40%] h-[40%] bg-amber-500/15 blur-[100px] rounded-full mix-blend-screen animate-pulse"
-            style={{ animationDuration: '12s', animationDelay: '4s' }}
+            className="absolute -bottom-[10%] left-[15%] w-[40%] h-[40%] bg-amber-500/6 dark:bg-amber-500/10 blur-[110px] rounded-full mix-blend-normal dark:mix-blend-screen animate-pulse"
+            style={{ animationDuration: '14s', animationDelay: '5s' }}
           />
         </div>
         
