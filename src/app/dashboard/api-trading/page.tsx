@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
+import okxSymbols from './okx_symbols.json';
 
 // Complete list of exchanges supported
 const SUPPORTED_EXCHANGES = [
@@ -177,6 +178,21 @@ export default function MultiExchangeDashboard() {
   const [gradeSetting, setGradeSetting] = useState('All');
   const [htfAlignment, setHtfAlignment] = useState('All');
 
+  // Alt Coins Risk Management States
+  const [altWalletSize, setAltWalletSize] = useState(1000);
+  const [altRiskPercent, setAltRiskPercent] = useState(1.0);
+  const [altMinRR, setAltMinRR] = useState(1.5);
+  const [altMaxConcurrent, setAltMaxConcurrent] = useState(3);
+  const [altAlignment, setAltAlignment] = useState('Both');
+  const [altEntryMode, setAltEntryMode] = useState('market');
+  const [altSweepQuality, setAltSweepQuality] = useState('All');
+  const [altGradeSetting, setAltGradeSetting] = useState('All');
+  const [altHtfAlignment, setAltHtfAlignment] = useState('All');
+
+  // Checklist Allowed Symbols State
+  const [allowedSymbolsList, setAllowedSymbolsList] = useState<string[]>([]);
+  const [symbolSearchQuery, setSymbolSearchQuery] = useState("");
+
   // Stats / Metrics per Exchange
   const [metrics, setMetrics] = useState<Record<string, any>>({});
   const [statusLogs, setStatusLogs] = useState<string[]>([]);
@@ -327,7 +343,6 @@ export default function MultiExchangeDashboard() {
     }
   }, [supabase, loading]);
 
-  // Sync risk settings and form inputs when switching active exchange tabs
   useEffect(() => {
     if (loading) return;
 
@@ -344,6 +359,20 @@ export default function MultiExchangeDashboard() {
         setGradeSetting(config.grade ?? 'All');
         setHtfAlignment(config.htf_alignment ?? 'All');
         
+        // Alt Coins settings
+        setAltWalletSize(config.alt_daily_risk_wallet ?? 1000);
+        setAltRiskPercent(config.alt_risk_percentage ?? 1.0);
+        setAltMinRR(config.alt_rr ?? 1.5);
+        setAltMaxConcurrent(config.alt_max_concurrent_setups ?? 3);
+        setAltAlignment(config.alt_alignment ?? 'Both');
+        setAltEntryMode(config.alt_entry_mode ?? 'market');
+        setAltSweepQuality(config.alt_sweep_quality ?? 'All');
+        setAltGradeSetting(config.alt_grade ?? 'All');
+        setAltHtfAlignment(config.alt_htf_alignment ?? 'All');
+
+        // Allowed symbols checklist
+        setAllowedSymbolsList(config.allowed_symbols ?? (activeTab === 'okx' ? okxSymbols.map(s => s.symbol) : []));
+        
         setApiKeys(prev => ({ ...prev, [activeTab]: config.api_key || '' }));
         setEnvironments(prev => ({ ...prev, [activeTab]: config.environment || 'testnet' }));
         setBotEnables(prev => ({ ...prev, [activeTab]: config.is_enabled ?? true }));
@@ -358,6 +387,20 @@ export default function MultiExchangeDashboard() {
         setSweepQuality('All');
         setGradeSetting('All');
         setHtfAlignment('All');
+
+        // Defaults for Alt Coins
+        setAltWalletSize(1000);
+        setAltRiskPercent(1.0);
+        setAltMinRR(1.5);
+        setAltMaxConcurrent(3);
+        setAltAlignment('Both');
+        setAltEntryMode('market');
+        setAltSweepQuality('All');
+        setAltGradeSetting('All');
+        setAltHtfAlignment('All');
+
+        // Allowed symbols checklist default
+        setAllowedSymbolsList(activeTab === 'okx' ? okxSymbols.map(s => s.symbol) : []);
         
         setApiKeys(prev => ({ ...prev, [activeTab]: '' }));
         setEnvironments(prev => ({ ...prev, [activeTab]: 'testnet' }));
@@ -472,6 +515,8 @@ export default function MultiExchangeDashboard() {
       encrypted_secret: encryptedSecret,
       environment: environments[exchangeId] || 'testnet',
       is_enabled: botEnables[exchangeId] ?? true,
+      
+      // Major Coins Config
       daily_risk_wallet: walletSize,
       risk_percentage: riskPercent,
       rr: minRR,
@@ -481,6 +526,21 @@ export default function MultiExchangeDashboard() {
       sweep_quality: sweepQuality,
       grade: gradeSetting,
       htf_alignment: htfAlignment,
+
+      // Alt Coins Config
+      alt_daily_risk_wallet: altWalletSize,
+      alt_risk_percentage: altRiskPercent,
+      alt_rr: altMinRR,
+      alt_max_concurrent_setups: altMaxConcurrent,
+      alt_alignment: altAlignment,
+      alt_entry_mode: altEntryMode,
+      alt_sweep_quality: altSweepQuality,
+      alt_grade: altGradeSetting,
+      alt_htf_alignment: altHtfAlignment,
+
+      // Checklist allowed symbols
+      allowed_symbols: allowedSymbolsList,
+
       updated_at: new Date().toISOString()
     };
 
@@ -593,99 +653,6 @@ export default function MultiExchangeDashboard() {
           </div>
         </div>
 
-        {/* Global Risk Management Deck */}
-        <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[2rem] p-6 md:p-8 shadow-2xl space-y-6">
-          <h2 className="text-sm font-black uppercase tracking-widest text-orange-500 flex items-center gap-2.5">
-            <Target size={18} /> Global Trade Risk Settings
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Wallet size={12} /> Daily Risk Capital ($)</label>
-              <input 
-                type="number" 
-                value={walletSize} 
-                onChange={(e) => setWalletSize(Number(e.target.value))} 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Percent size={12} /> Risk Per Trade (%)</label>
-              <input 
-                type="number" 
-                step="0.1"
-                value={riskPercent} 
-                onChange={(e) => setRiskPercent(Number(e.target.value))} 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Target size={12} /> Minimum RR Ratio</label>
-              <input 
-                type="number" 
-                step="0.1"
-                value={minRR} 
-                onChange={(e) => setMinRR(Number(e.target.value))} 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Activity size={12} /> Max Setups</label>
-              <input 
-                type="number" 
-                min="1"
-                value={maxConcurrent} 
-                onChange={(e) => setMaxConcurrent(Number(e.target.value))} 
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-              />
-            </div>
-            <CustomSelect
-              label="Trend Alignment"
-              icon={<Activity size={12} />}
-              value={alignment}
-              onChange={setAlignment}
-              options={[
-                { value: 'Both', label: 'Both' },
-                { value: 'Aligned', label: 'Aligned Only' },
-                { value: 'Counter', label: 'Counter Only' }
-              ]}
-            />
-          </div>
-
-          {/* Advanced Risk & Quality Filters Row */}
-          <div className="border-t border-zinc-850 pt-6">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4 flex items-center gap-1.5">
-              <ShieldCheck size={14} className="text-orange-500" /> Advanced Quality & Execution Filters
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <CustomSelect
-                label="Sweep Quality Filter"
-                icon={<Compass size={12} />}
-                value={sweepQuality}
-                onChange={setSweepQuality}
-                options={[
-                  { value: 'All', label: 'All Sweeps (Bypass)' },
-                  { value: 'High', label: 'High' },
-                  { value: 'Normal', label: 'Normal' }
-                ]}
-              />
-              <MultiSelectDropdown
-                label="Grading Filter"
-                icon={<Award size={12} />}
-                options={GRADE_OPTIONS}
-                selectedValues={gradeSetting}
-                onChange={setGradeSetting}
-              />
-              <MultiSelectDropdown
-                label="HTF Timeframe Alignment"
-                icon={<GitBranch size={12} />}
-                options={HTF_OPTIONS}
-                selectedValues={htfAlignment}
-                onChange={setHtfAlignment}
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Exchange Navigation Dock */}
         <div className="flex overflow-x-auto gap-3 pb-3 scrollbar-hide border-b border-zinc-850">
           {SUPPORTED_EXCHANGES.map(ex => {
@@ -705,7 +672,6 @@ export default function MultiExchangeDashboard() {
                 <Activity size={12} className={activeTab === ex.id ? 'animate-spin' : ''} />
                 <span>{ex.name}</span>
                 
-                {/* Activation Status Badge */}
                 {isConfigured ? (
                   isEnabled ? (
                     <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" title="Active & Enabled" />
@@ -720,17 +686,18 @@ export default function MultiExchangeDashboard() {
           })}
         </div>
 
+        {/* Configurations Widescreen Row */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Form Credentials Settings Column */}
-          <div className="lg:col-span-5 space-y-8">
+          {/* Column 1: API Config & Allowed Symbols Checklist */}
+          <div className="lg:col-span-4 space-y-8">
             <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-xs font-black text-orange-500 uppercase tracking-widest flex items-center gap-2">
                   <Lock size={16} /> API Vault Configuration
                 </h3>
                 <span className="text-[10px] font-mono text-zinc-500 uppercase">
-                  {activeEx.name} Table Storage
+                  {activeEx.name} Storage
                 </span>
               </div>
 
@@ -739,6 +706,7 @@ export default function MultiExchangeDashboard() {
                   <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2 mb-2">Network Environment</label>
                   <div className="flex bg-zinc-950 rounded-xl p-1.5 border border-zinc-800">
                     <button 
+                      type="button"
                       onClick={() => setEnvironments(prev => ({ ...prev, [activeEx.id]: 'testnet' }))}
                       className={`flex-1 py-2.5 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest ${
                         (environments[activeEx.id] || 'testnet') === 'testnet' 
@@ -749,6 +717,7 @@ export default function MultiExchangeDashboard() {
                       SANDBOX / DEMO
                     </button>
                     <button 
+                      type="button"
                       onClick={() => setEnvironments(prev => ({ ...prev, [activeEx.id]: 'live' }))}
                       className={`flex-1 py-2.5 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest ${
                         (environments[activeEx.id] || 'testnet') === 'live' 
@@ -791,7 +760,7 @@ export default function MultiExchangeDashboard() {
                       value={passphrases[activeEx.id] || ''} 
                       onChange={(e) => setPassphrases(prev => ({ ...prev, [activeEx.id]: e.target.value }))} 
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all"
-                      placeholder="Exchange passphrase / passphrase password"
+                      placeholder="Exchange passphrase"
                     />
                   </div>
                 )}
@@ -801,6 +770,7 @@ export default function MultiExchangeDashboard() {
                     Trade Engine State
                   </span>
                   <button 
+                    type="button"
                     onClick={() => setBotEnables(prev => ({ ...prev, [activeEx.id]: !(botEnables[activeEx.id] ?? true) }))}
                     className="text-orange-500 focus:outline-none"
                   >
@@ -809,19 +779,160 @@ export default function MultiExchangeDashboard() {
                 </div>
 
                 <button 
+                  type="button"
                   onClick={() => saveExchangeSettings(activeEx.id)}
-                  className="btn-modern w-full py-4 flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-white hover:bg-zinc-200 text-black text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2"
                 >
                   <Save size={14} /> SAVE & SYNC {activeEx.name.toUpperCase()}
                 </button>
               </div>
             </div>
+
+            {/* Allowed symbols checklist (OKX ONLY) */}
+            {activeTab === 'okx' && (
+              <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xs font-black text-orange-500 uppercase tracking-widest flex items-center gap-2">
+                    <Target size={16} /> Active Symbols ({allowedSymbolsList.length} / {okxSymbols.length})
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAllowedSymbolsList(okxSymbols.map(s => s.symbol))}
+                      className="px-2.5 py-1 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-lg text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
+                    >
+                      All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAllowedSymbolsList([])}
+                      className="px-2.5 py-1 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-lg text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search symbols (e.g. BTC, HYPE)..."
+                    value={symbolSearchQuery}
+                    onChange={(e) => setSymbolSearchQuery(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-orange-500 hover:border-zinc-800 transition-all font-mono"
+                  />
+                </div>
+
+                <div className="h-[280px] overflow-y-auto pr-1.5 custom-scrollbar grid grid-cols-2 gap-2 select-none">
+                  {okxSymbols
+                    .filter(s => s.symbol.toLowerCase().includes(symbolSearchQuery.toLowerCase()))
+                    .map(s => {
+                      const isChecked = allowedSymbolsList.includes(s.symbol);
+                      return (
+                        <button
+                          key={s.symbol}
+                          type="button"
+                          onClick={() => {
+                            if (isChecked) {
+                              setAllowedSymbolsList(prev => prev.filter(sym => sym !== s.symbol));
+                            } else {
+                              setAllowedSymbolsList(prev => [...prev, s.symbol]);
+                            }
+                          }}
+                          className={`flex items-center gap-2 px-2.5 py-2 rounded-xl border text-[10px] font-mono tracking-wider font-bold transition-all text-left truncate ${
+                            isChecked
+                              ? 'bg-zinc-950 border-orange-500/20 text-orange-500'
+                              : 'bg-zinc-950/20 border-zinc-900 text-zinc-500 hover:text-zinc-300'
+                          }`}
+                        >
+                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-all ${
+                            isChecked ? 'border-orange-500 bg-orange-500 text-black' : 'border-zinc-800 bg-zinc-950'
+                          }`}>
+                            {isChecked && (
+                              <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                                <path fill="none" stroke="currentColor" strokeWidth="3.5" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0 truncate pr-1">{s.symbol}</div>
+                          <span className={`px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest shrink-0 ${
+                            s.type === 'major'
+                              ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                              : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                          }`}>
+                            {s.type}
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Performance stats Column */}
-          <div className="lg:col-span-7 space-y-8">
+          {/* Column 2: Major Coins Risk Desk */}
+          <div className="lg:col-span-4 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl space-y-6 border-orange-500/5 hover:border-orange-500/10 transition-all">
+            <h2 className="text-xs font-black uppercase tracking-widest text-orange-500 flex items-center gap-2.5 select-none">
+              <Target size={16} /> Major Coins Risk Desk (BTC/ETH)
+            </h2>
             
-            {/* Live stats summary board */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Wallet size={12} /> Daily Risk Capital ($)</label>
+                <input type="number" value={walletSize} onChange={(e) => setWalletSize(Number(e.target.value))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Percent size={12} /> Risk Per Trade (%)</label>
+                <input type="number" step="0.1" value={riskPercent} onChange={(e) => setRiskPercent(Number(e.target.value))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Target size={12} /> Minimum RR Ratio</label>
+                <input type="number" step="0.1" value={minRR} onChange={(e) => setMinRR(Number(e.target.value))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Activity size={12} /> Max Setups</label>
+                <input type="number" min="1" value={maxConcurrent} onChange={(e) => setMaxConcurrent(Number(e.target.value))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-orange-500 hover:border-zinc-700 transition-all" />
+              </div>
+              <CustomSelect label="Trend Alignment" icon={<Activity size={12} />} value={alignment} onChange={setAlignment} options={[{value: 'Both', label: 'Both'}, {value: 'Aligned', label: 'Aligned Only'}, {value: 'Counter', label: 'Counter Only'}]} />
+              <CustomSelect label="Sweep Quality Filter" icon={<Compass size={12} />} value={sweepQuality} onChange={setSweepQuality} options={[{value: 'All', label: 'All Sweeps'}, {value: 'High', label: 'High'}, {value: 'Normal', label: 'Normal'}]} />
+              <MultiSelectDropdown label="Grading Filter" icon={<Award size={12} />} options={GRADE_OPTIONS} selectedValues={gradeSetting} onChange={setGradeSetting} />
+              <MultiSelectDropdown label="HTF Timeframe Alignment" icon={<GitBranch size={12} />} options={HTF_OPTIONS} selectedValues={htfAlignment} onChange={setHtfAlignment} />
+            </div>
+          </div>
+
+          {/* Column 3: Alt Coins Risk Desk */}
+          <div className="lg:col-span-4 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl space-y-6 border-purple-500/5 hover:border-purple-500/10 transition-all">
+            <h2 className="text-xs font-black uppercase tracking-widest text-purple-400 flex items-center gap-2.5 select-none">
+              <Target size={16} /> Alt Coins Risk Desk (Alts)
+            </h2>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Wallet size={12} /> Daily Risk Capital ($)</label>
+                <input type="number" value={altWalletSize} onChange={(e) => setAltWalletSize(Number(e.target.value))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-purple-500 hover:border-zinc-700 transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Percent size={12} /> Risk Per Trade (%)</label>
+                <input type="number" step="0.1" value={altRiskPercent} onChange={(e) => setAltRiskPercent(Number(e.target.value))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-purple-500 hover:border-zinc-700 transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Target size={12} /> Minimum RR Ratio</label>
+                <input type="number" step="0.1" value={altMinRR} onChange={(e) => setAltMinRR(Number(e.target.value))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-purple-500 hover:border-zinc-700 transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5"><Activity size={12} /> Max Setups</label>
+                <input type="number" min="1" value={altMaxConcurrent} onChange={(e) => setAltMaxConcurrent(Number(e.target.value))} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-xs font-mono text-white outline-none focus:border-purple-500 hover:border-zinc-700 transition-all" />
+              </div>
+              <CustomSelect label="Trend Alignment" icon={<Activity size={12} />} value={altAlignment} onChange={setAltAlignment} options={[{value: 'Both', label: 'Both'}, {value: 'Aligned', label: 'Aligned Only'}, {value: 'Counter', label: 'Counter Only'}]} />
+              <CustomSelect label="Sweep Quality Filter" icon={<Compass size={12} />} value={altSweepQuality} onChange={setAltSweepQuality} options={[{value: 'All', label: 'All Sweeps'}, {value: 'High', label: 'High'}, {value: 'Normal', label: 'Normal'}]} />
+              <MultiSelectDropdown label="Grading Filter" icon={<Award size={12} />} options={GRADE_OPTIONS} selectedValues={altGradeSetting} onChange={setAltGradeSetting} />
+              <MultiSelectDropdown label="HTF Timeframe Alignment" icon={<GitBranch size={12} />} options={HTF_OPTIONS} selectedValues={altHtfAlignment} onChange={setAltHtfAlignment} />
+            </div>
+          </div>
+        </div>
+
+        {/* Live Performance & Sync Terminal Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-8 border-t border-zinc-850">
+          <div className="lg:col-span-5 space-y-8">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-between">
                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Executions</span>
@@ -845,7 +956,6 @@ export default function MultiExchangeDashboard() {
               </div>
             </div>
 
-            {/* Balances & PnL metrics */}
             <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl">
               <h3 className="text-xs font-black text-orange-500 uppercase tracking-widest flex items-center gap-2 mb-6">
                 <BarChart3 size={16} /> Vault Performance Board
@@ -871,115 +981,59 @@ export default function MultiExchangeDashboard() {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Sync Status Terminal Console */}
-            <div className="bg-zinc-950 border border-zinc-850 rounded-3xl p-6 h-[300px] overflow-hidden flex flex-col relative font-mono text-xs">
-              <div className="flex justify-between items-center pb-4 border-b border-zinc-850 mb-3 text-[10px] text-zinc-500 uppercase tracking-widest shrink-0">
-                <div className="flex gap-6">
-                  <button 
-                    onClick={() => setTerminalTab('trade')} 
-                    className={`font-black tracking-widest uppercase transition-all pb-1 ${
-                      terminalTab === 'trade' 
-                        ? 'text-orange-500 border-b-2 border-orange-500 font-bold' 
-                        : 'text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    📈 Trade Logs ({activeEx.name})
-                  </button>
-                  <button 
-                    onClick={() => setTerminalTab('vault')} 
-                    className={`font-black tracking-widest uppercase transition-all pb-1 ${
-                      terminalTab === 'vault' 
-                        ? 'text-orange-500 border-b-2 border-orange-500 font-bold' 
-                        : 'text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    🔒 Vault Sync Logs
-                  </button>
-                </div>
-                <span className="text-orange-500 flex items-center gap-1.5"><Flame className="animate-pulse" size={12} /> Active</span>
+          <div className="lg:col-span-7 bg-zinc-950 border border-zinc-850 rounded-3xl p-6 h-[460px] overflow-hidden flex flex-col relative font-mono text-xs">
+            <div className="flex justify-between items-center pb-4 border-b border-zinc-850 mb-3 text-[10px] text-zinc-500 uppercase tracking-widest shrink-0">
+              <div className="flex gap-6">
+                <button type="button" onClick={() => setTerminalTab('trade')} className={`font-black tracking-widest uppercase transition-all pb-1 ${terminalTab === 'trade' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                  📈 Trade Logs ({activeEx.name})
+                </button>
+                <button type="button" onClick={() => setTerminalTab('vault')} className={`font-black tracking-widest uppercase transition-all pb-1 ${terminalTab === 'vault' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                  🔒 Vault Sync Logs
+                </button>
               </div>
-              <div className="overflow-y-auto flex-1 space-y-2.5 custom-scrollbar pr-2">
-                {terminalTab === 'trade' ? (
-                  (() => {
-                    const tradeLogs = exchangeLogs.filter(log => log.symbol);
-                    return tradeLogs.length === 0 ? (
-                      <div className="flex items-center justify-center h-full text-zinc-600 font-bold uppercase tracking-wider text-[10px]">
-                        No trade execution logs found for {activeEx.name}.
-                      </div>
-                    ) : (
-                      tradeLogs.map((log, i) => {
-                        const timeStr = new Date(log.created_at).toLocaleTimeString();
-                        const isError = log.log_type === 'ERROR' || log.message.includes('❌');
-                        const isSuccess = log.log_type === 'SUCCESS' || log.message.includes('✅');
-                        const isWarning = log.log_type === 'WARNING' || log.message.includes('⚠️');
-                        
-                        let colorClass = 'text-zinc-300';
-                        if (isError) colorClass = 'text-red-400 font-semibold';
-                        else if (isSuccess) colorClass = 'text-emerald-400 font-semibold';
-                        else if (isWarning) colorClass = 'text-orange-400 font-semibold';
-
-                        return (
-                          <div key={log.id || i} className="flex gap-2.5 text-zinc-400 animate-fadeIn">
-                            <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
-                            <span className="text-zinc-500 select-none font-semibold shrink-0">[{timeStr}]</span>
-                            {log.symbol && (
-                              <span className="text-blue-400 font-bold shrink-0">
-                                [{log.symbol.toUpperCase()}]
-                              </span>
-                            )}
-                            <span className={colorClass}>{log.message}</span>
-                          </div>
-                        );
-                      })
-                    );
-                  })()
-                ) : (
-                  (() => {
-                    const vaultLogs = exchangeLogs.filter(log => !log.symbol);
-                    if (vaultLogs.length === 0 && statusLogs.length === 0) {
+              <span className="text-orange-500 flex items-center gap-1.5"><Flame className="animate-pulse" size={12} /> Active</span>
+            </div>
+            <div className="overflow-y-auto flex-1 space-y-2.5 custom-scrollbar pr-2">
+              {terminalTab === 'trade' ? (
+                (() => {
+                  const tradeLogs = exchangeLogs.filter(log => log.symbol);
+                  return tradeLogs.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-zinc-600 font-bold uppercase tracking-wider text-[10px]">No trade execution logs found.</div>
+                  ) : (
+                    tradeLogs.map((log, i) => {
+                      const timeStr = new Date(log.created_at).toLocaleTimeString();
+                      const isError = log.log_type === 'ERROR' || log.message.includes('❌');
+                      const isSuccess = log.log_type === 'SUCCESS' || log.message.includes('✅');
+                      const colorClass = isError ? 'text-red-400 font-semibold' : isSuccess ? 'text-emerald-400 font-semibold' : 'text-zinc-300';
                       return (
-                        <div className="flex items-center justify-center h-full text-zinc-600 font-bold uppercase tracking-wider text-[10px]">
-                          Vault fully idle. Awaiting configuration saves...
+                        <div key={log.id || i} className="flex gap-2.5 text-zinc-400 animate-fadeIn">
+                          <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
+                          <span className="text-zinc-500 select-none font-semibold shrink-0">[{timeStr}]</span>
+                          {log.symbol && <span className="text-blue-400 font-bold shrink-0">[{log.symbol.toUpperCase()}]</span>}
+                          <span className={colorClass}>{log.message}</span>
                         </div>
                       );
-                    }
-                    return (
-                      <div className="space-y-2.5">
-                        {vaultLogs.map((log, i) => {
-                          const timeStr = new Date(log.created_at).toLocaleTimeString();
-                          const isError = log.log_type === 'ERROR' || log.message.includes('❌');
-                          const isSuccess = log.log_type === 'SUCCESS' || log.message.includes('✅');
-                          const isWarning = log.log_type === 'WARNING' || log.message.includes('⚠️');
-                          
-                          let colorClass = 'text-zinc-300';
-                          if (isError) colorClass = 'text-red-400 font-semibold';
-                          else if (isSuccess) colorClass = 'text-emerald-400 font-semibold';
-                          else if (isWarning) colorClass = 'text-orange-400 font-semibold';
-
-                          return (
-                            <div key={log.id || i} className="flex gap-2.5 text-zinc-400 animate-fadeIn">
-                              <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
-                              <span className="text-zinc-500 select-none font-semibold shrink-0">[{timeStr}]</span>
-                              <span className={colorClass}>{log.message}</span>
-                            </div>
-                          );
-                        })}
-                        {vaultLogs.length === 0 && statusLogs.map((log, i) => (
-                          <div key={`local-${i}`} className="flex gap-3 text-zinc-400">
-                            <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
-                            <span className={log.includes('❌') ? 'text-red-400' : log.includes('✅') ? 'text-emerald-400' : 'text-zinc-300'}>
-                              {log}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()
-                )}
-              </div>
+                    })
+                  );
+                })()
+              ) : (
+                (() => {
+                  const vaultLogs = exchangeLogs.filter(log => !log.symbol);
+                  return (
+                    <div className="space-y-2.5">
+                      {vaultLogs.map((log, i) => (
+                        <div key={log.id || i} className="flex gap-2.5 text-zinc-400">
+                          <span className="text-zinc-600 select-none shrink-0">&gt;&gt;</span>
+                          <span className="text-zinc-300">{log.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()
+              )}
             </div>
-
           </div>
         </div>
 
