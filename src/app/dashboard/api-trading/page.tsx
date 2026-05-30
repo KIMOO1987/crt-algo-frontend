@@ -191,13 +191,15 @@ export default function MultiExchangeDashboard() {
 
   // Checklist Allowed Symbols State
   const [allowedSymbolsList, setAllowedSymbolsList] = useState<string[]>([]);
-  const [symbolSearchQuery, setSymbolSearchQuery] = useState("");
+  const [majorSearchQuery, setMajorSearchQuery] = useState("");
+  const [altSearchQuery, setAltSearchQuery] = useState("");
 
   // Stats / Metrics per Exchange
   const [metrics, setMetrics] = useState<Record<string, any>>({});
   const [statusLogs, setStatusLogs] = useState<string[]>([]);
   const [terminalTab, setTerminalTab] = useState<'trade' | 'vault'>('trade');
   const [exchangeLogs, setExchangeLogs] = useState<any[]>([]);
+  const [rawExecutions, setRawExecutions] = useState<any[]>([]);
 
   const addLog = useCallback((msg: string) => {
     setStatusLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 30));
@@ -258,6 +260,8 @@ export default function MultiExchangeDashboard() {
         .from('trade_executions')
         .select('*')
         .eq('user_id', uId);
+
+      setRawExecutions(allExecs || []);
 
       // Concurrently load credentials configs for all exchanges
       const configsTemp: Record<string, any> = {};
@@ -629,6 +633,26 @@ export default function MultiExchangeDashboard() {
     );
   }
 
+  const getTfStats = (alignment: string) => {
+    const tfExecs = rawExecutions.filter(e => {
+      if (e.exchange_name !== activeTab) return false;
+      if (!e.tf_alignment) return false;
+      const normalized = e.tf_alignment.toUpperCase().replace("-", "/");
+      return normalized === alignment.toUpperCase();
+    });
+
+    const total = tfExecs.length;
+    const wins = tfExecs.filter(e => e.status === 'TP2_HIT' || e.status === 'WIN' || e.pnl > 0).length;
+    const sls = tfExecs.filter(e => e.status === 'SL_HIT' || e.status === 'LOSS' || e.pnl < 0).length;
+    const bes = tfExecs.filter(e => e.status === 'BE_HIT').length;
+    const winPnL = tfExecs.filter(e => e.pnl > 0).reduce((sum, e) => sum + (e.pnl ?? 0), 0);
+
+    return { total, wins, sls, bes, winPnL };
+  };
+
+  const majorsList = okxSymbols.filter(s => s.type === 'major').map(s => s.symbol);
+  const altsList = okxSymbols.filter(s => s.type === 'alt').map(s => s.symbol);
+
   const activeEx = SUPPORTED_EXCHANGES.find(e => e.id === activeTab) || SUPPORTED_EXCHANGES[0];
   const activeMetrics = metrics[activeTab] || { total: 0, partialTps: 0, fullTps: 0, sls: 0, bes: 0, opening: 1000, closing: 1000, pnl: 0 };
 
@@ -788,83 +812,69 @@ export default function MultiExchangeDashboard() {
               </div>
             </div>
 
-            {/* Allowed symbols checklist (OKX ONLY) */}
+            {/* Timeframe Performance Board (OKX ONLY) */}
             {activeTab === 'okx' && (
-              <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl space-y-6">
-                <div className="flex justify-between items-center">
+              <div className="space-y-6">
+                <div className="flex justify-between items-center px-2">
                   <h3 className="text-xs font-black text-orange-500 uppercase tracking-widest flex items-center gap-2">
-                    <Target size={16} /> Active Symbols ({allowedSymbolsList.length} / {okxSymbols.length})
+                    <Activity size={16} className="animate-pulse" /> Timeframe Performance Board
                   </h3>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setAllowedSymbolsList(okxSymbols.map(s => s.symbol))}
-                      className="px-2.5 py-1 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-lg text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
-                    >
-                      All
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAllowedSymbolsList([])}
-                      className="px-2.5 py-1 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-lg text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
-                    >
-                      None
-                    </button>
-                  </div>
+                  <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">Active Statistics</span>
                 </div>
-
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search symbols (e.g. BTC, HYPE)..."
-                    value={symbolSearchQuery}
-                    onChange={(e) => setSymbolSearchQuery(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-orange-500 hover:border-zinc-800 transition-all font-mono"
-                  />
-                </div>
-
-                <div className="h-[280px] overflow-y-auto pr-1.5 custom-scrollbar grid grid-cols-2 gap-2 select-none">
-                  {okxSymbols
-                    .filter(s => s.symbol.toLowerCase().includes(symbolSearchQuery.toLowerCase()))
-                    .map(s => {
-                      const isChecked = allowedSymbolsList.includes(s.symbol);
-                      return (
-                        <button
-                          key={s.symbol}
-                          type="button"
-                          onClick={() => {
-                            if (isChecked) {
-                              setAllowedSymbolsList(prev => prev.filter(sym => sym !== s.symbol));
-                            } else {
-                              setAllowedSymbolsList(prev => [...prev, s.symbol]);
-                            }
-                          }}
-                          className={`flex items-center gap-2 px-2.5 py-2 rounded-xl border text-[10px] font-mono tracking-wider font-bold transition-all text-left truncate ${
-                            isChecked
-                              ? 'bg-zinc-950 border-orange-500/20 text-orange-500'
-                              : 'bg-zinc-950/20 border-zinc-900 text-zinc-500 hover:text-zinc-300'
-                          }`}
-                        >
-                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-all ${
-                            isChecked ? 'border-orange-500 bg-orange-500 text-black' : 'border-zinc-800 bg-zinc-950'
-                          }`}>
-                            {isChecked && (
-                              <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
-                                <path fill="none" stroke="currentColor" strokeWidth="3.5" d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
+                
+                <div className="grid grid-cols-2 gap-4 select-none">
+                  {[
+                    { label: "M5 / H1 Alignment", key: "M5/H1", color: "from-orange-500/20 to-transparent", text: "text-orange-500", border: "hover:border-orange-500/30" },
+                    { label: "M15 / H4 Alignment", key: "M15/H4", color: "from-emerald-500/20 to-transparent", text: "text-emerald-400", border: "hover:border-emerald-500/30" },
+                    { label: "M30 / H6 Alignment", key: "M30/H6", color: "from-cyan-500/20 to-transparent", text: "text-cyan-400", border: "hover:border-cyan-500/30" },
+                    { label: "H1 / D1 Alignment", key: "H1/D1", color: "from-purple-500/20 to-transparent", text: "text-purple-400", border: "hover:border-purple-500/30" }
+                  ].map(tf => {
+                    const stats = getTfStats(tf.key);
+                    return (
+                      <div key={tf.key} className={`bg-gradient-to-br from-zinc-900 to-zinc-950/80 border border-zinc-800/80 rounded-2xl p-5 shadow-xl hover:shadow-2xl transition-all duration-300 ${tf.border} flex flex-col justify-between relative overflow-hidden group`}>
+                        {/* Glow effect at top left corner */}
+                        <div className={`absolute top-0 left-0 w-24 h-12 bg-gradient-to-br ${tf.color} filter blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-300`} />
+                        
+                        <div className="relative z-10 space-y-4">
+                          {/* Title */}
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 truncate">{tf.label}</span>
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${tf.text.replace("text-", "bg-")} animate-pulse`} />
                           </div>
-                          <div className="flex-1 min-w-0 truncate pr-1">{s.symbol}</div>
-                          <span className={`px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest shrink-0 ${
-                            s.type === 'major'
-                              ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
-                              : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                          }`}>
-                            {s.type}
-                          </span>
-                        </button>
-                      );
-                    })}
+                          
+                          {/* Main metric - Total Trades */}
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Total Trades</span>
+                            <span className="text-xl font-black font-mono text-white">{stats.total}</span>
+                          </div>
+                          
+                          {/* Mini inline bar or flex metrics */}
+                          <div className="grid grid-cols-3 gap-1 border-t border-b border-zinc-850 py-2.5 my-1 text-center font-mono text-[9px] font-bold">
+                            <div>
+                              <div className="text-zinc-500 uppercase tracking-wider mb-0.5">Win</div>
+                              <div className="text-emerald-400 font-extrabold">{stats.wins}</div>
+                            </div>
+                            <div>
+                              <div className="text-zinc-500 uppercase tracking-wider mb-0.5">SL</div>
+                              <div className="text-red-500 font-extrabold">{stats.sls}</div>
+                            </div>
+                            <div>
+                              <div className="text-zinc-500 uppercase tracking-wider mb-0.5">BE</div>
+                              <div className="text-blue-400 font-extrabold">{stats.bes}</div>
+                            </div>
+                          </div>
+                          
+                          {/* Win PnL */}
+                          <div className="flex items-center justify-between pt-1 font-mono">
+                            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Win PnL</span>
+                            <span className="text-xs font-black text-emerald-400 truncate">
+                              +${stats.winPnL.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -897,6 +907,88 @@ export default function MultiExchangeDashboard() {
               <CustomSelect label="Sweep Quality Filter" icon={<Compass size={12} />} value={sweepQuality} onChange={setSweepQuality} options={[{value: 'All', label: 'All Sweeps'}, {value: 'High', label: 'High'}, {value: 'Normal', label: 'Normal'}]} />
               <MultiSelectDropdown label="Grading Filter" icon={<Award size={12} />} options={GRADE_OPTIONS} selectedValues={gradeSetting} onChange={setGradeSetting} />
               <MultiSelectDropdown label="HTF Timeframe Alignment" icon={<GitBranch size={12} />} options={HTF_OPTIONS} selectedValues={htfAlignment} onChange={setHtfAlignment} />
+              
+              {activeTab === 'okx' && (
+                <div className="pt-6 border-t border-zinc-850 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest flex items-center gap-1.5">
+                      <Target size={12} /> Major Symbols ({allowedSymbolsList.filter(s => majorsList.includes(s)).length} / {majorsList.length})
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const otherSymbols = allowedSymbolsList.filter(s => !majorsList.includes(s));
+                          setAllowedSymbolsList([...otherSymbols, ...majorsList]);
+                        }}
+                        className="px-2 py-0.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded text-[8px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAllowedSymbolsList(allowedSymbolsList.filter(s => !majorsList.includes(s)));
+                        }}
+                        className="px-2 py-0.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded text-[8px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
+                      >
+                        None
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search Major symbols..."
+                      value={majorSearchQuery}
+                      onChange={(e) => setMajorSearchQuery(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-[10px] text-white outline-none focus:border-orange-500 hover:border-zinc-800 transition-all font-mono"
+                    />
+                  </div>
+
+                  <div className="h-[180px] overflow-y-auto pr-1 custom-scrollbar grid grid-cols-2 gap-1.5 select-none">
+                    {okxSymbols
+                      .filter(s => s.type === 'major')
+                      .filter(s => s.symbol.toLowerCase().includes(majorSearchQuery.toLowerCase()))
+                      .map(s => {
+                        const isChecked = allowedSymbolsList.includes(s.symbol);
+                        return (
+                          <button
+                            key={s.symbol}
+                            type="button"
+                            onClick={() => {
+                              if (isChecked) {
+                                setAllowedSymbolsList(prev => prev.filter(sym => sym !== s.symbol));
+                              } else {
+                                setAllowedSymbolsList(prev => [...prev, s.symbol]);
+                              }
+                            }}
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-[9px] font-mono tracking-wider font-bold transition-all text-left truncate ${
+                              isChecked
+                                ? 'bg-zinc-950 border-orange-500/20 text-orange-500'
+                                : 'bg-zinc-950/20 border-zinc-900 text-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            <div className={`w-3 h-3 rounded border flex items-center justify-center shrink-0 transition-all ${
+                              isChecked ? 'border-orange-500 bg-orange-500 text-black' : 'border-zinc-800 bg-zinc-950'
+                            }`}>
+                              {isChecked && (
+                                <svg className="w-2 h-2 fill-current stroke-2" viewBox="0 0 24 24">
+                                  <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            <span className="flex-1 min-w-0 truncate pr-1">{s.symbol}</span>
+                            <span className="px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0 select-none">
+                              major
+                            </span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -926,6 +1018,88 @@ export default function MultiExchangeDashboard() {
               <CustomSelect label="Sweep Quality Filter" icon={<Compass size={12} />} value={altSweepQuality} onChange={setAltSweepQuality} options={[{value: 'All', label: 'All Sweeps'}, {value: 'High', label: 'High'}, {value: 'Normal', label: 'Normal'}]} />
               <MultiSelectDropdown label="Grading Filter" icon={<Award size={12} />} options={GRADE_OPTIONS} selectedValues={altGradeSetting} onChange={setAltGradeSetting} />
               <MultiSelectDropdown label="HTF Timeframe Alignment" icon={<GitBranch size={12} />} options={HTF_OPTIONS} selectedValues={altHtfAlignment} onChange={setAltHtfAlignment} />
+              
+              {activeTab === 'okx' && (
+                <div className="pt-6 border-t border-zinc-850 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <Target size={12} /> Alt Symbols ({allowedSymbolsList.filter(s => altsList.includes(s)).length} / {altsList.length})
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const otherSymbols = allowedSymbolsList.filter(s => !altsList.includes(s));
+                          setAllowedSymbolsList([...otherSymbols, ...altsList]);
+                        }}
+                        className="px-2 py-0.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded text-[8px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAllowedSymbolsList(allowedSymbolsList.filter(s => !altsList.includes(s)));
+                        }}
+                        className="px-2 py-0.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded text-[8px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
+                      >
+                        None
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search Alt symbols..."
+                      value={altSearchQuery}
+                      onChange={(e) => setAltSearchQuery(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-[10px] text-white outline-none focus:border-purple-500 hover:border-zinc-800 transition-all font-mono"
+                    />
+                  </div>
+
+                  <div className="h-[180px] overflow-y-auto pr-1 custom-scrollbar grid grid-cols-2 gap-1.5 select-none">
+                    {okxSymbols
+                      .filter(s => s.type === 'alt')
+                      .filter(s => s.symbol.toLowerCase().includes(altSearchQuery.toLowerCase()))
+                      .map(s => {
+                        const isChecked = allowedSymbolsList.includes(s.symbol);
+                        return (
+                          <button
+                            key={s.symbol}
+                            type="button"
+                            onClick={() => {
+                              if (isChecked) {
+                                setAllowedSymbolsList(prev => prev.filter(sym => sym !== s.symbol));
+                              } else {
+                                setAllowedSymbolsList(prev => [...prev, s.symbol]);
+                              }
+                            }}
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-[9px] font-mono tracking-wider font-bold transition-all text-left truncate ${
+                              isChecked
+                                ? 'bg-zinc-950 border-purple-500/20 text-purple-400'
+                                : 'bg-zinc-950/20 border-zinc-900 text-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            <div className={`w-3 h-3 rounded border flex items-center justify-center shrink-0 transition-all ${
+                              isChecked ? 'border-purple-500 bg-purple-500 text-black' : 'border-zinc-800 bg-zinc-950'
+                            }`}>
+                              {isChecked && (
+                                <svg className="w-2 h-2 fill-current stroke-2" viewBox="0 0 24 24">
+                                  <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            <span className="flex-1 min-w-0 truncate pr-1">{s.symbol}</span>
+                            <span className="px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0 select-none">
+                              alt
+                            </span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
