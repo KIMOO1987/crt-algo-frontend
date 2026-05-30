@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import AdminSidebar from '@/components/AdminSidebar';
 import AdminMobileNav from '@/components/AdminMobileNav';
+import { Providers } from '@/components/Providers';
 import { Loader2 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -34,26 +35,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background">
       <div className="flex flex-col items-center justify-center space-y-6 glass-panel p-12 rounded-[2rem] preserve-3d">
-        <Loader2 className="animate-spin mx-auto text-blue-500" size={48} />
+        <Loader2 className="animate-spin mx-auto text-orange-500" size={40} />
         <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-70">Verifying Clearance...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="flex min-h-screen relative overflow-x-hidden">
-      <AdminSidebar userRole={role || 'user'} />
-      <div className="flex-1 lg:ml-72 flex flex-col min-w-0">
-        <main id="main-scroll-container" className="flex-1 overflow-y-auto relative z-10 custom-scrollbar">
-          <div className="h-full w-full px-4 md:px-0 flex flex-col">
-            <div className="h-20 shrink-0 lg:hidden w-full"></div> {/* Spacer for mobile MENU button */}
-            {children}
-          </div>
-        </main>
+    <Providers>
+      <div className="flex min-h-screen relative overflow-hidden bg-background">
+        <AdminSidebar userRole={role || 'user'} />
+        
+        <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
+          <AdminMobileNav userRole={role || 'user'} />
+
+          <main id="main-scroll-container" className="flex-1 overflow-y-auto w-full custom-scrollbar relative">
+            <div className="h-full w-full p-4 md:p-8 lg:p-10 flex flex-col max-w-[1700px] mx-auto">
+              <div className="h-20 shrink-0 lg:hidden w-full"></div> {/* Spacer for mobile MENU button */}
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-      <AdminMobileNav userRole={role || 'user'} />
-    </div>
+    </Providers>
   );
 }
