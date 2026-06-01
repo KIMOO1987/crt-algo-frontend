@@ -36,6 +36,14 @@ const STATE_OPTIONS = [
   { value: 'ARCHIVED', label: 'ARCHIVED/HISTORICAL' }
 ];
 
+const TIMEFRAME_OPTIONS = [
+  { value: 'ALL', label: 'ALL TIMEFRAMES' },
+  { value: 'M5/H1', label: 'M5/H1 (5M-1H)' },
+  { value: 'M15/H4', label: 'M15/H4 (15M-4H)' },
+  { value: 'M30/H6', label: 'M30/H6 (30M-6H)' },
+  { value: 'H1/D1', label: 'H1/D1 (1H-1D)' }
+];
+
 const MODAL_CATEGORY_OPTIONS = [
   { value: 'CRYPTO', label: 'CRYPTO' },
   { value: 'FOREX', label: 'FOREX' },
@@ -74,6 +82,7 @@ export default function SignalsManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [assetClass, setAssetClass] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [tfFilter, setTfFilter] = useState('ALL');
   const [stateFilter, setStateFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -107,7 +116,14 @@ export default function SignalsManager() {
         query = query.eq('category', assetClass);
       }
       if (statusFilter !== 'ALL') {
-        query = query.eq('status', statusFilter);
+        if (statusFilter === 'ACTIVE') {
+          query = query.in('status', ['ACTIVE', 'ENTRY']);
+        } else {
+          query = query.eq('status', statusFilter);
+        }
+      }
+      if (tfFilter !== 'ALL') {
+        query = query.eq('tf_alignment', tfFilter);
       }
       if (stateFilter !== 'ALL') {
         query = query.eq('is_active', stateFilter === 'LIVE');
@@ -131,7 +147,7 @@ export default function SignalsManager() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, assetClass, statusFilter, stateFilter, currentPage]);
+  }, [searchTerm, assetClass, statusFilter, tfFilter, stateFilter, currentPage]);
 
   useEffect(() => {
     fetchSignals();
@@ -139,7 +155,7 @@ export default function SignalsManager() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, assetClass, statusFilter, stateFilter]);
+  }, [searchTerm, assetClass, statusFilter, tfFilter, stateFilter]);
 
   const openCreateModal = () => {
     setEditingSignal(null);
@@ -294,7 +310,7 @@ export default function SignalsManager() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 glass-panel p-5 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 glass-panel p-5 items-end">
         <div className="flex flex-col gap-1.5 w-full">
           <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1 tracking-wider select-none">Filter Symbol</label>
           <div className="relative h-[42px]">
@@ -321,6 +337,13 @@ export default function SignalsManager() {
           value={statusFilter}
           onChange={(val) => setStatusFilter(val)}
           options={STATUS_OPTIONS}
+        />
+
+        <CustomSelect
+          label="Timeframe"
+          value={tfFilter}
+          onChange={(val) => setTfFilter(val)}
+          options={TIMEFRAME_OPTIONS}
         />
 
         <CustomSelect
