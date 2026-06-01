@@ -662,8 +662,10 @@ export default function MultiExchangeDashboard() {
     const sls = tfExecs.filter(e => e.status === 'SL_HIT' || e.status === 'LOSS' || e.pnl < 0).length;
     const bes = tfExecs.filter(e => e.status === 'BE_HIT').length;
     const winPnL = tfExecs.filter(e => e.pnl > 0).reduce((sum, e) => sum + (e.pnl ?? 0), 0);
+    const lossPnL = tfExecs.filter(e => e.pnl < 0).reduce((sum, e) => sum + (e.pnl ?? 0), 0);
+    const netPnL = tfExecs.reduce((sum, e) => sum + (e.pnl ?? 0), 0);
 
-    return { total, wins, sls, bes, winPnL };
+    return { total, wins, sls, bes, winPnL, lossPnL, netPnL };
   };
 
   const getActiveCount = (list: string[]) => {
@@ -944,12 +946,26 @@ export default function MultiExchangeDashboard() {
                             </div>
                           </div>
                           
-                          {/* Win PnL */}
-                          <div className="flex items-center justify-between pt-1 font-mono">
-                            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Win PnL</span>
-                            <span className="text-xs font-black text-emerald-400 truncate">
-                              +${stats.winPnL.toFixed(2)}
-                            </span>
+                          {/* PNL Breakdown */}
+                          <div className="space-y-1.5 pt-1.5 border-t border-zinc-850/50">
+                            <div className="flex items-center justify-between font-mono text-[9px]">
+                              <span className="font-bold text-zinc-500 uppercase tracking-wider">Gross Win</span>
+                              <span className="font-bold text-emerald-400">
+                                +${stats.winPnL.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between font-mono text-[9px]">
+                              <span className="font-bold text-zinc-500 uppercase tracking-wider">Gross Loss</span>
+                              <span className="font-bold text-red-400">
+                                -${Math.abs(stats.lossPnL).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between pt-1 border-t border-zinc-850/30 font-mono text-[10px]">
+                              <span className="font-black text-zinc-400 uppercase tracking-wider">Net PnL</span>
+                              <span className={`font-black ${stats.netPnL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {stats.netPnL >= 0 ? '+' : '-'}${Math.abs(stats.netPnL).toFixed(2)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
