@@ -28,13 +28,7 @@ const GRADE_OPTIONS = [
   { value: 'NORMAL', label: 'NORMAL' }
 ];
 
-const HTF_OPTIONS = [
-  { value: 'All', label: 'All Alignments (Bypass)' },
-  { value: 'M5/H1', label: '5M - 1H Alignment' },
-  { value: 'M15/H4', label: '15M - 4H Alignment' },
-  { value: 'M30/H6', label: '30M - 6H Alignment' },
-  { value: 'H1/D1', label: '1H - 1D Alignment' }
-];
+
 
 interface MultiSelectProps {
   label: string;
@@ -551,7 +545,7 @@ export default function MultiExchangeDashboard() {
       entry_mode: entryMode,
       sweep_quality: sweepQuality,
       grade: gradeSetting,
-      htf_alignment: htfAlignment,
+      htf_alignment: 'All',
 
       // Alt Coins Config
       alt_daily_risk_wallet: altWalletSize,
@@ -562,7 +556,7 @@ export default function MultiExchangeDashboard() {
       alt_entry_mode: altEntryMode,
       alt_sweep_quality: altSweepQuality,
       alt_grade: altGradeSetting,
-      alt_htf_alignment: altHtfAlignment,
+      alt_htf_alignment: 'All',
 
       // Checklist allowed symbols
       allowed_symbols: allowedSymbolsList,
@@ -708,6 +702,31 @@ export default function MultiExchangeDashboard() {
         ...prev,
         [symbol]: next
       };
+    });
+  };
+
+  const isTfAllChecked = (list: string[], tf: string) => {
+    return list.every(sym => {
+      const tfs = allowedSymbolsList[sym];
+      return tfs && tfs.includes(tf);
+    });
+  };
+
+  const toggleTfBulk = (list: string[], tf: string) => {
+    const isAllChecked = isTfAllChecked(list, tf);
+    setAllowedSymbolsList(prev => {
+      const next = { ...prev };
+      list.forEach(sym => {
+        const current = prev[sym] ?? [];
+        if (isAllChecked) {
+          next[sym] = current.filter(t => t !== tf);
+        } else {
+          if (!current.includes(tf)) {
+            next[sym] = [...current, tf];
+          }
+        }
+      });
+      return next;
     });
   };
 
@@ -967,7 +986,6 @@ export default function MultiExchangeDashboard() {
               <CustomSelect label="Trend Alignment" icon={<Activity size={12} />} value={alignment} onChange={setAlignment} options={[{value: 'Both', label: 'Both'}, {value: 'Aligned', label: 'Aligned Only'}, {value: 'Counter', label: 'Counter Only'}]} />
               <CustomSelect label="Sweep Quality Filter" icon={<Compass size={12} />} value={sweepQuality} onChange={setSweepQuality} options={[{value: 'All', label: 'All Sweeps'}, {value: 'High', label: 'High'}, {value: 'Normal', label: 'Normal'}]} />
               <MultiSelectDropdown label="Grading Filter" icon={<Award size={12} />} options={GRADE_OPTIONS} selectedValues={gradeSetting} onChange={setGradeSetting} />
-              <MultiSelectDropdown label="HTF Timeframe Alignment" icon={<GitBranch size={12} />} options={HTF_OPTIONS} selectedValues={htfAlignment} onChange={setHtfAlignment} />
               
               {activeTab === 'okx' && (
                 <div className="pt-6 border-t border-zinc-850 space-y-4">
@@ -1016,58 +1034,12 @@ export default function MultiExchangeDashboard() {
                         placeholder="Search Major symbols..."
                         value={majorSearchQuery}
                         onChange={(e) => setMajorSearchQuery(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-[10px] text-white outline-none focus:border-orange-500 hover:border-zinc-800 transition-all font-mono"
+                        className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-orange-500 hover:border-zinc-800 transition-all font-mono"
                       />
-                    </div>
-                    {/* Bulk TF Toggles Bar */}
-                    <div className="flex flex-wrap items-center gap-1 pt-1 select-none text-[8px] font-black uppercase tracking-wider text-zinc-500">
-                      <span className="mr-0.5">Enable All:</span>
-                      {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => (
-                        <button
-                          key={`enable-major-${tf}`}
-                          type="button"
-                          onClick={() => {
-                            setAllowedSymbolsList(prev => {
-                              const next = { ...prev };
-                              majorsList.forEach(sym => {
-                                const current = prev[sym] ?? [];
-                                if (!current.includes(tf)) {
-                                  next[sym] = [...current, tf];
-                                }
-                              });
-                              return next;
-                            });
-                          }}
-                          className="px-1 py-0.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 rounded text-emerald-400 hover:text-emerald-300 transition-all font-mono shrink-0"
-                        >
-                          +{tf.split("/")[0]}
-                        </button>
-                      ))}
-                      <span className="mx-1 font-normal text-zinc-800">|</span>
-                      <span className="mr-0.5">Disable All:</span>
-                      {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => (
-                        <button
-                          key={`disable-major-${tf}`}
-                          type="button"
-                          onClick={() => {
-                            setAllowedSymbolsList(prev => {
-                              const next = { ...prev };
-                              majorsList.forEach(sym => {
-                                const current = prev[sym] ?? [];
-                                next[sym] = current.filter(t => t !== tf);
-                              });
-                              return next;
-                            });
-                          }}
-                          className="px-1 py-0.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 rounded text-red-400 hover:text-red-300 transition-all font-mono shrink-0"
-                        >
-                          -{tf.split("/")[0]}
-                        </button>
-                      ))}
                     </div>
                   </div>
 
-                  <div className="h-[220px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
+                  <div className="h-[415px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
                     {okxSymbols
                       .filter(s => s.type === 'major')
                       .filter(s => s.symbol.toLowerCase().includes(majorSearchQuery.toLowerCase()))
@@ -1082,20 +1054,20 @@ export default function MultiExchangeDashboard() {
                               <button
                                 type="button"
                                 onClick={() => toggleWholeSymbol(s.symbol)}
-                                className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-all ${
+                                className={`w-4.5 h-4.5 rounded border flex items-center justify-center shrink-0 transition-all ${
                                   isChecked ? 'border-orange-500 bg-orange-500 text-black' : 'border-zinc-800 bg-zinc-900'
                                 }`}
                               >
                                 {isChecked && (
-                                  <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                                  <svg className="w-3 h-3 fill-current stroke-2" viewBox="0 0 24 24">
                                     <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
                                   </svg>
                                 )}
                               </button>
-                              <span className={`text-[10px] font-mono tracking-wider font-bold truncate ${isChecked ? 'text-white' : 'text-zinc-500'}`}>
+                              <span className={`text-xs font-mono tracking-wider font-bold truncate ${isChecked ? 'text-white' : 'text-zinc-500'}`}>
                                 {s.symbol}
                               </span>
-                              <span className="px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0 select-none">
+                              <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0 select-none">
                                 major
                               </span>
                             </div>
@@ -1110,7 +1082,7 @@ export default function MultiExchangeDashboard() {
                                     type="button"
                                     onClick={() => toggleSymbolTimeframe(s.symbol, tf)}
                                     title={`Toggle ${tf} for ${s.symbol}`}
-                                    className={`px-1.5 py-0.5 rounded text-[8px] font-black font-mono tracking-tighter uppercase transition-all select-none border shrink-0 ${
+                                    className={`px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border shrink-0 ${
                                       active
                                         ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/60 text-amber-300 shadow-[0_0_6px_rgba(245,158,11,0.15)] hover:border-amber-400'
                                         : 'border-zinc-850 text-zinc-500 bg-zinc-950/20 hover:text-zinc-300 hover:bg-zinc-900/40'
@@ -1155,7 +1127,6 @@ export default function MultiExchangeDashboard() {
               <CustomSelect label="Trend Alignment" icon={<Activity size={12} />} value={altAlignment} onChange={setAltAlignment} options={[{value: 'Both', label: 'Both'}, {value: 'Aligned', label: 'Aligned Only'}, {value: 'Counter', label: 'Counter Only'}]} />
               <CustomSelect label="Sweep Quality Filter" icon={<Compass size={12} />} value={altSweepQuality} onChange={setAltSweepQuality} options={[{value: 'All', label: 'All Sweeps'}, {value: 'High', label: 'High'}, {value: 'Normal', label: 'Normal'}]} />
               <MultiSelectDropdown label="Grading Filter" icon={<Award size={12} />} options={GRADE_OPTIONS} selectedValues={altGradeSetting} onChange={setAltGradeSetting} />
-              <MultiSelectDropdown label="HTF Timeframe Alignment" icon={<GitBranch size={12} />} options={HTF_OPTIONS} selectedValues={altHtfAlignment} onChange={setAltHtfAlignment} />
               
               {activeTab === 'okx' && (
                 <div className="pt-6 border-t border-zinc-850 space-y-4">
@@ -1204,58 +1175,12 @@ export default function MultiExchangeDashboard() {
                         placeholder="Search Alt symbols..."
                         value={altSearchQuery}
                         onChange={(e) => setAltSearchQuery(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-[10px] text-white outline-none focus:border-purple-500 hover:border-zinc-800 transition-all font-mono"
+                        className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500 hover:border-zinc-800 transition-all font-mono"
                       />
-                    </div>
-                    {/* Bulk TF Toggles Bar */}
-                    <div className="flex flex-wrap items-center gap-1 pt-1 select-none text-[8px] font-black uppercase tracking-wider text-zinc-500">
-                      <span className="mr-0.5">Enable All:</span>
-                      {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => (
-                        <button
-                          key={`enable-alt-${tf}`}
-                          type="button"
-                          onClick={() => {
-                            setAllowedSymbolsList(prev => {
-                              const next = { ...prev };
-                              altsList.forEach(sym => {
-                                const current = prev[sym] ?? [];
-                                if (!current.includes(tf)) {
-                                  next[sym] = [...current, tf];
-                                }
-                              });
-                              return next;
-                            });
-                          }}
-                          className="px-1 py-0.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 rounded text-emerald-400 hover:text-emerald-300 transition-all font-mono shrink-0"
-                        >
-                          +{tf.split("/")[0]}
-                        </button>
-                      ))}
-                      <span className="mx-1 font-normal text-zinc-800">|</span>
-                      <span className="mr-0.5">Disable All:</span>
-                      {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => (
-                        <button
-                          key={`disable-alt-${tf}`}
-                          type="button"
-                          onClick={() => {
-                            setAllowedSymbolsList(prev => {
-                              const next = { ...prev };
-                              altsList.forEach(sym => {
-                                const current = prev[sym] ?? [];
-                                next[sym] = current.filter(t => t !== tf);
-                              });
-                              return next;
-                            });
-                          }}
-                          className="px-1 py-0.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 rounded text-red-400 hover:text-red-300 transition-all font-mono shrink-0"
-                        >
-                          -{tf.split("/")[0]}
-                        </button>
-                      ))}
                     </div>
                   </div>
 
-                  <div className="h-[220px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
+                  <div className="h-[415px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
                     {okxSymbols
                       .filter(s => s.type === 'alt')
                       .filter(s => s.symbol.toLowerCase().includes(altSearchQuery.toLowerCase()))
@@ -1270,20 +1195,20 @@ export default function MultiExchangeDashboard() {
                               <button
                                 type="button"
                                 onClick={() => toggleWholeSymbol(s.symbol)}
-                                className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-all ${
+                                className={`w-4.5 h-4.5 rounded border flex items-center justify-center shrink-0 transition-all ${
                                   isChecked ? 'border-purple-500 bg-purple-500 text-black' : 'border-zinc-800 bg-zinc-900'
                                 }`}
                               >
                                 {isChecked && (
-                                  <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                                  <svg className="w-3 h-3 fill-current stroke-2" viewBox="0 0 24 24">
                                     <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
                                   </svg>
                                 )}
                               </button>
-                              <span className={`text-[10px] font-mono tracking-wider font-bold truncate ${isChecked ? 'text-white' : 'text-zinc-500'}`}>
+                              <span className={`text-xs font-mono tracking-wider font-bold truncate ${isChecked ? 'text-white' : 'text-zinc-500'}`}>
                                 {s.symbol}
                               </span>
-                              <span className="px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0 select-none">
+                              <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0 select-none">
                                 alt
                               </span>
                             </div>
@@ -1298,7 +1223,7 @@ export default function MultiExchangeDashboard() {
                                     type="button"
                                     onClick={() => toggleSymbolTimeframe(s.symbol, tf)}
                                     title={`Toggle ${tf} for ${s.symbol}`}
-                                    className={`px-1.5 py-0.5 rounded text-[8px] font-black font-mono tracking-tighter uppercase transition-all select-none border shrink-0 ${
+                                    className={`px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border shrink-0 ${
                                       active
                                         ? 'bg-gradient-to-r from-purple-500/20 to-fuchsia-500/20 border-purple-500/60 text-purple-300 shadow-[0_0_6px_rgba(168,85,247,0.15)] hover:border-purple-400'
                                         : 'border-zinc-850 text-zinc-500 bg-zinc-950/20 hover:text-zinc-300 hover:bg-zinc-900/40'
