@@ -159,6 +159,28 @@ export default function MultiExchangeDashboard() {
   const [loadedTab, setLoadedTab] = useState<string | null>(null);
 
   
+  const parseAllowedSymbols = (loaded: any, tab: string): Record<string, string[]> => {
+    if (loaded && typeof loaded === 'object' && !Array.isArray(loaded)) {
+      return loaded as Record<string, string[]>;
+    }
+    if (Array.isArray(loaded)) {
+      const res: Record<string, string[]> = {};
+      loaded.forEach(sym => {
+        if (typeof sym === 'string') {
+          res[sym] = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+        }
+      });
+      return res;
+    }
+    const res: Record<string, string[]> = {};
+    if (tab === 'okx') {
+      okxSymbols.forEach(s => {
+        res[s.symbol] = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+      });
+    }
+    return res;
+  };
+
   // Exchange credentials configuration states
   const [exchangeConfigs, setExchangeConfigs] = useState<Record<string, any>>({});
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
@@ -190,7 +212,7 @@ export default function MultiExchangeDashboard() {
   const [altHtfAlignment, setAltHtfAlignment] = useState('All');
 
   // Checklist Allowed Symbols State
-  const [allowedSymbolsList, setAllowedSymbolsList] = useState<string[]>([]);
+  const [allowedSymbolsList, setAllowedSymbolsList] = useState<Record<string, string[]>>({});
   const [majorSearchQuery, setMajorSearchQuery] = useState("");
   const [altSearchQuery, setAltSearchQuery] = useState("");
 
@@ -375,7 +397,7 @@ export default function MultiExchangeDashboard() {
         setAltHtfAlignment(config.alt_htf_alignment ?? 'All');
 
         // Allowed symbols checklist
-        setAllowedSymbolsList(config.allowed_symbols ?? (activeTab === 'okx' ? okxSymbols.map(s => s.symbol) : []));
+        setAllowedSymbolsList(parseAllowedSymbols(config.allowed_symbols, activeTab));
         
         setApiKeys(prev => ({ ...prev, [activeTab]: config.api_key || '' }));
         setEnvironments(prev => ({ ...prev, [activeTab]: config.environment || 'testnet' }));
@@ -404,7 +426,7 @@ export default function MultiExchangeDashboard() {
         setAltHtfAlignment('All');
 
         // Allowed symbols checklist default
-        setAllowedSymbolsList(activeTab === 'okx' ? okxSymbols.map(s => s.symbol) : []);
+        setAllowedSymbolsList(parseAllowedSymbols(null, activeTab));
         
         setApiKeys(prev => ({ ...prev, [activeTab]: '' }));
         setEnvironments(prev => ({ ...prev, [activeTab]: 'testnet' }));
@@ -650,6 +672,45 @@ export default function MultiExchangeDashboard() {
     return { total, wins, sls, bes, winPnL };
   };
 
+  const getActiveCount = (list: string[]) => {
+    return Object.entries(allowedSymbolsList).filter(([sym, tfs]) => list.includes(sym) && tfs.length > 0).length;
+  };
+
+  const isSymbolChecked = (symbol: string) => {
+    const tfs = allowedSymbolsList[symbol];
+    return tfs && tfs.length > 0;
+  };
+
+  const isTfChecked = (symbol: string, tf: string) => {
+    const tfs = allowedSymbolsList[symbol];
+    return tfs && tfs.includes(tf);
+  };
+
+  const toggleWholeSymbol = (symbol: string) => {
+    setAllowedSymbolsList(prev => {
+      const current = prev[symbol] ?? [];
+      const allTfs = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+      const isAnyChecked = current.length > 0;
+      return {
+        ...prev,
+        [symbol]: isAnyChecked ? [] : allTfs
+      };
+    });
+  };
+
+  const toggleSymbolTimeframe = (symbol: string, tf: string) => {
+    setAllowedSymbolsList(prev => {
+      const current = prev[symbol] ?? [];
+      const next = current.includes(tf)
+        ? current.filter(t => t !== tf)
+        : [...current, tf];
+      return {
+        ...prev,
+        [symbol]: next
+      };
+    });
+  };
+
   const majorsList = okxSymbols.filter(s => s.type === 'major').map(s => s.symbol);
   const altsList = okxSymbols.filter(s => s.type === 'alt').map(s => s.symbol);
 
@@ -822,7 +883,7 @@ export default function MultiExchangeDashboard() {
                   <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">Active Statistics</span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 select-none">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 select-none">
                   {[
                     { label: "M5 / H1 Alignment", key: "M5/H1", color: "from-orange-500/20 to-transparent", text: "text-orange-500", border: "hover:border-orange-500/30" },
                     { label: "M15 / H4 Alignment", key: "M15/H4", color: "from-emerald-500/20 to-transparent", text: "text-emerald-400", border: "hover:border-emerald-500/30" },
@@ -912,14 +973,19 @@ export default function MultiExchangeDashboard() {
                 <div className="pt-6 border-t border-zinc-850 space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest flex items-center gap-1.5">
-                      <Target size={12} /> Major Symbols ({allowedSymbolsList.filter(s => majorsList.includes(s)).length} / {majorsList.length})
+                      <Target size={12} /> Major Symbols ({getActiveCount(majorsList)} / {majorsList.length})
                     </span>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => {
-                          const otherSymbols = allowedSymbolsList.filter(s => !majorsList.includes(s));
-                          setAllowedSymbolsList([...otherSymbols, ...majorsList]);
+                          setAllowedSymbolsList(prev => {
+                            const next = { ...prev };
+                            majorsList.forEach(sym => {
+                              next[sym] = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+                            });
+                            return next;
+                          });
                         }}
                         className="px-2 py-0.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded text-[8px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
                       >
@@ -928,7 +994,13 @@ export default function MultiExchangeDashboard() {
                       <button
                         type="button"
                         onClick={() => {
-                          setAllowedSymbolsList(allowedSymbolsList.filter(s => !majorsList.includes(s)));
+                          setAllowedSymbolsList(prev => {
+                            const next = { ...prev };
+                            majorsList.forEach(sym => {
+                              next[sym] = [];
+                            });
+                            return next;
+                          });
                         }}
                         className="px-2 py-0.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded text-[8px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
                       >
@@ -937,53 +1009,119 @@ export default function MultiExchangeDashboard() {
                     </div>
                   </div>
 
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search Major symbols..."
-                      value={majorSearchQuery}
-                      onChange={(e) => setMajorSearchQuery(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-[10px] text-white outline-none focus:border-orange-500 hover:border-zinc-800 transition-all font-mono"
-                    />
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search Major symbols..."
+                        value={majorSearchQuery}
+                        onChange={(e) => setMajorSearchQuery(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-[10px] text-white outline-none focus:border-orange-500 hover:border-zinc-800 transition-all font-mono"
+                      />
+                    </div>
+                    {/* Bulk TF Toggles Bar */}
+                    <div className="flex flex-wrap items-center gap-1 pt-1 select-none text-[8px] font-black uppercase tracking-wider text-zinc-500">
+                      <span className="mr-0.5">Enable All:</span>
+                      {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => (
+                        <button
+                          key={`enable-major-${tf}`}
+                          type="button"
+                          onClick={() => {
+                            setAllowedSymbolsList(prev => {
+                              const next = { ...prev };
+                              majorsList.forEach(sym => {
+                                const current = prev[sym] ?? [];
+                                if (!current.includes(tf)) {
+                                  next[sym] = [...current, tf];
+                                }
+                              });
+                              return next;
+                            });
+                          }}
+                          className="px-1 py-0.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 rounded text-emerald-400 hover:text-emerald-300 transition-all font-mono shrink-0"
+                        >
+                          +{tf.split("/")[0]}
+                        </button>
+                      ))}
+                      <span className="mx-1 font-normal text-zinc-800">|</span>
+                      <span className="mr-0.5">Disable All:</span>
+                      {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => (
+                        <button
+                          key={`disable-major-${tf}`}
+                          type="button"
+                          onClick={() => {
+                            setAllowedSymbolsList(prev => {
+                              const next = { ...prev };
+                              majorsList.forEach(sym => {
+                                const current = prev[sym] ?? [];
+                                next[sym] = current.filter(t => t !== tf);
+                              });
+                              return next;
+                            });
+                          }}
+                          className="px-1 py-0.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 rounded text-red-400 hover:text-red-300 transition-all font-mono shrink-0"
+                        >
+                          -{tf.split("/")[0]}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="h-[180px] overflow-y-auto pr-1 custom-scrollbar grid grid-cols-2 gap-1.5 select-none">
+                  <div className="h-[220px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
                     {okxSymbols
                       .filter(s => s.type === 'major')
                       .filter(s => s.symbol.toLowerCase().includes(majorSearchQuery.toLowerCase()))
                       .map(s => {
-                        const isChecked = allowedSymbolsList.includes(s.symbol);
+                        const isChecked = isSymbolChecked(s.symbol);
                         return (
-                          <button
+                          <div
                             key={s.symbol}
-                            type="button"
-                            onClick={() => {
-                              if (isChecked) {
-                                setAllowedSymbolsList(prev => prev.filter(sym => sym !== s.symbol));
-                              } else {
-                                setAllowedSymbolsList(prev => [...prev, s.symbol]);
-                              }
-                            }}
-                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-[9px] font-mono tracking-wider font-bold transition-all text-left truncate ${
-                              isChecked
-                                ? 'bg-zinc-950 border-orange-500/20 text-orange-500'
-                                : 'bg-zinc-950/20 border-zinc-900 text-zinc-500 hover:text-zinc-300'
-                            }`}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2 bg-zinc-950/40 hover:bg-zinc-950/80 border border-zinc-900 hover:border-zinc-800/80 rounded-xl transition-all"
                           >
-                            <div className={`w-3 h-3 rounded border flex items-center justify-center shrink-0 transition-all ${
-                              isChecked ? 'border-orange-500 bg-orange-500 text-black' : 'border-zinc-800 bg-zinc-950'
-                            }`}>
-                              {isChecked && (
-                                <svg className="w-2 h-2 fill-current stroke-2" viewBox="0 0 24 24">
-                                  <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => toggleWholeSymbol(s.symbol)}
+                                className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-all ${
+                                  isChecked ? 'border-orange-500 bg-orange-500 text-black' : 'border-zinc-800 bg-zinc-900'
+                                }`}
+                              >
+                                {isChecked && (
+                                  <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                                    <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </button>
+                              <span className={`text-[10px] font-mono tracking-wider font-bold truncate ${isChecked ? 'text-white' : 'text-zinc-500'}`}>
+                                {s.symbol}
+                              </span>
+                              <span className="px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0 select-none">
+                                major
+                              </span>
                             </div>
-                            <span className="flex-1 min-w-0 truncate pr-1">{s.symbol}</span>
-                            <span className="px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0 select-none">
-                              major
-                            </span>
-                          </button>
+                            
+                            <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
+                              {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
+                                const active = isTfChecked(s.symbol, tf);
+                                const shortLabel = tf.split("/")[0];
+                                return (
+                                  <button
+                                    key={tf}
+                                    type="button"
+                                    onClick={() => toggleSymbolTimeframe(s.symbol, tf)}
+                                    title={`Toggle ${tf} for ${s.symbol}`}
+                                    className={`px-1.5 py-0.5 rounded text-[8px] font-black font-mono tracking-tighter uppercase transition-all select-none border shrink-0 ${
+                                      active
+                                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/60 text-amber-300 shadow-[0_0_6px_rgba(245,158,11,0.15)] hover:border-amber-400'
+                                        : 'border-zinc-850 text-zinc-500 bg-zinc-950/20 hover:text-zinc-300 hover:bg-zinc-900/40'
+                                    }`}
+                                  >
+                                    {shortLabel}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         );
                       })}
                   </div>
@@ -1023,14 +1161,19 @@ export default function MultiExchangeDashboard() {
                 <div className="pt-6 border-t border-zinc-850 space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest flex items-center gap-1.5">
-                      <Target size={12} /> Alt Symbols ({allowedSymbolsList.filter(s => altsList.includes(s)).length} / {altsList.length})
+                      <Target size={12} /> Alt Symbols ({getActiveCount(altsList)} / {altsList.length})
                     </span>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => {
-                          const otherSymbols = allowedSymbolsList.filter(s => !altsList.includes(s));
-                          setAllowedSymbolsList([...otherSymbols, ...altsList]);
+                          setAllowedSymbolsList(prev => {
+                            const next = { ...prev };
+                            altsList.forEach(sym => {
+                              next[sym] = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+                            });
+                            return next;
+                          });
                         }}
                         className="px-2 py-0.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded text-[8px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
                       >
@@ -1039,7 +1182,13 @@ export default function MultiExchangeDashboard() {
                       <button
                         type="button"
                         onClick={() => {
-                          setAllowedSymbolsList(allowedSymbolsList.filter(s => !altsList.includes(s)));
+                          setAllowedSymbolsList(prev => {
+                            const next = { ...prev };
+                            altsList.forEach(sym => {
+                              next[sym] = [];
+                            });
+                            return next;
+                          });
                         }}
                         className="px-2 py-0.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded text-[8px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-all select-none"
                       >
@@ -1048,53 +1197,119 @@ export default function MultiExchangeDashboard() {
                     </div>
                   </div>
 
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search Alt symbols..."
-                      value={altSearchQuery}
-                      onChange={(e) => setAltSearchQuery(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-[10px] text-white outline-none focus:border-purple-500 hover:border-zinc-800 transition-all font-mono"
-                    />
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search Alt symbols..."
+                        value={altSearchQuery}
+                        onChange={(e) => setAltSearchQuery(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-[10px] text-white outline-none focus:border-purple-500 hover:border-zinc-800 transition-all font-mono"
+                      />
+                    </div>
+                    {/* Bulk TF Toggles Bar */}
+                    <div className="flex flex-wrap items-center gap-1 pt-1 select-none text-[8px] font-black uppercase tracking-wider text-zinc-500">
+                      <span className="mr-0.5">Enable All:</span>
+                      {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => (
+                        <button
+                          key={`enable-alt-${tf}`}
+                          type="button"
+                          onClick={() => {
+                            setAllowedSymbolsList(prev => {
+                              const next = { ...prev };
+                              altsList.forEach(sym => {
+                                const current = prev[sym] ?? [];
+                                if (!current.includes(tf)) {
+                                  next[sym] = [...current, tf];
+                                }
+                              });
+                              return next;
+                            });
+                          }}
+                          className="px-1 py-0.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 rounded text-emerald-400 hover:text-emerald-300 transition-all font-mono shrink-0"
+                        >
+                          +{tf.split("/")[0]}
+                        </button>
+                      ))}
+                      <span className="mx-1 font-normal text-zinc-800">|</span>
+                      <span className="mr-0.5">Disable All:</span>
+                      {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => (
+                        <button
+                          key={`disable-alt-${tf}`}
+                          type="button"
+                          onClick={() => {
+                            setAllowedSymbolsList(prev => {
+                              const next = { ...prev };
+                              altsList.forEach(sym => {
+                                const current = prev[sym] ?? [];
+                                next[sym] = current.filter(t => t !== tf);
+                              });
+                              return next;
+                            });
+                          }}
+                          className="px-1 py-0.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 rounded text-red-400 hover:text-red-300 transition-all font-mono shrink-0"
+                        >
+                          -{tf.split("/")[0]}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="h-[180px] overflow-y-auto pr-1 custom-scrollbar grid grid-cols-2 gap-1.5 select-none">
+                  <div className="h-[220px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
                     {okxSymbols
                       .filter(s => s.type === 'alt')
                       .filter(s => s.symbol.toLowerCase().includes(altSearchQuery.toLowerCase()))
                       .map(s => {
-                        const isChecked = allowedSymbolsList.includes(s.symbol);
+                        const isChecked = isSymbolChecked(s.symbol);
                         return (
-                          <button
+                          <div
                             key={s.symbol}
-                            type="button"
-                            onClick={() => {
-                              if (isChecked) {
-                                setAllowedSymbolsList(prev => prev.filter(sym => sym !== s.symbol));
-                              } else {
-                                setAllowedSymbolsList(prev => [...prev, s.symbol]);
-                              }
-                            }}
-                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-[9px] font-mono tracking-wider font-bold transition-all text-left truncate ${
-                              isChecked
-                                ? 'bg-zinc-950 border-purple-500/20 text-purple-400'
-                                : 'bg-zinc-950/20 border-zinc-900 text-zinc-500 hover:text-zinc-300'
-                            }`}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2 bg-zinc-950/40 hover:bg-zinc-950/80 border border-zinc-900 hover:border-zinc-800/80 rounded-xl transition-all"
                           >
-                            <div className={`w-3 h-3 rounded border flex items-center justify-center shrink-0 transition-all ${
-                              isChecked ? 'border-purple-500 bg-purple-500 text-black' : 'border-zinc-800 bg-zinc-950'
-                            }`}>
-                              {isChecked && (
-                                <svg className="w-2 h-2 fill-current stroke-2" viewBox="0 0 24 24">
-                                  <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => toggleWholeSymbol(s.symbol)}
+                                className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-all ${
+                                  isChecked ? 'border-purple-500 bg-purple-500 text-black' : 'border-zinc-800 bg-zinc-900'
+                                }`}
+                              >
+                                {isChecked && (
+                                  <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                                    <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </button>
+                              <span className={`text-[10px] font-mono tracking-wider font-bold truncate ${isChecked ? 'text-white' : 'text-zinc-500'}`}>
+                                {s.symbol}
+                              </span>
+                              <span className="px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0 select-none">
+                                alt
+                              </span>
                             </div>
-                            <span className="flex-1 min-w-0 truncate pr-1">{s.symbol}</span>
-                            <span className="px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0 select-none">
-                              alt
-                            </span>
-                          </button>
+                            
+                            <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
+                              {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
+                                const active = isTfChecked(s.symbol, tf);
+                                const shortLabel = tf.split("/")[0];
+                                return (
+                                  <button
+                                    key={tf}
+                                    type="button"
+                                    onClick={() => toggleSymbolTimeframe(s.symbol, tf)}
+                                    title={`Toggle ${tf} for ${s.symbol}`}
+                                    className={`px-1.5 py-0.5 rounded text-[8px] font-black font-mono tracking-tighter uppercase transition-all select-none border shrink-0 ${
+                                      active
+                                        ? 'bg-gradient-to-r from-purple-500/20 to-fuchsia-500/20 border-purple-500/60 text-purple-300 shadow-[0_0_6px_rgba(168,85,247,0.15)] hover:border-purple-400'
+                                        : 'border-zinc-850 text-zinc-500 bg-zinc-950/20 hover:text-zinc-300 hover:bg-zinc-900/40'
+                                    }`}
+                                  >
+                                    {shortLabel}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         );
                       })}
                   </div>
