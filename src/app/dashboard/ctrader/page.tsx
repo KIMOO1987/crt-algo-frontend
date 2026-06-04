@@ -192,7 +192,7 @@ export default function CTraderDashboard() {
     );
   }
 
-  const apiBaseUrl = "https://kimoocrt.vercel.app/api/signals";
+  const apiBaseUrl = "https://crt-algo.vercel.app/api/signals";
   const fullUrl = botToken ? `${apiBaseUrl}?botId=${botToken}` : "Generating Token...";
 
   return (
@@ -255,7 +255,7 @@ export default function CTraderDashboard() {
         <div className="mt-20 md:mt-32 space-y-20 relative">
           <div className="text-center space-y-4">
             <h2 className="text-3xl md:text-5xl font-black tracking-tighter italic uppercase">
-              Guardian<span className="text-cyan-500">Deployment</span> Guide
+              CRT-ALGO <span className="text-cyan-500">Deployment</span> Guide
             </h2>
             <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-500 font-bold max-w-2xl mx-auto">
               Select your license tier and follow the institutional setup protocol for cTrader.
@@ -271,7 +271,7 @@ export default function CTraderDashboard() {
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[10px] font-black text-cyan-400 uppercase tracking-widest">
                   Standard Access
                 </div>
-                <h3 className="text-3xl font-black italic tracking-tighter uppercase">Kimoo<span className="text-cyan-500">Pro</span></h3>
+                <h3 className="text-3xl font-black italic tracking-tighter uppercase">CRT-ALGO <span className="text-cyan-500">PRO</span></h3>
                 <p className="text-zinc-400 text-sm leading-relaxed">
                   Automated trend-following for cTrader users. Focuses on safe execution and capital preservation.
                 </p>
@@ -289,7 +289,7 @@ export default function CTraderDashboard() {
                   ))}
                 </ul>
                 <a
-                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Pro.algo`}
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Pro.algo`}
                   download
                   className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-center block"
                 >
@@ -306,7 +306,7 @@ export default function CTraderDashboard() {
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/20 border border-blue-500/30 rounded-full text-[10px] font-black text-blue-300 uppercase tracking-widest">
                   Elite Access
                 </div>
-                <h3 className="text-3xl font-black italic tracking-tighter uppercase">Kimoo<span className="text-blue-400">Ultimate</span></h3>
+                <h3 className="text-3xl font-black italic tracking-tighter uppercase">CRT-ALGO <span className="text-blue-400">ULTIMATE</span></h3>
                 <p className="text-zinc-300 text-sm leading-relaxed">
                   Maximum precision for cTrader. Use institutional-grade limit entries and deep confluence filtering.
                 </p>
@@ -324,7 +324,7 @@ export default function CTraderDashboard() {
                   ))}
                 </ul>
                 <a
-                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Ultimate.algo`}
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Ultimate.algo`}
                   download
                   className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl text-center block"
                 >
@@ -338,13 +338,13 @@ export default function CTraderDashboard() {
             <div className="max-w-4xl mx-auto space-y-12">
               <div className="space-y-4">
                 <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase">Installation <span className="text-cyan-500">Protocol</span></h3>
-                <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Follow these steps to synchronize your cTrader terminal with the Kimoo Cloud.</p>
+                <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Follow these steps to synchronize your cTrader terminal with the CRT-ALGO Cloud.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
                 {[
                   { title: 'Files Deployment', desc: 'Download the .algo file and double-click it. cTrader will automatically install the bot into your cBot library.' },
-                  { title: 'Instance Creation', desc: 'In cTrader Automate tab, find "Kimoo Guardian" and click the "+" button to create a new instance on your chosen symbol.' },
+                  { title: 'Instance Creation', desc: 'In cTrader Automate tab, find "CRT-ALGO" and click the "+" button to create a new instance on your chosen symbol.' },
                   { title: 'Access Rights', desc: 'Ensure the bot has "Full Access" rights enabled. This is required for the bot to communicate with our Cloud API.' },
                   { title: 'Cloud Sync', desc: 'Copy your Unique UUID (License Key) from your profile settings and paste it into the "License Key" parameter in the cBot settings.' },
                   { title: 'Engine Start', desc: 'Click the "Start Bridge" button at the top of this page, then click "Start" on your cBot instance in cTrader.' }

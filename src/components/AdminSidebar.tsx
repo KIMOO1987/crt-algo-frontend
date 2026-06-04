@@ -78,7 +78,7 @@ export default function AdminSidebar({ userRole }: { userRole: string }) {
       <div className="flex flex-col h-full w-full p-6 relative z-10">
         <div className="mb-10 px-2 shrink-0">
           <h1 className="text-3xl font-black tracking-tighter uppercase drop-shadow-md">
-            KIMOO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">CONSOLE</span>
+            CRT-ALGO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">CONSOLE</span>
           </h1>
           <div className="flex items-center gap-1.5 mt-3 px-2.5 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full w-fit shadow-sm">
             <ShieldCheck size={10} className="text-orange-500" />

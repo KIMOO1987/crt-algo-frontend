@@ -170,7 +170,7 @@ export default function MT5Dashboard() {
     );
   }
 
-  const apiBaseUrl = "https://kimoocrt.vercel.app/api/signals";
+  const apiBaseUrl = "https://crt-algo.vercel.app/api/signals";
   const fullUrl = botToken ? `${apiBaseUrl}?botId=${botToken}` : "Generating Token...";
 
   return (
@@ -238,7 +238,7 @@ export default function MT5Dashboard() {
           <div className="mt-20 md:mt-32 space-y-20 relative">
             <div className="text-center space-y-4">
               <h2 className="text-3xl md:text-5xl font-black tracking-tighter italic uppercase">
-                Guardian<span className="text-blue-500">Deployment</span> Guide
+                CRT-ALGO <span className="text-blue-500">Deployment</span> Guide
               </h2>
               <p className="text-[10px] uppercase tracking-[0.4em] text-zinc-500 font-bold max-w-2xl mx-auto">
                 Select your license tier and follow the institutional setup protocol.
@@ -256,7 +256,7 @@ export default function MT5Dashboard() {
                   <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-black text-blue-400 uppercase tracking-widest">
                     Standard Access
                   </div>
-                  <h3 className="text-3xl font-black italic tracking-tighter uppercase">Kimoo<span className="text-blue-500">Pro</span></h3>
+                  <h3 className="text-3xl font-black italic tracking-tighter uppercase">CRT-ALGO <span className="text-blue-500">PRO</span></h3>
                   <p className="text-zinc-400 text-sm leading-relaxed">
                     Designed for traders who want a simplified, automated experience. Pro tier focuses on trend-following stability.
                   </p>
@@ -274,7 +274,7 @@ export default function MT5Dashboard() {
                     ))}
                   </ul>
                   <a
-                    href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Pro.ex5`}
+                    href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Pro.ex5`}
                     download
                     className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-center block"
                   >
@@ -292,7 +292,7 @@ export default function MT5Dashboard() {
                   <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-500/20 border border-indigo-500/30 rounded-full text-[10px] font-black text-indigo-300 uppercase tracking-widest">
                     Elite Access
                   </div>
-                  <h3 className="text-3xl font-black italic tracking-tighter uppercase">Kimoo<span className="text-indigo-400">Ultimate</span></h3>
+                  <h3 className="text-3xl font-black italic tracking-tighter uppercase">CRT-ALGO <span className="text-indigo-400">ULTIMATE</span></h3>
                   <p className="text-zinc-300 text-sm leading-relaxed">
                     The ultimate institutional toolkit. Take full control of entry precision and confluence matrix filtering.
                   </p>
@@ -310,7 +310,7 @@ export default function MT5Dashboard() {
                     ))}
                   </ul>
                   <a
-                    href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Ultimate.ex5`}
+                    href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Ultimate.ex5`}
                     download
                     className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl text-center block"
                   >
@@ -325,14 +325,14 @@ export default function MT5Dashboard() {
               <div className="max-w-4xl mx-auto space-y-12">
                 <div className="space-y-4">
                   <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase">Installation <span className="text-blue-500">Protocol</span></h3>
-                  <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Follow these steps to synchronize your terminal with the Kimoo Cloud.</p>
+                  <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Follow these steps to synchronize your terminal with the CRT-ALGO Cloud.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
                   {[
-                    { title: 'MT5 Configuration', desc: 'Go to Tools > Options > Expert Advisors. Check "Allow WebRequest" and add: https://kimoocrt.vercel.app and https://kimoocrt.onrender.com' },
+                    { title: 'MT5 Configuration', desc: 'Go to Tools > Options > Expert Advisors. Check "Allow WebRequest" and add: https://crt-algo.vercel.app and https://kimoocrt.onrender.com' },
                     { title: 'Files Deployment', desc: 'Copy your downloaded .ex5 file. In MT5, go to File > Open Data Folder > MQL5 > Experts, and paste the file.' },
-                    { title: 'Expert Activation', desc: 'Drag the Kimoo Guardian onto any chart. Ensure "Allow Algorithmic Trading" is enabled in the common tab.' },
+                    { title: 'Expert Activation', desc: 'Drag the CRT-ALGO EA onto any chart. Ensure "Allow Algorithmic Trading" is enabled in the common tab.' },
                     { title: 'Cloud Sync', desc: 'Copy your Unique UUID (License Key) from your profile settings and paste it into the "License Key" parameter in the EA settings.' },
                     { title: 'Auth Protocol', desc: 'Enter your registered Email and License Key (UserID) into the EA parameters to unlock your tier features.' },
                     { title: 'Engine Start', desc: 'Click the "Connect Engine" button at the top of this page to allow the cloud to start sending signals.' }

@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "KIMOO CRT | Institutional Execution",
+  title: "CRT-ALGO | Institutional Execution",
   description: "Advanced Trade Execution Terminal",
 };
 

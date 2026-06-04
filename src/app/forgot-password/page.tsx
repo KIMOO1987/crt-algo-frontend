@@ -73,7 +73,7 @@ function ForgotPasswordContent() {
             <label className="text-[10px] font-black uppercase opacity-70 ml-2 tracking-widest">Email Address</label>
             <div className="relative">
               <Mail className="absolute left-5 top-1/2 -translate-y-1/2 opacity-50" size={18} />
-              <input name="email" type="email" required placeholder="operator@kimoo.com" className="input-modern w-full pl-14" />
+              <input name="email" type="email" required placeholder="operator@crtalgo.com" className="input-modern w-full pl-14" />
             </div>
           </div>
           <button type="submit" disabled={loading} className="btn-modern w-full flex items-center justify-center gap-2 mt-8 relative overflow-hidden group preserve-3d">
@@ -100,7 +100,7 @@ function ForgotPasswordContent() {
             <label className="text-[10px] font-black uppercase opacity-70 ml-2 tracking-widest">Verified Email</label>
             <div className="relative">
               <Mail className="absolute left-5 top-1/2 -translate-y-1/2 opacity-50" size={18} />
-              <input name="email" type="email" required placeholder="operator@kimoo.com" className="input-modern w-full pl-14" />
+              <input name="email" type="email" required placeholder="operator@crtalgo.com" className="input-modern w-full pl-14" />
             </div>
           </div>
           <button type="submit" disabled={loading} className="btn-modern w-full flex items-center justify-center gap-2 mt-8 relative overflow-hidden group preserve-3d">

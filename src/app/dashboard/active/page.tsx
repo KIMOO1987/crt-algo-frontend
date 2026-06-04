@@ -335,7 +335,7 @@ export default function ActiveSignalsPage() {
                       <div>
                         <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight uppercase">{signal.symbol}</h3>
                         <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-1.5 flex items-center gap-1.5">
-                          {signal.strategy || 'KIMOO CRT PRO'} • {signal.tf_alignment || '5M'}
+                          {signal.strategy || 'CRT_ALGO_PRO'} • {signal.tf_alignment || '5M'}
                         </p>
                       </div>
 

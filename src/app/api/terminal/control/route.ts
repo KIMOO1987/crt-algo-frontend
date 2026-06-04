@@ -88,7 +88,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `KIMOO Engine: ${action.toUpperCase()} command deployed.`
+      message: `CRT-ALGO Engine: ${action.toUpperCase()} command deployed.`
     });
 
   } catch (err: any) {

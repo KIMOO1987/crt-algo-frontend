@@ -156,7 +156,7 @@ export default function MobileNav({ tier, role }: { tier: number; role?: string 
 
               <div className="flex justify-between items-center mb-10 shrink-0 relative z-10">
                 <div>
-                  <h1 className="text-3xl font-black tracking-tighter uppercase drop-shadow-md">KIMOO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">PRO</span></h1>
+                  <h1 className="text-3xl font-black tracking-tighter uppercase drop-shadow-md">CRT-ALGO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">PRO</span></h1>
                   {isStaff && (
                     <div className="flex items-center gap-1.5 mt-3 px-2.5 py-1 bg-orange-500/10 border border-orange-500/20 rounded-lg w-fit shadow-sm">
                       <ShieldCheck size={10} className="text-orange-500" />

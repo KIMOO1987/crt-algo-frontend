@@ -1,14 +1,14 @@
 "use client"; // This marks the boundary
 
 import { AuthProvider } from '@/hooks/useAuth';
-import { KimooProvider } from '@/context/KimooContext';
+import { CrtAlgoProvider } from '@/context/CrtAlgoContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <KimooProvider>
+      <CrtAlgoProvider>
         {children}
-      </KimooProvider>
+      </CrtAlgoProvider>
     </AuthProvider>
   );
 }

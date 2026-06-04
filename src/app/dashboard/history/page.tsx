@@ -96,7 +96,7 @@ const SignalCard = ({ signal, onClick }: { signal: any, onClick: () => void }) =
         <div className="flex justify-between items-start mb-6 border-b border-[var(--glass-border)] pb-4.5">
           <div>
             <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight uppercase">{signal.symbol}</h3>
-            <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-1.5 flex items-center gap-1.5">{signal.strategy || 'KIMOO CRT PRO'} • {signal.tf_alignment || '5M'}</p>
+            <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-1.5 flex items-center gap-1.5">{signal.strategy || 'CRT_ALGO_PRO'} • {signal.tf_alignment || '5M'}</p>
           </div>
           <div className={`px-3 py-1 rounded-lg border text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${isBuy ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-555' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
             {isBuy ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {isBuy ? 'BULLISH' : 'BEARISH'}

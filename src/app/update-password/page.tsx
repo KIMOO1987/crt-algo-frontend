@@ -152,7 +152,7 @@ export default function UpdatePasswordPage() {
         </form>
 
         <p className="mt-8 pt-8 border-t border-[var(--glass-border)] text-center opacity-50 text-[9px] font-bold uppercase tracking-[0.2em] relative z-10">
-          KIMOO CRT Security Protocol v2.0
+          CRT-ALGO Security Protocol v2.0
         </p>
       </motion.div>
     </div>

@@ -44,14 +44,14 @@ export default function CFDBotDocumentation() {
             >
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-[10px] font-black uppercase tracking-widest mb-8">
                 <ShieldCheck size={12} />
-                Kimoo Guardian Infrastructure
+                CRT-ALGO Infrastructure
               </div>
               <h1 className="text-5xl lg:text-7xl font-black italic tracking-tighter uppercase mb-6 leading-tight">
-                Kimoo Guardian <br />
+                CRT-ALGO <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400">Institutional SaaS Receiver</span>
               </h1>
               <p className="text-zinc-500 text-sm md:text-base font-medium max-w-3xl leading-relaxed">
-                High-performance trading infrastructure for cTrader and MT5. Synchronized with Kimoo AI backend to execute signals with microsecond precision and tier-gated risk management.
+                High-performance trading infrastructure for cTrader and MT5. Synchronized with CRT-ALGO AI backend to execute signals with microsecond precision and tier-gated risk management.
               </p>
             </motion.div>
           </div>
@@ -70,14 +70,14 @@ export default function CFDBotDocumentation() {
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                {/* KIMOO PRO */}
+                {/* CRT-ALGO PRO */}
                 <motion.div {...fadeInUp} className="glass-panel p-10 rounded-[2.5rem] border border-[var(--glass-border)] relative overflow-hidden group">
                   <div className="flex flex-col gap-10 relative z-10">
                     <div>
                       <div className="p-5 bg-zinc-500/10 rounded-[2rem] border border-zinc-500/20 w-fit mb-8">
                         <Zap className="text-zinc-500" size={32} />
                       </div>
-                      <h3 className="text-4xl font-black italic uppercase mb-2 tracking-tighter">Kimoo <span className="text-zinc-500">PRO</span></h3>
+                      <h3 className="text-4xl font-black italic uppercase mb-2 tracking-tighter">CRT-ALGO <span className="text-zinc-500">PRO</span></h3>
                       <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-8 italic">Standard Tier Execution</p>
                     </div>
                     <div className="border-t border-[var(--glass-border)] pt-8 space-y-6">
@@ -111,14 +111,14 @@ export default function CFDBotDocumentation() {
                   </div>
                 </motion.div>
 
-                {/* KIMOO ULTIMATE */}
+                {/* CRT-ALGO ULTIMATE */}
                 <motion.div {...fadeInUp} className="glass-panel p-10 rounded-[2.5rem] border border-blue-500/20 bg-blue-500/[0.02] relative overflow-hidden group">
                   <div className="flex flex-col gap-10 relative z-10">
                     <div>
                       <div className="p-5 bg-blue-500/10 rounded-[2rem] border border-blue-500/20 w-fit mb-8">
                         <Cpu className="text-blue-500" size={32} />
                       </div>
-                      <h3 className="text-4xl font-black italic uppercase mb-2 tracking-tighter">Kimoo <span className="text-blue-500">ULTIMATE</span></h3>
+                      <h3 className="text-4xl font-black italic uppercase mb-2 tracking-tighter">CRT-ALGO <span className="text-blue-500">ULTIMATE</span></h3>
                       <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-8 italic">Premium Tier Elite Precision</p>
                     </div>
                     <div className="border-t border-blue-500/10 pt-8 space-y-6">
@@ -353,7 +353,7 @@ export default function CFDBotDocumentation() {
 
                 <div className="space-y-6">
                   {[
-                    { q: "Auth Failed", a: "Verify Email and License. Ensure 'Allow WebRequest' is enabled for Kimoo domain in Expert Advisor options." },
+                    { q: "Auth Failed", a: "Verify Email and License. Ensure 'Allow WebRequest' is enabled for CRT-ALGO domain in Expert Advisor options." },
                     { q: "Skip Signal (RR low)", a: "Bot skips trades where projected Reward-to-Risk ratio is below your InpMinRR setting." },
                     { q: "Symbol Not Found", a: "Check for unique broker suffixes (e.g. NAS100.x) and add them to the Symbol Map function." }
                   ].map((item, i) => (
@@ -373,7 +373,7 @@ export default function CFDBotDocumentation() {
         <div className="max-w-[1600px] mx-auto px-16 mt-32 opacity-30 text-center">
           <div className="h-px bg-gradient-to-r from-transparent via-zinc-500/20 to-transparent mb-8" />
           <p className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-500">
-            © 2026 Kimoo Guardian Infrastructure. Institutional Documentation.
+            © 2026 CRT-ALGO Infrastructure. Institutional Documentation.
           </p>
         </div>
       </div>

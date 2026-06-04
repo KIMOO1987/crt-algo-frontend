@@ -137,7 +137,7 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
             Client <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">Dashboard</span>
           </h1>
           <p className="text-[10px] uppercase tracking-[0.3em] font-bold mt-2 text-zinc-500 dark:text-zinc-400">
-            • KIMOO CRT ENGINE PRO •
+            • CRT-ALGO ENGINE PRO •
           </p>
         </div>
       </div>

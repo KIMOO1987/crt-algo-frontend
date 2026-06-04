@@ -99,7 +99,7 @@ export default function SignalsManager() {
     tp_secondary: '',
     tf_alignment: 'M5/H1',
     category: 'CRYPTO',
-    strategy: 'KIMOO CRT PRO',
+    strategy: 'CRT_ALGO_PRO',
     confluences: 'Institutional Bias Confirmed',
     is_active: true
   });
@@ -169,7 +169,7 @@ export default function SignalsManager() {
       tp_secondary: '',
       tf_alignment: 'M5/H1',
       category: 'CRYPTO',
-      strategy: 'KIMOO CRT PRO',
+      strategy: 'CRT_ALGO_PRO',
       confluences: 'Institutional Bias Confirmed',
       is_active: true
     });
@@ -188,7 +188,7 @@ export default function SignalsManager() {
       tp_secondary: signal.tp_secondary ? String(signal.tp_secondary) : '',
       tf_alignment: signal.tf_alignment || 'M5/H1',
       category: signal.category || 'CRYPTO',
-      strategy: signal.strategy || 'KIMOO CRT PRO',
+      strategy: signal.strategy || 'CRT_ALGO_PRO',
       confluences: signal.confluences || 'Institutional Bias Confirmed',
       is_active: signal.is_active ?? true
     });
@@ -387,7 +387,7 @@ export default function SignalsManager() {
                             {signal.symbol}
                           </span>
                           <span className="text-[9px] font-bold text-zinc-550 dark:text-zinc-500 uppercase tracking-widest mt-0.5">
-                            {signal.category || 'CRYPTO'} • {signal.strategy || 'KIMOO CRT PRO'}
+                            {signal.category || 'CRYPTO'} • {signal.strategy || 'CRT_ALGO_PRO'}
                           </span>
                         </div>
                       </td>
@@ -634,7 +634,7 @@ export default function SignalsManager() {
                       name="strategy"
                       value={formData.strategy}
                       onChange={handleInputChange}
-                      placeholder="e.g. KIMOO CRT PRO"
+                      placeholder="e.g. CRT_ALGO_PRO"
                       className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-4 py-3.5 text-xs font-mono font-bold text-white outline-none focus:border-blue-500/50 hover:border-white/10 transition-all"
                     />
                   </div>

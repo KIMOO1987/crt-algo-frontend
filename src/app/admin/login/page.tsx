@@ -49,7 +49,7 @@ export default function AdminLoginPage() {
               <ShieldCheck className="text-orange-500" size={32} />
             </div>
             <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter flex items-center justify-center gap-2 drop-shadow-xl">
-              KIMOO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">CONSOLE</span>
+              CRT-ALGO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">CONSOLE</span>
             </h1>
             <p className="text-[9px] font-bold uppercase tracking-[0.3em] mt-3 opacity-70">Secure Terminal Access</p>
           </div>
