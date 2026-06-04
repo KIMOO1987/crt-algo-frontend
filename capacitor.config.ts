@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.kimoo.app',
-  appName: 'Kimoo Pro',
+  appId: 'com.crtalgo.app',
+  appName: 'CRT-ALGO Pro',
   webDir: 'out'
 };
 

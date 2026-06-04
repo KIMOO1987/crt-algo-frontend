@@ -1,15 +1,48 @@
 {
-  "name": "crt-algo-backend-worker",
-  "version": "1.0.0",
-  "description": "Background worker for trade tracking",
-  "main": "scripts/trade-tracker.js",
+  "name": "crt-algo-frontend",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "trade-tracker": "node scripts/trade-tracker.js",
-    "okx-price-fetcher": "node scripts/okx-price-fetcher.js"
+    "dev": "next dev",
+    "build": "next build",
+    "build:mobile": "node toggle-api.js disable && set NEXT_EXPORT=true && next build && node toggle-api.js enable && npx cap sync",
+    "start": "next start",
+    "lint": "eslint",
+    "cap:sync": "npx cap sync"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.100.1",
-    "dotenv": "^16.4.5",
-    "ws": "^8.18.0"
+    "crypto-js": "^4.2.0",
+    "framer-motion": "^12.38.0",
+    "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
+    "https-proxy-agent": "^8.0.0",
+    "lightweight-charts": "^5.2.0",
+    "lucide-react": "^1.7.0",
+    "next": "16.2.1",
+    "next-themes": "^0.4.6",
+    "node-fetch": "^3.3.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/crypto-js": "^4.2.2",
+    "@types/node": "^20",
+    "@types/node-fetch": "^2.6.13",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
