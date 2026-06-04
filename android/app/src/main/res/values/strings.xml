@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Kimoo Pro</string>
-    <string name="title_activity_main">Kimoo Pro</string>
-    <string name="package_name">com.kimoo.app</string>
-    <string name="custom_url_scheme">com.kimoo.app</string>
+    <string name="app_name">CRT-ALGO Pro</string>
+    <string name="title_activity_main">CRT-ALGO Pro</string>
+    <string name="package_name">com.crtalgo.app</string>
+    <string name="custom_url_scheme">com.crtalgo.app</string>
 </resources>
