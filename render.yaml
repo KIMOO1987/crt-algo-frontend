@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: crt-algo-backend
+    env: python
+    buildCommand: pip install --no-cache-dir -r requirements.txt
+    startCommand: bash start.sh
+    healthCheckPath: /health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: MASTER_ENCRYPTION_KEY
+        sync: false
+      - key: WEBHOOK_PASSPHRASE
+        sync: false
