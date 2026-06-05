@@ -86,7 +86,7 @@ export default function SymbolAudit() {
       try {
         let query = supabase
           .from('signals')
-          .select('symbol, status, entry_price, sl, tp, tp_secondary')
+          .select('symbol, status, entry_price, sl, tp, tp_secondary, grade')
           .eq('is_active', false);
 
         if (tfAlignment !== 'ALL') {
@@ -118,12 +118,22 @@ export default function SymbolAudit() {
                 wins: 0,
                 losses: 0,
                 be: 0,
-                total_rr: 0
+                total_rr: 0,
+                gradeCounts: {
+                  'A++': 0,
+                  'A+': 0,
+                  'GOOD': 0,
+                  'NORMAL': 0
+                }
               };
             }
 
             const stats = symbolMap[sym];
             stats.total_trades++;
+
+            const rawGrade = (s.grade || 'A+').toUpperCase().trim();
+            const cleanGrade = rawGrade.includes('A++') ? 'A++' : rawGrade.includes('A+') ? 'A+' : rawGrade.includes('GOOD') ? 'GOOD' : 'NORMAL';
+            stats.gradeCounts[cleanGrade]++;
 
             const entry = Number(s.entry_price || 0);
             const sl = Number(s.sl || 0);
@@ -145,15 +155,21 @@ export default function SymbolAudit() {
             }
           });
 
-          const formatted = Object.values(symbolMap).map((item: any) => ({
-            symbol: item.symbol,
-            trades: item.total_trades,
-            wins: item.wins,
-            losses: item.losses,
-            be: item.be,
-            winRate: item.total_trades > 0 ? Number(((item.wins / item.total_trades) * 100).toFixed(1)) : 0,
-            totalRR: Number(item.total_rr.toFixed(1))
-          }));
+          const formatted = Object.values(symbolMap).map((item: any) => {
+            const gCounts = item.gradeCounts;
+            const gradeWeight = (gCounts['A++'] * 4) + (gCounts['A+'] * 3) + (gCounts['GOOD'] * 2) + (gCounts['NORMAL'] * 1);
+            return {
+              symbol: item.symbol,
+              trades: item.total_trades,
+              wins: item.wins,
+              losses: item.losses,
+              be: item.be,
+              winRate: item.total_trades > 0 ? Number(((item.wins / item.total_trades) * 100).toFixed(1)) : 0,
+              gradeCounts: gCounts,
+              gradeWeight: gradeWeight,
+              totalRR: Number(item.total_rr.toFixed(1))
+            };
+          });
 
           setStats(formatted);
           localStorage.setItem('audit_stats_cache', JSON.stringify(formatted));
@@ -179,8 +195,9 @@ export default function SymbolAudit() {
 
     return filtered.sort((a, b) => {
       const { key, direction } = sortConfig;
-      let valA = a[key];
-      let valB = b[key];
+      const sortKey = key === 'grade' ? 'gradeWeight' : key;
+      let valA = a[sortKey];
+      let valB = b[sortKey];
 
       if (valA < valB) return direction === 'asc' ? -1 : 1;
       if (valA > valB) return direction === 'asc' ? 1 : -1;
@@ -196,9 +213,16 @@ export default function SymbolAudit() {
       { key: 'losses', label: 'Losses' },
       { key: 'be', label: 'Breakeven (BE)' },
       { key: 'winRate', label: 'Win Rate %' },
+      { key: 'gradesFormatted', label: 'Setup Grades' },
       { key: 'totalRR', label: 'Net Realized R:R' }
     ];
-    exportToCSV(filteredStats, headers, "Symbol_Audit_Analytics_Report");
+    
+    const statsWithFormattedGrades = filteredStats.map(s => ({
+      ...s,
+      gradesFormatted: `A++: ${s.gradeCounts?.['A++'] || 0} | A+: ${s.gradeCounts?.['A+'] || 0} | Good: ${s.gradeCounts?.['GOOD'] || 0} | Normal: ${s.gradeCounts?.['NORMAL'] || 0}`
+    }));
+    
+    exportToCSV(statsWithFormattedGrades, headers, "Symbol_Audit_Analytics_Report");
   };
 
   // Derived metrics for Top Cards
@@ -377,6 +401,12 @@ export default function SymbolAudit() {
                         {sortConfig.key === 'winRate' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                       </div>
                     </th>
+                    <th className="px-4 py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('grade')}>
+                      <div className="flex items-center gap-1">
+                        Grading
+                        {sortConfig.key === 'grade' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
                     <th className="px-4 py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('totalRR')}>
                       <div className="flex items-center gap-1">
                         Net R:R
@@ -397,6 +427,14 @@ export default function SymbolAudit() {
                         <td className="px-4 py-6 text-[13px] font-mono font-black text-red-400/80">{item.losses}</td>
                         <td className="px-4 py-6 text-[13px] font-mono font-bold text-zinc-600 dark:text-zinc-500">{item.be}</td>
                         <td className="px-4 py-6 text-[13px] font-mono font-black text-blue-400">{item.winRate}%</td>
+                        <td className="px-4 py-6">
+                          <div className="flex flex-wrap gap-1.5 text-[10px] font-mono font-black select-none">
+                            <span className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/10">A++: {item.gradeCounts?.['A++'] || 0}</span>
+                            <span className="text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/10">A+: {item.gradeCounts?.['A+'] || 0}</span>
+                            <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/10">Good: {item.gradeCounts?.['GOOD'] || 0}</span>
+                            <span className="text-zinc-400 bg-zinc-500/10 px-1.5 py-0.5 rounded border border-zinc-500/10">Normal: {item.gradeCounts?.['NORMAL'] || 0}</span>
+                          </div>
+                        </td>
                         <td className={`px-4 py-6 text-[14px] font-mono font-black ${item.totalRR >= 0 ? 'text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]' : 'text-red-400 drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]'}`}>
                           {item.totalRR >= 0 ? `+${item.totalRR.toFixed(2)}R` : `${item.totalRR.toFixed(2)}R`}
                         </td>
@@ -404,7 +442,7 @@ export default function SymbolAudit() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-32 text-center">
+                      <td colSpan={8} className="py-32 text-center">
                         <div className="flex flex-col items-center justify-center">
                           <AlertCircle size={40} className="text-zinc-700 mb-4" />
                           <h3 className="text-xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white mb-2">No Audit Data Found</h3>
