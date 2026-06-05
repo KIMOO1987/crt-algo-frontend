@@ -213,6 +213,88 @@ function SymbolGradeDropdown({ symbol, selectedGrades, onChange }: { symbol: str
   );
 }
 
+function SymbolTfDropdown({
+  symbol,
+  selectedTfs,
+  onChange,
+  activeColorClass = 'border-orange-500 bg-orange-500 text-black'
+}: {
+  symbol: string,
+  selectedTfs: string[],
+  onChange: (tfs: string[]) => void,
+  activeColorClass?: string
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const options = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+
+  const handleToggle = (tf: string) => {
+    const next = selectedTfs.includes(tf)
+      ? selectedTfs.filter(t => t !== tf)
+      : [...selectedTfs, tf];
+    onChange(next);
+  };
+
+  const getShortLabel = (tf: string) => tf.split("/")[0];
+  const displayText = selectedTfs.length === 0
+    ? 'None'
+    : selectedTfs.length === options.length
+    ? 'All'
+    : selectedTfs.map(getShortLabel).join(', ');
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border border-zinc-850 text-zinc-400 bg-zinc-900/40 hover:text-white hover:bg-zinc-800 shrink-0 flex items-center gap-1 cursor-pointer"
+        title={`Configure timeframes for ${symbol}`}
+      >
+        <span>TFs: {displayText}</span>
+        <ChevronDown size={10} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1.5 w-32 rounded-xl bg-zinc-950 border border-zinc-800 p-2 shadow-2xl z-50 space-y-1 animate-fadeIn">
+          {options.map(opt => {
+            const checked = selectedTfs.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleToggle(opt)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-mono font-bold text-left rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition-all cursor-pointer"
+              >
+                <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                  checked ? activeColorClass : 'border-zinc-800 bg-zinc-900'
+                }`}>
+                  {checked && (
+                    <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                      <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span>{opt}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MultiExchangeDashboard() {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -1273,7 +1355,7 @@ export default function MultiExchangeDashboard() {
                     </div>
                   </div>
 
-                  <div className="h-[520px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
+                  <div className="h-[850px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
                     {okxSymbols
                       .filter(s => s.type === 'major')
                       .filter(s => s.symbol.toLowerCase().includes(majorSearchQuery.toLowerCase()))
@@ -1307,25 +1389,24 @@ export default function MultiExchangeDashboard() {
                             </div>
                             
                             <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
-                              {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
-                                const active = isTfChecked(s.symbol, tf);
-                                const shortLabel = tf.split("/")[0];
-                                return (
-                                  <button
-                                    key={tf}
-                                    type="button"
-                                    onClick={() => toggleSymbolTimeframe(s.symbol, tf)}
-                                    title={`Toggle ${tf} for ${s.symbol}`}
-                                    className={`px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border shrink-0 ${
-                                      active
-                                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/60 text-amber-300 shadow-[0_0_6px_rgba(245,158,11,0.15)] hover:border-amber-400'
-                                        : 'border-zinc-850 text-zinc-500 bg-zinc-950/20 hover:text-zinc-300 hover:bg-zinc-900/40'
-                                    }`}
-                                  >
-                                    {shortLabel}
-                                  </button>
-                                );
-                              })}
+                              <SymbolTfDropdown
+                                symbol={s.symbol}
+                                selectedTfs={allowedSymbolsList[s.symbol]?.timeframes || []}
+                                onChange={(tfs) => {
+                                  setAllowedSymbolsList(prev => {
+                                    const config = prev[s.symbol];
+                                    const currentGrades = config?.grades || ['All'];
+                                    return {
+                                      ...prev,
+                                      [s.symbol]: {
+                                        timeframes: tfs,
+                                        grades: currentGrades
+                                      }
+                                    };
+                                  });
+                                }}
+                                activeColorClass="border-orange-500 bg-orange-500 text-black"
+                              />
                               <SymbolGradeDropdown
                                 symbol={s.symbol}
                                 selectedGrades={allowedSymbolsList[s.symbol]?.grades || ['All']}
@@ -1428,7 +1509,7 @@ export default function MultiExchangeDashboard() {
                     </div>
                   </div>
 
-                  <div className="h-[520px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
+                  <div className="h-[850px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
                     {okxSymbols
                       .filter(s => s.type === 'alt')
                       .filter(s => s.symbol.toLowerCase().includes(altSearchQuery.toLowerCase()))
@@ -1462,25 +1543,24 @@ export default function MultiExchangeDashboard() {
                             </div>
                             
                             <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
-                              {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
-                                const active = isTfChecked(s.symbol, tf);
-                                const shortLabel = tf.split("/")[0];
-                                return (
-                                  <button
-                                    key={tf}
-                                    type="button"
-                                    onClick={() => toggleSymbolTimeframe(s.symbol, tf)}
-                                    title={`Toggle ${tf} for ${s.symbol}`}
-                                    className={`px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border shrink-0 ${
-                                      active
-                                        ? 'bg-gradient-to-r from-purple-500/20 to-fuchsia-500/20 border-purple-500/60 text-purple-300 shadow-[0_0_6px_rgba(168,85,247,0.15)] hover:border-purple-400'
-                                        : 'border-zinc-850 text-zinc-500 bg-zinc-950/20 hover:text-zinc-300 hover:bg-zinc-900/40'
-                                    }`}
-                                  >
-                                    {shortLabel}
-                                  </button>
-                                );
-                              })}
+                              <SymbolTfDropdown
+                                symbol={s.symbol}
+                                selectedTfs={allowedSymbolsList[s.symbol]?.timeframes || []}
+                                onChange={(tfs) => {
+                                  setAllowedSymbolsList(prev => {
+                                    const config = prev[s.symbol];
+                                    const currentGrades = config?.grades || ['All'];
+                                    return {
+                                      ...prev,
+                                      [s.symbol]: {
+                                        timeframes: tfs,
+                                        grades: currentGrades
+                                      }
+                                    };
+                                  });
+                                }}
+                                activeColorClass="border-purple-500 bg-purple-500 text-black"
+                              />
                               <SymbolGradeDropdown
                                 symbol={s.symbol}
                                 selectedGrades={allowedSymbolsList[s.symbol]?.grades || ['All']}
