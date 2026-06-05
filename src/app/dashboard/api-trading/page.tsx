@@ -8,7 +8,7 @@ import {
   ShieldAlert, ShieldCheck, Activity, Wallet, Percent, 
   Target, Lock, Save, Settings2, BarChart3, TrendingUp, CheckCircle, 
   XCircle, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownRight, Flame,
-  PlayCircle, Compass, Award, GitBranch, ChevronDown
+  PlayCircle, Compass, Award, GitBranch, ChevronDown, Trash2
 } from 'lucide-react';
 
 const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
@@ -139,6 +139,80 @@ function MultiSelectDropdown({ label, icon, options, selectedValues, onChange }:
   );
 }
 
+function SymbolGradeDropdown({ symbol, selectedGrades, onChange }: { symbol: string, selectedGrades: string[], onChange: (grades: string[]) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const options = ["All", "A++", "A+", "Good", "Normal"];
+
+  const handleToggle = (grade: string) => {
+    if (grade === 'All') {
+      onChange(['All']);
+    } else {
+      let next = selectedGrades.includes(grade)
+        ? selectedGrades.filter(g => g !== grade)
+        : [...selectedGrades.filter(g => g !== 'All'), grade];
+      if (next.length === 0) {
+        next = ['All'];
+      }
+      onChange(next);
+    }
+  };
+
+  const displayText = selectedGrades.includes('All') || selectedGrades.length === 0 ? 'All' : selectedGrades.join(', ');
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border border-zinc-850 text-zinc-400 bg-zinc-900/40 hover:text-white hover:bg-zinc-800 shrink-0 flex items-center gap-1 cursor-pointer"
+        title={`Configure grades for ${symbol}`}
+      >
+        <span>Grades: {displayText}</span>
+        <ChevronDown size={10} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1.5 w-32 rounded-xl bg-zinc-950 border border-zinc-800 p-2 shadow-2xl z-50 space-y-1 animate-fadeIn">
+          {options.map(opt => {
+            const checked = selectedGrades.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleToggle(opt)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-mono font-bold text-left rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition-all cursor-pointer"
+              >
+                <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                  checked ? 'border-orange-500 bg-orange-500 text-black' : 'border-zinc-800 bg-zinc-900'
+                }`}>
+                  {checked && (
+                    <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                      <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span>{opt}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MultiExchangeDashboard() {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -149,28 +223,106 @@ export default function MultiExchangeDashboard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userTier, setUserTier] = useState<number | null>(null);
   const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetData = async () => {
+    if (!userId) {
+      addLog("❌ Cannot reset: Session not found.");
+      return;
+    }
+    
+    const confirmReset = window.confirm(
+      "⚠️ DANGER ZONE: Are you sure you want to completely reset all your trade logs and execution history?\n\nThis will delete your performance metrics and logs from Supabase permanently. Your API configurations and exchange credentials will NOT be affected. This action cannot be undone."
+    );
+    
+    if (!confirmReset) return;
+    
+    setIsResetting(true);
+    const startMsg = "⏳ Initializing trade history reset...";
+    addLog(startMsg);
+    
+    try {
+      // 1. Delete executions & logs (Keep exchange credentials/auth configurations intact)
+      const { error: execsErr } = await supabase.from('trade_executions').delete().eq('user_id', userId);
+      if (execsErr) {
+        console.error("Error deleting trade executions:", execsErr);
+        throw new Error(`Delete executions failed: ${execsErr.message}`);
+      }
+      
+      const { error: logsErr } = await supabase.from('exchange_logs').delete().eq('user_id', userId);
+      if (logsErr) {
+        console.error("Error deleting exchange logs:", logsErr);
+        throw new Error(`Delete logs failed: ${logsErr.message}`);
+      }
+      
+      const successMsg = "✅ Trade history reset successful. All executions and logs deleted.";
+      addLog(successMsg);
+      
+      // 2. Reset local trade states so the UI updates instantly
+      setExchangeLogs([]);
+      setRawExecutions([]);
+      
+      // Re-fetch data from database to rebuild metrics
+      await fetchDashboardData();
+    } catch (err: any) {
+      console.error("Critical error during reset:", err);
+      addLog(`❌ Reset failed: ${err.message || err}`);
+    } finally {
+      setIsResetting(false);
+    }
+  };
   const [activeTab, setActiveTab] = useState('okx');
   const [loadedTab, setLoadedTab] = useState<string | null>(null);
 
   
-  const parseAllowedSymbols = (loaded: any, tab: string): Record<string, string[]> => {
+  interface SymbolConfig {
+    timeframes: string[];
+    grades: string[];
+  }
+
+  const parseAllowedSymbols = (loaded: any, tab: string): Record<string, SymbolConfig> => {
+    const res: Record<string, SymbolConfig> = {};
     if (loaded && typeof loaded === 'object' && !Array.isArray(loaded)) {
-      return loaded as Record<string, string[]>;
-    }
-    if (Array.isArray(loaded)) {
-      const res: Record<string, string[]> = {};
-      loaded.forEach(sym => {
-        if (typeof sym === 'string') {
-          res[sym] = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+      Object.entries(loaded).forEach(([sym, val]: [string, any]) => {
+        if (Array.isArray(val)) {
+          res[sym] = {
+            timeframes: val,
+            grades: ['All']
+          };
+        } else if (val && typeof val === 'object') {
+          res[sym] = {
+            timeframes: val.timeframes || [],
+            grades: val.grades || ['All']
+          };
+        } else {
+          res[sym] = {
+            timeframes: [],
+            grades: ['All']
+          };
         }
       });
       return res;
     }
-    const res: Record<string, string[]> = {};
+    if (Array.isArray(loaded)) {
+      loaded.forEach(sym => {
+        if (typeof sym === 'string') {
+          res[sym] = {
+            timeframes: ["M5/H1", "M15/H4", "M30/H6", "H1/D1"],
+            grades: ['All']
+          };
+        }
+      });
+      return res;
+    }
+    const defaultRes: Record<string, SymbolConfig> = {};
     if (tab === 'okx') {
       okxSymbols.forEach(s => {
-        res[s.symbol] = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+        defaultRes[s.symbol] = {
+          timeframes: ["M5/H1", "M15/H4", "M30/H6", "H1/D1"],
+          grades: ['All']
+        };
       });
+      return defaultRes;
     }
     return res;
   };
@@ -206,7 +358,7 @@ export default function MultiExchangeDashboard() {
   const [altHtfAlignment, setAltHtfAlignment] = useState('All');
 
   // Checklist Allowed Symbols State
-  const [allowedSymbolsList, setAllowedSymbolsList] = useState<Record<string, string[]>>({});
+  const [allowedSymbolsList, setAllowedSymbolsList] = useState<Record<string, SymbolConfig>>({});
   const [majorSearchQuery, setMajorSearchQuery] = useState("");
   const [altSearchQuery, setAltSearchQuery] = useState("");
 
@@ -669,47 +821,78 @@ export default function MultiExchangeDashboard() {
   };
 
   const getActiveCount = (list: string[]) => {
-    return Object.entries(allowedSymbolsList).filter(([sym, tfs]) => list.includes(sym) && tfs.length > 0).length;
+    return Object.entries(allowedSymbolsList).filter(([sym, config]) => {
+      if (!list.includes(sym)) return false;
+      const tfs = config?.timeframes || [];
+      return tfs.length > 0;
+    }).length;
   };
 
   const isSymbolChecked = (symbol: string) => {
-    const tfs = allowedSymbolsList[symbol];
+    const config = allowedSymbolsList[symbol];
+    const tfs = config?.timeframes || [];
     return tfs && tfs.length > 0;
   };
 
   const isTfChecked = (symbol: string, tf: string) => {
-    const tfs = allowedSymbolsList[symbol];
+    const config = allowedSymbolsList[symbol];
+    const tfs = config?.timeframes || [];
     return tfs && tfs.includes(tf);
   };
 
   const toggleWholeSymbol = (symbol: string) => {
     setAllowedSymbolsList(prev => {
-      const current = prev[symbol] ?? [];
+      const config = prev[symbol];
+      const currentTfs = config?.timeframes || [];
+      const currentGrades = config?.grades || ['All'];
       const allTfs = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
-      const isAnyChecked = current.length > 0;
+      const isAnyChecked = currentTfs.length > 0;
       return {
         ...prev,
-        [symbol]: isAnyChecked ? [] : allTfs
+        [symbol]: {
+          timeframes: isAnyChecked ? [] : allTfs,
+          grades: isAnyChecked ? ['All'] : currentGrades
+        }
       };
     });
   };
 
   const toggleSymbolTimeframe = (symbol: string, tf: string) => {
     setAllowedSymbolsList(prev => {
-      const current = prev[symbol] ?? [];
-      const next = current.includes(tf)
-        ? current.filter(t => t !== tf)
-        : [...current, tf];
+      const config = prev[symbol];
+      const currentTfs = config?.timeframes || [];
+      const currentGrades = config?.grades || ['All'];
+      const nextTfs = currentTfs.includes(tf)
+        ? currentTfs.filter(t => t !== tf)
+        : [...currentTfs, tf];
       return {
         ...prev,
-        [symbol]: next
+        [symbol]: {
+          timeframes: nextTfs,
+          grades: currentGrades
+        }
+      };
+    });
+  };
+
+  const changeSymbolGrades = (symbol: string, grades: string[]) => {
+    setAllowedSymbolsList(prev => {
+      const config = prev[symbol];
+      const currentTfs = config?.timeframes || [];
+      return {
+        ...prev,
+        [symbol]: {
+          timeframes: currentTfs,
+          grades: grades
+        }
       };
     });
   };
 
   const isTfAllChecked = (list: string[], tf: string) => {
     return list.every(sym => {
-      const tfs = allowedSymbolsList[sym];
+      const config = allowedSymbolsList[sym];
+      const tfs = config?.timeframes || [];
       return tfs && tfs.includes(tf);
     });
   };
@@ -719,12 +902,20 @@ export default function MultiExchangeDashboard() {
     setAllowedSymbolsList(prev => {
       const next = { ...prev };
       list.forEach(sym => {
-        const current = prev[sym] ?? [];
+        const config = prev[sym];
+        const currentTfs = config?.timeframes || [];
+        const currentGrades = config?.grades || ['All'];
         if (isAllChecked) {
-          next[sym] = current.filter(t => t !== tf);
+          next[sym] = {
+            timeframes: currentTfs.filter(t => t !== tf),
+            grades: currentGrades
+          };
         } else {
-          if (!current.includes(tf)) {
-            next[sym] = [...current, tf];
+          if (!currentTfs.includes(tf)) {
+            next[sym] = {
+              timeframes: [...currentTfs, tf],
+              grades: currentGrades
+            };
           }
         }
       });
@@ -894,6 +1085,24 @@ export default function MultiExchangeDashboard() {
               </div>
             </div>
 
+            {/* Danger Zone */}
+            <div className="bg-gradient-to-br from-red-950/20 to-zinc-950 border border-red-900/30 rounded-[2.5rem] p-8 shadow-2xl space-y-6">
+              <h3 className="text-xs font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
+                <ShieldAlert size={16} className="text-red-500 animate-pulse" /> Danger Zone
+              </h3>
+              <p className="text-[11px] text-zinc-400 leading-relaxed">
+                Resetting will delete all trade execution history, performance metrics, and logs from Supabase. Your API credentials and exchange configurations will be preserved.
+              </p>
+              <button 
+                type="button"
+                onClick={handleResetData}
+                disabled={isResetting}
+                className="w-full py-4 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 hover:text-red-300 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Trash2 size={14} /> {isResetting ? 'RESETTING HISTORY...' : 'RESET TRADE HISTORY & LOGS'}
+              </button>
+            </div>
+
             {/* Timeframe Performance Board (OKX ONLY) */}
             {activeTab === 'okx' && (
               <div className="space-y-6">
@@ -1016,7 +1225,12 @@ export default function MultiExchangeDashboard() {
                           setAllowedSymbolsList(prev => {
                             const next = { ...prev };
                             majorsList.forEach(sym => {
-                              next[sym] = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+                              const config = prev[sym];
+                              const currentGrades = Array.isArray(config) ? ['All'] : config?.grades || ['All'];
+                              next[sym] = {
+                                timeframes: ["M5/H1", "M15/H4", "M30/H6", "H1/D1"],
+                                grades: currentGrades
+                              };
                             });
                             return next;
                           });
@@ -1031,7 +1245,12 @@ export default function MultiExchangeDashboard() {
                           setAllowedSymbolsList(prev => {
                             const next = { ...prev };
                             majorsList.forEach(sym => {
-                              next[sym] = [];
+                              const config = prev[sym];
+                              const currentGrades = Array.isArray(config) ? ['All'] : config?.grades || ['All'];
+                              next[sym] = {
+                                timeframes: [],
+                                grades: currentGrades
+                              };
                             });
                             return next;
                           });
@@ -1088,7 +1307,7 @@ export default function MultiExchangeDashboard() {
                               </span>
                             </div>
                             
-                            <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
+                            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                               {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
                                 const active = isTfChecked(s.symbol, tf);
                                 const shortLabel = tf.split("/")[0];
@@ -1108,6 +1327,11 @@ export default function MultiExchangeDashboard() {
                                   </button>
                                 );
                               })}
+                              <SymbolGradeDropdown
+                                symbol={s.symbol}
+                                selectedGrades={allowedSymbolsList[s.symbol]?.grades || ['All']}
+                                onChange={(grades) => changeSymbolGrades(s.symbol, grades)}
+                              />
                             </div>
                           </div>
                         );
@@ -1157,7 +1381,12 @@ export default function MultiExchangeDashboard() {
                           setAllowedSymbolsList(prev => {
                             const next = { ...prev };
                             altsList.forEach(sym => {
-                              next[sym] = ["M5/H1", "M15/H4", "M30/H6", "H1/D1"];
+                              const config = prev[sym];
+                              const currentGrades = Array.isArray(config) ? ['All'] : config?.grades || ['All'];
+                              next[sym] = {
+                                timeframes: ["M5/H1", "M15/H4", "M30/H6", "H1/D1"],
+                                grades: currentGrades
+                              };
                             });
                             return next;
                           });
@@ -1172,7 +1401,12 @@ export default function MultiExchangeDashboard() {
                           setAllowedSymbolsList(prev => {
                             const next = { ...prev };
                             altsList.forEach(sym => {
-                              next[sym] = [];
+                              const config = prev[sym];
+                              const currentGrades = Array.isArray(config) ? ['All'] : config?.grades || ['All'];
+                              next[sym] = {
+                                timeframes: [],
+                                grades: currentGrades
+                              };
                             });
                             return next;
                           });
@@ -1229,7 +1463,7 @@ export default function MultiExchangeDashboard() {
                               </span>
                             </div>
                             
-                            <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
+                            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                               {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
                                 const active = isTfChecked(s.symbol, tf);
                                 const shortLabel = tf.split("/")[0];
@@ -1249,6 +1483,11 @@ export default function MultiExchangeDashboard() {
                                   </button>
                                 );
                               })}
+                              <SymbolGradeDropdown
+                                symbol={s.symbol}
+                                selectedGrades={allowedSymbolsList[s.symbol]?.grades || ['All']}
+                                onChange={(grades) => changeSymbolGrades(s.symbol, grades)}
+                              />
                             </div>
                           </div>
                         );
