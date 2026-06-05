@@ -33,7 +33,6 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
   // 1. Always allow the auth callback to run
@@ -45,6 +44,13 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/update-password') {
     return supabaseResponse
   }
+
+  // 3. Bypass auth check for API routes to avoid redundant Auth API requests and save egress
+  if (pathname.startsWith('/api')) {
+    return supabaseResponse
+  }
+
+  const { data: { user } } = await supabase.auth.getUser()
 
   // 3. Protect /dashboard — redirect unauthenticated users to login
   if (!user && pathname.startsWith('/dashboard')) {
