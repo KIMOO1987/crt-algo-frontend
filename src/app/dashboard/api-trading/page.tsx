@@ -1210,7 +1210,6 @@ export default function MultiExchangeDashboard() {
               </div>
               <CustomSelect label="Trend Alignment" icon={<Activity size={12} />} value={alignment} onChange={setAlignment} options={[{value: 'Both', label: 'Both'}, {value: 'Aligned', label: 'Aligned Only'}, {value: 'Counter', label: 'Counter Only'}]} />
               <CustomSelect label="Sweep Quality Filter" icon={<Compass size={12} />} value={sweepQuality} onChange={setSweepQuality} options={[{value: 'All', label: 'All Sweeps'}, {value: 'High', label: 'High'}, {value: 'Normal', label: 'Normal'}]} />
-              <MultiSelectDropdown label="Grading Filter" icon={<Award size={12} />} options={GRADE_OPTIONS} selectedValues={gradeSetting} onChange={setGradeSetting} />
               
               {activeTab === 'okx' && (
                 <div className="pt-6 border-t border-zinc-850 space-y-4">
@@ -1274,7 +1273,7 @@ export default function MultiExchangeDashboard() {
                     </div>
                   </div>
 
-                  <div className="h-[415px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
+                  <div className="h-[520px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
                     {okxSymbols
                       .filter(s => s.type === 'major')
                       .filter(s => s.symbol.toLowerCase().includes(majorSearchQuery.toLowerCase()))
@@ -1366,7 +1365,6 @@ export default function MultiExchangeDashboard() {
               </div>
               <CustomSelect label="Trend Alignment" icon={<Activity size={12} />} value={altAlignment} onChange={setAltAlignment} options={[{value: 'Both', label: 'Both'}, {value: 'Aligned', label: 'Aligned Only'}, {value: 'Counter', label: 'Counter Only'}]} />
               <CustomSelect label="Sweep Quality Filter" icon={<Compass size={12} />} value={altSweepQuality} onChange={setAltSweepQuality} options={[{value: 'All', label: 'All Sweeps'}, {value: 'High', label: 'High'}, {value: 'Normal', label: 'Normal'}]} />
-              <MultiSelectDropdown label="Grading Filter" icon={<Award size={12} />} options={GRADE_OPTIONS} selectedValues={altGradeSetting} onChange={setAltGradeSetting} />
               
               {activeTab === 'okx' && (
                 <div className="pt-6 border-t border-zinc-850 space-y-4">
@@ -1430,7 +1428,7 @@ export default function MultiExchangeDashboard() {
                     </div>
                   </div>
 
-                  <div className="h-[415px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
+                  <div className="h-[520px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 select-none">
                     {okxSymbols
                       .filter(s => s.type === 'alt')
                       .filter(s => s.symbol.toLowerCase().includes(altSearchQuery.toLowerCase()))
