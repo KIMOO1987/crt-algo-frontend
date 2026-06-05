@@ -435,7 +435,7 @@ export default function MultiExchangeDashboard() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Polling loop for active stats and logs (runs every 4 seconds for real-time responsiveness)
+  // Polling loop for active stats and logs (runs every 5 minutes as a fallback; realtime subscription handles instant updates)
   useEffect(() => {
     if (!userId) return;
     
@@ -445,7 +445,7 @@ export default function MultiExchangeDashboard() {
     const interval = setInterval(() => {
       fetchDashboardData();
       fetchExchangeLogs(activeTab, userId);
-    }, 4000); // 4-second live refresh cycle
+    }, 300000); // 5-minute fallback refresh cycle to prevent resource exhaustion
     
     return () => clearInterval(interval);
   }, [activeTab, userId, fetchExchangeLogs, fetchDashboardData]);
