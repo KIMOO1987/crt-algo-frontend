@@ -25,9 +25,15 @@ interface InviteRequest {
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   updated_at: string;
+  payment_method?: 'FREE' | 'CRYPTO' | 'WHOP';
+  crypto_hash?: string | null;
+  payment_amount?: number;
+  duration_months?: number;
   // Mapped in-memory:
   full_name?: string;
   email?: string;
+  tier?: number;
+  plan_type?: string;
 }
 
 export default function TVInvitesManager() {
@@ -56,11 +62,11 @@ export default function TVInvitesManager() {
         return;
       }
 
-      // 2. Fetch profiles in bulk to attach full name and email
+      // 2. Fetch profiles in bulk to attach full name, email, tier and plan
       const userIds = Array.from(new Set(invites.map(i => i.user_id)));
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, tier, plan_type')
         .in('id', userIds);
 
       if (profilesError) {
@@ -70,13 +76,15 @@ export default function TVInvitesManager() {
       const profilesMap = (profiles || []).reduce((acc, curr) => {
         acc[curr.id] = curr;
         return acc;
-      }, {} as Record<string, { full_name: string; email: string }>);
+      }, {} as Record<string, { full_name: string; email: string; tier?: number; plan_type?: string }>);
 
       // 3. Map together
       const mapped: InviteRequest[] = invites.map(invite => ({
         ...invite,
         full_name: profilesMap[invite.user_id]?.full_name || 'UNKNOWN TRADER',
-        email: profilesMap[invite.user_id]?.email || ''
+        email: profilesMap[invite.user_id]?.email || '',
+        tier: profilesMap[invite.user_id]?.tier ?? 0,
+        plan_type: profilesMap[invite.user_id]?.plan_type || 'ALPHA'
       }));
 
       setRequests(mapped);
@@ -129,7 +137,8 @@ export default function TVInvitesManager() {
     const matchesSearch = 
       req.tradingview_username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (req.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (req.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+      (req.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (req.indicator_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -192,7 +201,7 @@ export default function TVInvitesManager() {
         <div className="relative w-full md:w-96">
           <input 
             type="text" 
-            placeholder="Search by TV user, Email or Name..."
+            placeholder="Search by TV user, Email, Name or Indicator..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-modern w-full pl-12 pr-4 font-bold"
@@ -250,6 +259,16 @@ export default function TVInvitesManager() {
                       {req.full_name}
                     </p>
                     
+                    {/* User Subscription tier badge */}
+                    <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-widest shadow-sm ${
+                      req.tier === 3 ? 'text-indigo-450 bg-indigo-500/10 border-indigo-500/20 shadow-[0_0_10px_rgba(99,102,241,0.2)]' :
+                      req.tier === 2 ? 'text-blue-450 bg-blue-500/10 border-blue-500/20' :
+                      req.tier === 1 ? 'text-orange-450 bg-orange-500/10 border-orange-500/20' :
+                      'text-zinc-500 dark:text-zinc-400 bg-zinc-500/5 border-[var(--glass-border)]'
+                    }`}>
+                      Plan: {req.plan_type || (req.tier === 3 ? 'ULTIMATE' : req.tier === 2 ? 'PRO' : req.tier === 1 ? 'ACTIVE' : 'ALPHA')} (Tier {req.tier})
+                    </span>
+
                     {/* Status badge */}
                     {req.status === 'pending' && (
                       <span className="text-[9px] font-black text-yellow-450 bg-yellow-500/10 px-2.5 py-1 rounded-lg border border-yellow-500/20 uppercase tracking-widest shadow-sm">
@@ -268,15 +287,47 @@ export default function TVInvitesManager() {
                     )}
                   </div>
                   
-                  {/* Email & Indicator */}
+                  {/* Email */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-[10px] font-bold text-zinc-550 dark:text-zinc-500 uppercase tracking-widest">
                     <span className="flex items-center gap-1"><Mail size={12}/> {req.email || 'NO EMAIL'}</span>
-                    <span className="hidden sm:inline">•</span>
-                    <span>Indicator: <strong className="text-zinc-800 dark:text-zinc-300">{req.indicator_name}</strong></span>
                   </div>
 
+                  {/* Indicator name & payment details block */}
+                  <div className="flex flex-wrap items-center gap-2 mt-2.5 mb-2">
+                    <div className="px-3 py-1.5 rounded-lg bg-orange-500/15 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-wider w-fit flex items-center gap-1.5 shadow-sm">
+                      <span className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse" />
+                      Indicator: {req.indicator_name}
+                    </div>
+
+                    {req.payment_method !== 'FREE' && (
+                      <span className={`text-[9px] font-black px-2.5 py-1.5 rounded-lg border uppercase tracking-widest ${
+                        req.payment_method === 'WHOP' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                      }`}>
+                        {req.payment_method} - ${req.payment_amount} ({req.duration_months}M)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Transaction Hash */}
+                  {req.payment_method === 'CRYPTO' && req.crypto_hash && (
+                    <div className="flex items-center gap-2 bg-[var(--input-bg)] p-2.5 rounded-xl border border-[var(--glass-border)] w-fit mt-1.5 mb-2.5">
+                      <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest px-1">TxID:</span>
+                      <code className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-350 select-all">
+                        {req.crypto_hash}
+                      </code>
+                    </div>
+                  )}
+
+                  {/* Warning for Lower Tiers on paid scripts */}
+                  {req.tier === 0 && req.indicator_id === '7h_profiling' && (
+                    <div className="mt-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest w-fit flex items-center gap-1.5 shadow-sm">
+                      <AlertCircle size={12} className="shrink-0" />
+                      Warning: Free User (Tier 0) requesting paid indicator
+                    </div>
+                  )}
+
                   {/* Request timestamp */}
-                  <p className="text-[9px] font-mono text-zinc-650 dark:text-zinc-550 font-bold">
+                  <p className="text-[9px] font-mono text-zinc-650 dark:text-zinc-555 font-bold pt-1">
                     Requested on: {new Date(req.created_at).toLocaleString()}
                   </p>
                 </div>
@@ -286,7 +337,7 @@ export default function TVInvitesManager() {
               <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto shrink-0">
                 
                 {/* TV Username display & copy block */}
-                <div className="w-full sm:w-auto p-3 rounded-xl bg-[var(--input-bg)] border border-[var(--glass-border)] flex items-center justify-between gap-4">
+                <div className="w-full sm:w-auto p-3 rounded-xl bg-[var(--input-bg)] border border-[var(--input-border)] flex items-center justify-between gap-4">
                   <div>
                     <span className="text-[8px] font-black text-zinc-650 dark:text-zinc-500 uppercase tracking-widest block mb-0.5">TV Username</span>
                     <span className="font-mono text-xs font-bold text-zinc-900 dark:text-white">{req.tradingview_username}</span>
