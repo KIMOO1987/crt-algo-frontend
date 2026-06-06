@@ -24,20 +24,12 @@ export async function POST(req: Request) {
     const eventType = payload.action || payload.type;
     const data = payload.data;
 
-    // Handle purchase events
-    if (eventType === 'payment.succeeded' || eventType === 'membership.activated' || eventType === 'membership.created') {
+    const isSuccessEvent = ['payment.succeeded', 'membership.activated', 'membership.created'].includes(eventType);
+    const isFailureEvent = ['payment.failed', 'membership.cancelled', 'membership.refunded', 'membership.expired', 'membership.disputed'].includes(eventType);
+
+    if (isSuccessEvent || isFailureEvent) {
       const email = data.email || data.user?.email;
       const amount = data.amount || data.price || 20;
-      
-      // Scan custom fields/metadata for TradingView username
-      let tradingviewUsername = 'AWAITING_USER_INPUT';
-      const customFields = data.custom_fields || data.metadata || {};
-      for (const key of Object.keys(customFields)) {
-        if (key.toLowerCase().includes('tradingview') || key.toLowerCase().includes('username')) {
-          tradingviewUsername = customFields[key] || 'AWAITING_USER_INPUT';
-          break;
-        }
-      }
 
       if (email) {
         const supabaseAdmin = createClient(
@@ -60,14 +52,50 @@ export async function POST(req: Request) {
           }, { status: 200 });
         }
 
-        // 2. Determine duration months based on payment amount
+        // 2. Fetch existing invite if any
+        const { data: existingInvite } = await supabaseAdmin
+          .from('tradingview_invites')
+          .select('tradingview_username, status')
+          .eq('user_id', profile.id)
+          .eq('indicator_id', 'crt_algo_ultimate')
+          .maybeSingle();
+
+        // 3. Process status and username based on event type
+        let status = 'pending';
+        let tradingviewUsername = 'AWAITING_USER_INPUT';
+
+        if (isSuccessEvent) {
+          status = 'pending'; // Awaiting admin whitelist approval
+
+          // Priority for Username:
+          // A. From Whop metadata/custom fields
+          const customFields = data.custom_fields || data.metadata || {};
+          let metaUsername = '';
+          for (const key of Object.keys(customFields)) {
+            if (key.toLowerCase().includes('tradingview') || key.toLowerCase().includes('username')) {
+              metaUsername = (customFields[key] || '').trim();
+              break;
+            }
+          }
+
+          if (metaUsername && metaUsername !== 'AWAITING_USER_INPUT') {
+            tradingviewUsername = metaUsername;
+          }
+          // B. From pre-entered username in dashboard (when status was pending_payment or similar)
+          else if (existingInvite?.tradingview_username && existingInvite.tradingview_username !== 'AWAITING_USER_INPUT') {
+            tradingviewUsername = existingInvite.tradingview_username;
+          }
+        } else if (isFailureEvent) {
+          status = 'rejected'; // Show reject status
+          tradingviewUsername = existingInvite?.tradingview_username || 'AWAITING_USER_INPUT';
+        }
+
+        // 4. Determine duration months based on payment amount
         let durationMonths = 1;
         if (amount >= 200) durationMonths = 12;
         else if (amount >= 100) durationMonths = 6;
 
-        // 3. Upsert approved whitelist invite (if username is available)
-        const status = tradingviewUsername === 'AWAITING_USER_INPUT' ? 'pending' : 'approved';
-
+        // 5. Upsert invite request
         const { error: upsertError } = await supabaseAdmin
           .from('tradingview_invites')
           .upsert({
@@ -89,7 +117,7 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: upsertError.message }, { status: 500 });
         }
 
-        console.log(`[Whop Webhook] Automatically provisioned TV Indicator request for ${email}. TV Username: ${tradingviewUsername}, Status: ${status}`);
+        console.log(`[Whop Webhook] Processed ${eventType} for ${email}. TV Username: ${tradingviewUsername}, Status: ${status}`);
       }
     }
 
