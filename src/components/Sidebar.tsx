@@ -35,6 +35,7 @@ const menuGroups = [
     items: [
 
       { name: 'Performance', icon: LineChart, path: '/dashboard/performance', minTier: 1 },
+      { name: 'Resources', icon: Zap, path: '/dashboard/resources', minTier: 0 },
     ]
   },
   {

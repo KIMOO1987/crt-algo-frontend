@@ -34,6 +34,7 @@ const adminMenuGroups = [
       { name: 'Premium Members', path: '/admin/premium', icon: UserPlus, roles: ['admin', 'moderator'] },
       { name: 'Free Members', path: '/admin/users', icon: UserPlus, roles: ['admin', 'moderator'] },
       { name: 'Reset Requests', path: '/admin/resets', icon: UserPlus, roles: ['admin', 'moderator'] },
+      { name: 'TV Invites', path: '/admin/tv-invites', icon: Activity, roles: ['admin', 'moderator'] },
     ]
   },
   {
