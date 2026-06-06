@@ -29,7 +29,7 @@ interface InviteRequest {
   tradingview_username: string;
   indicator_id: string;
   indicator_name: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'pending_payment';
   payment_method: 'FREE' | 'CRYPTO' | 'WHOP';
   crypto_hash: string | null;
   payment_amount: number;
@@ -68,8 +68,8 @@ export default function ResourcesPage() {
   const [isPaidModalOpen, setIsPaidModalOpen] = useState(false);
   const [paidIndicator, setPaidIndicator] = useState<{ id: string; name: string } | null>(null);
   
-  // Checkout Steps: 'plan' -> 'method' -> 'crypto_form' or 'whop_redirect'
-  const [checkoutStep, setCheckoutStep] = useState<'plan' | 'method' | 'crypto_form'>('plan');
+  // Checkout Steps: 'plan' -> 'method' -> 'crypto_form' or 'whop_form'
+  const [checkoutStep, setCheckoutStep] = useState<'plan' | 'method' | 'crypto_form' | 'whop_form'>('plan');
   const [selectedPlan, setSelectedPlan] = useState<{ duration: number; price: number; id: string } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'CRYPTO' | 'WHOP' | null>(null);
   
@@ -79,6 +79,11 @@ export default function ResourcesPage() {
   const [cryptoSubmitting, setCryptoSubmitting] = useState(false);
   const [cryptoError, setCryptoError] = useState('');
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
+  // Whop Form inputs
+  const [whopTvUsername, setWhopTvUsername] = useState('');
+  const [whopSubmitting, setWhopSubmitting] = useState(false);
+  const [whopError, setWhopError] = useState('');
 
   // Modal 3: Claim Whop Username (if purchased via Whop but missing username)
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -176,6 +181,8 @@ export default function ResourcesPage() {
     setCryptoTvUsername('');
     setCryptoTxHash('');
     setCryptoError('');
+    setWhopTvUsername('');
+    setWhopError('');
     setIsPaidModalOpen(true);
   };
 
@@ -186,15 +193,56 @@ export default function ResourcesPage() {
 
   const handlePaymentMethodSelect = (method: 'CRYPTO' | 'WHOP') => {
     setPaymentMethod(method);
-    if (method === 'WHOP' && selectedPlan) {
-      // Open Whop link in a new tab
+    if (method === 'WHOP') {
+      setCheckoutStep('whop_form');
+    } else {
+      setCheckoutStep('crypto_form');
+    }
+  };
+
+  const handleWhopSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paidIndicator || !selectedPlan || !user) return;
+    if (!whopTvUsername.trim()) {
+      setWhopError('Please enter your TradingView username.');
+      return;
+    }
+
+    setWhopSubmitting(true);
+    setWhopError('');
+
+    try {
+      const { data, error } = await supabase
+        .from('tradingview_invites')
+        .upsert({
+          user_id: user.id,
+          tradingview_username: whopTvUsername.trim(),
+          indicator_id: paidIndicator.id,
+          indicator_name: paidIndicator.name,
+          status: 'pending_payment',
+          payment_method: 'WHOP',
+          payment_amount: selectedPlan.price,
+          duration_months: selectedPlan.duration,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,indicator_id'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setRequests(prev => ({ ...prev, [paidIndicator.id]: data as InviteRequest }));
+
       const whopUrl = selectedPlan.duration === 12 ? WHOP_LINKS.twelve_month :
                        selectedPlan.duration === 6 ? WHOP_LINKS.six_month :
                        WHOP_LINKS.monthly;
       window.open(whopUrl, '_blank');
       setIsPaidModalOpen(false);
-    } else {
-      setCheckoutStep('crypto_form');
+    } catch (err: any) {
+      setWhopError(err.message || 'Failed to initialize Whop checkout.');
+    } finally {
+      setWhopSubmitting(false);
     }
   };
 
@@ -270,7 +318,7 @@ export default function ResourcesPage() {
         .from('tradingview_invites')
         .update({
           tradingview_username: claimTvUsername.trim(),
-          status: 'approved', // Pre-approved since Whop payment is verified
+          status: 'pending', // Send to admin panel for whitelisting & approval (was approved)
           updated_at: new Date().toISOString()
         })
         .eq('id', req.id)
@@ -297,6 +345,14 @@ export default function ResourcesPage() {
       return (
         <span className="flex items-center gap-1.5 px-3 py-1 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-lg shadow-sm">
           Action Required
+        </span>
+      );
+    }
+
+    if (req.status === 'pending_payment') {
+      return (
+        <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest rounded-lg shadow-sm">
+          Awaiting Payment
         </span>
       );
     }
@@ -588,13 +644,24 @@ export default function ResourcesPage() {
                 );
               }
 
-              if (req?.status === 'pending' && req.tradingview_username !== 'AWAITING_USER_INPUT') {
+              if (req?.status === 'pending_payment') {
                 return (
                   <button 
                     onClick={() => openPaidCheckout('crt_algo_ultimate', 'CRT-Algo (+Ultimate)')}
-                    className="w-full py-4 bg-zinc-500/15 border border-zinc-500/20 text-zinc-500 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-zinc-500/25 hover:text-zinc-805 dark:hover:text-zinc-350 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-4 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-orange-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer animate-pulse"
                   >
-                    Submit New TxID
+                    Complete Whop Payment <ArrowRight size={14} />
+                  </button>
+                );
+              }
+
+              if (req?.status === 'pending' && req.tradingview_username !== 'AWAITING_USER_INPUT') {
+                return (
+                  <button 
+                    disabled
+                    className="w-full py-4 bg-zinc-500/15 border border-zinc-500/20 text-zinc-500 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl opacity-60 flex items-center justify-center gap-2 cursor-not-allowed"
+                  >
+                    Pending Whitelist Approval
                   </button>
                 );
               }
@@ -872,6 +939,58 @@ export default function ResourcesPage() {
                         disabled={cryptoSubmitting}
                       >
                         {cryptoSubmitting ? <Loader2 size={14} className="animate-spin" /> : <>Submit Checkout <ChevronRight size={14} /></>}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* STEP 4: Whop Checkout Form */}
+                {checkoutStep === 'whop_form' && selectedPlan && (
+                  <form onSubmit={handleWhopSubmit} className="space-y-6 animate-in fade-in duration-200">
+                    <div className="p-3 bg-[var(--input-bg)] border border-[var(--glass-border)] rounded-xl flex items-center justify-between text-xs font-bold">
+                      <span>Selected Plan:</span>
+                      <span className="text-orange-500 uppercase">{selectedPlan.duration} Month (${selectedPlan.price} USDT/month via Whop)</span>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[9px] md:text-[10px] font-black text-zinc-650 dark:text-zinc-500 uppercase ml-1 tracking-widest">TradingView Username</label>
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            placeholder="Exact username, case-sensitive..." 
+                            value={whopTvUsername} 
+                            onChange={(e) => setWhopTvUsername(e.target.value)} 
+                            className="input-modern w-full pl-12 pr-4 font-bold focus:border-orange-500/50" 
+                            required
+                            disabled={whopSubmitting}
+                          />
+                          <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {whopError && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                        <AlertTriangle size={14} /> {whopError}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4 pt-2">
+                      <button 
+                        type="button" 
+                        onClick={() => setCheckoutStep('method')} 
+                        className="flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-500/10 rounded-xl transition-all cursor-pointer" 
+                        disabled={whopSubmitting}
+                      >
+                        Back
+                      </button>
+                      <button 
+                        type="submit" 
+                        className="flex-2 btn-modern flex items-center justify-center gap-2" 
+                        disabled={whopSubmitting}
+                      >
+                        {whopSubmitting ? <Loader2 size={14} className="animate-spin" /> : <>Go to Whop Checkout <ChevronRight size={14} /></>}
                       </button>
                     </div>
                   </form>
