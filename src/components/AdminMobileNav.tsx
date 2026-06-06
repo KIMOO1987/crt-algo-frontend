@@ -13,7 +13,8 @@ import {
   X,
   UserPlus,
   LayoutDashboard,
-  Activity
+  Activity,
+  Mail
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { ThemeToggle } from './ThemeToggle';
@@ -35,6 +36,7 @@ const adminMenuGroups = [
       { name: 'Free Members', path: '/admin/users', icon: UserPlus, roles: ['admin', 'moderator'] },
       { name: 'Reset Requests', path: '/admin/resets', icon: UserPlus, roles: ['admin', 'moderator'] },
       { name: 'TV Invites', path: '/admin/tv-invites', icon: Activity, roles: ['admin', 'moderator'] },
+      { name: 'Contact Messages', path: '/admin/inquiries', icon: Mail, roles: ['admin', 'moderator'] },
     ]
   },
   {
