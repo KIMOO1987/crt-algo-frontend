@@ -52,6 +52,7 @@ export default function TVInvitesManager() {
       const { data: invites, error: invitesError } = await supabase
         .from('tradingview_invites')
         .select('*')
+        .neq('status', 'pending_payment')
         .order('created_at', { ascending: false });
 
       if (invitesError) throw invitesError;
