@@ -577,10 +577,13 @@ export default function ResourcesPage() {
                 CRT-Algo (+Ultimate)
               </h3>
               <div className="text-xs text-zinc-750 dark:text-zinc-400 leading-relaxed font-semibold space-y-1.5">
-                <p>Institutional private TradingView script access containing:</p>
-                <p>• <strong>Neural Signals</strong>: Fully integrated trade triggers designed to run on automated execution bots.</p>
-                <p>• <strong>Custom Whitelist Activation</strong>: Automatically whitelisted on your TradingView account when purchased.</p>
-                <p>• <strong>Multiple Duration Licenses</strong>: Affordable month-to-month or discounted multi-month passes.</p>
+                <p>Institutional-grade private TradingView script access containing:</p>
+                <p>• <strong>3-Drive Reversal (CRT) Pattern</strong>: Multi-drive reversal engine with LTF FVG alignment, smart POI rejection, and HTF bias filters.</p>
+                <p>• <strong>HTF Candles & Imbalances</strong>: Overlays multi-timeframe candle structures with integrated Fair Value Gaps (FVG) and Volume Imbalance (VI) zones.</p>
+                <p>• <strong>Triad & Dyad SSMT Divergence</strong>: Automated correlation tracking across index triads (NQ/ES/YM), crypto (BTC/ETH/TOTAL3), metals, and currencies.</p>
+                <p>• <strong>Defining Range & SD Cycles</strong>: Custom time-bracket Defining Ranges (DFR) with standard deviation expansion targets.</p>
+                <p>• <strong>Market Structure & CISD</strong>: High-precision BOS/CHoCH structures combined with Candle Invalidation & Structure Disruption (CISD/QCISD) breakout lines.</p>
+                <p>• <strong>True Open Session Zones</strong>: Displays True Daily/Weekly/Monthly Opens, session boundaries (Asia/London/NY), and NWOG/NDOG gaps.</p>
               </div>
             </div>
 
