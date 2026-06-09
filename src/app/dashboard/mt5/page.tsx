@@ -225,8 +225,7 @@ export default function MT5Dashboard() {
   });
 
   const [allowedSymbolsList, setAllowedSymbolsList] = useState<Record<string, SymbolConfig>>({});
-  const [majorSearchQuery, setMajorSearchQuery] = useState("");
-  const [altSearchQuery, setAltSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [terminalTab, setTerminalTab] = useState<'trade' | 'bridge'>('trade');
   const [bridgeLogs, setBridgeLogs] = useState<string[]>([]);
@@ -622,15 +621,22 @@ export default function MT5Dashboard() {
     }
   };
 
-  const majorsList = MT5_SYMBOLS.filter(s => s.type === 'major').map(s => s.symbol);
-  const altsList = MT5_SYMBOLS.filter(s => s.type === 'alt').map(s => s.symbol);
+  const metalsList = MT5_SYMBOLS.filter(s => s.category === 'METALS').map(s => s.symbol);
+  const indicesList = MT5_SYMBOLS.filter(s => s.category === 'INDICES').map(s => s.symbol);
+  const forexList = MT5_SYMBOLS.filter(s => s.category === 'FOREX').map(s => s.symbol);
+  const cryptoList = MT5_SYMBOLS.filter(s => s.category === 'CRYPTO').map(s => s.symbol);
 
-  const filteredMajors = MT5_SYMBOLS.filter(s => 
-    s.type === 'major' && s.symbol.toLowerCase().includes(majorSearchQuery.toLowerCase())
+  const filteredMetals = MT5_SYMBOLS.filter(s => 
+    s.category === 'METALS' && s.symbol.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
-  const filteredAlts = MT5_SYMBOLS.filter(s => 
-    s.type === 'alt' && s.symbol.toLowerCase().includes(altSearchQuery.toLowerCase())
+  const filteredIndices = MT5_SYMBOLS.filter(s => 
+    s.category === 'INDICES' && s.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredForex = MT5_SYMBOLS.filter(s => 
+    s.category === 'FOREX' && s.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredCrypto = MT5_SYMBOLS.filter(s => 
+    s.category === 'CRYPTO' && s.symbol.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -756,193 +762,356 @@ export default function MT5Dashboard() {
           </div>
         </div>
 
-        {/* Main allowed symbols grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* Major Symbols */}
-          <div className="glass-panel p-8 space-y-6">
-            <div className="flex justify-between items-center flex-wrap gap-4 border-b border-zinc-800 pb-4">
-              <div>
-                <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
-                  <Flame size={16} className="text-blue-400" /> Major Symbols
-                </h3>
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
-                  Active checklist: {getActiveCount(majorsList)} / {majorsList.length}
-                </span>
-              </div>
-              <input
-                type="text"
-                placeholder="Search Major..."
-                value={majorSearchQuery}
-                onChange={(e) => setMajorSearchQuery(e.target.value)}
-                className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-[10px] outline-none w-32 focus:border-blue-500 transition-all font-mono"
-              />
+        {/* Allowed Symbols Section */}
+        <div className="glass-panel p-8 space-y-6">
+          <div className="flex justify-between items-center flex-wrap gap-4 border-b border-zinc-850 pb-4">
+            <div>
+              <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-blue-500">
+                ALLOWED SYMBOLS CHECKLIST
+              </h2>
+              <p className="text-[10px] text-zinc-500 font-mono mt-1">
+                Configure allowed timeframes and grades per symbol. Toggled off symbols are blocked.
+              </p>
             </div>
-
-            {/* Bulk TF Actions */}
-            <div className="flex flex-wrap gap-2 py-1 select-none">
-              {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
-                const bulkChecked = isTfAllChecked(majorsList, tf);
-                return (
-                  <button
-                    key={tf}
-                    type="button"
-                    onClick={() => toggleTfBulk(majorsList, tf)}
-                    className={`px-2 py-1 rounded text-[9px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
-                      bulkChecked 
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
-                        : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    Bulk {tf}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-              {filteredMajors.map(sym => {
-                const checked = isSymbolChecked(sym.symbol);
-                return (
-                  <div key={sym.symbol} className="flex items-center justify-between p-3.5 bg-zinc-950/40 border border-zinc-850 rounded-xl hover:border-zinc-800 transition-all select-none">
-                    <button
-                      type="button"
-                      onClick={() => toggleWholeSymbol(sym.symbol)}
-                      className="flex items-center gap-3 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
-                    >
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                        checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-800 bg-zinc-900'
-                      }`}>
-                        {checked && (
-                          <svg className="w-3 h-3 fill-current stroke-2" viewBox="0 0 24 24">
-                            <path fill="none" stroke="currentColor" strokeWidth="3.5" d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <div className="truncate">
-                        <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
-                        <span className="text-[8px] text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
-                      </div>
-                    </button>
-
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <SymbolTfDropdown
-                        symbol={sym.symbol}
-                        selectedTfs={allowedSymbolsList[sym.symbol]?.timeframes || []}
-                        onChange={(tfs) => {
-                          setAllowedSymbolsList(prev => ({
-                            ...prev,
-                            [sym.symbol]: {
-                              timeframes: tfs,
-                              grades: prev[sym.symbol]?.grades || ['All']
-                            }
-                          }));
-                        }}
-                      />
-                      <SymbolGradeDropdown
-                        symbol={sym.symbol}
-                        selectedGrades={allowedSymbolsList[sym.symbol]?.grades || ['All']}
-                        onChange={(grades) => changeSymbolGrades(sym.symbol, grades)}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <input
+              type="text"
+              placeholder="Search all symbols..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-xs outline-none w-48 focus:border-blue-500 transition-all font-mono text-white"
+            />
           </div>
 
-          {/* Alt Symbols */}
-          <div className="glass-panel p-8 space-y-6">
-            <div className="flex justify-between items-center flex-wrap gap-4 border-b border-zinc-800 pb-4">
-              <div>
-                <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
-                  <Compass size={16} className="text-blue-400" /> Alt Symbols
-                </h3>
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
-                  Active checklist: {getActiveCount(altsList)} / {altsList.length}
-                </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* 1. Metals Card */}
+            <div className="bg-zinc-950/40 border border-zinc-900 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+                <div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <Flame size={14} className="text-blue-400" /> Metals
+                  </h3>
+                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
+                    Enabled: {getActiveCount(metalsList)} / {metalsList.length}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
+                    const bulkChecked = isTfAllChecked(metalsList, tf);
+                    return (
+                      <button
+                        key={tf}
+                        type="button"
+                        onClick={() => toggleTfBulk(metalsList, tf)}
+                        className={`px-1.5 py-0.5 rounded text-[8px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
+                          bulkChecked 
+                            ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
+                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                        }`}
+                      >
+                        {tf.split("/")[0]}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <input
-                type="text"
-                placeholder="Search Alt..."
-                value={altSearchQuery}
-                onChange={(e) => setAltSearchQuery(e.target.value)}
-                className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-[10px] outline-none w-32 focus:border-blue-500 transition-all font-mono"
-              />
-            </div>
-
-            {/* Bulk TF Actions */}
-            <div className="flex flex-wrap gap-2 py-1 select-none">
-              {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
-                const bulkChecked = isTfAllChecked(altsList, tf);
-                return (
-                  <button
-                    key={tf}
-                    type="button"
-                    onClick={() => toggleTfBulk(altsList, tf)}
-                    className={`px-2 py-1 rounded text-[9px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
-                      bulkChecked 
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
-                        : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    Bulk {tf}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-              {filteredAlts.map(sym => {
-                const checked = isSymbolChecked(sym.symbol);
-                return (
-                  <div key={sym.symbol} className="flex items-center justify-between p-3.5 bg-zinc-950/40 border border-zinc-850 rounded-xl hover:border-zinc-800 transition-all select-none">
-                    <button
-                      type="button"
-                      onClick={() => toggleWholeSymbol(sym.symbol)}
-                      className="flex items-center gap-3 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
-                    >
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                        checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-800 bg-zinc-900'
-                      }`}>
-                        {checked && (
-                          <svg className="w-3 h-3 fill-current stroke-2" viewBox="0 0 24 24">
-                            <path fill="none" stroke="currentColor" strokeWidth="3.5" d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
+              
+              <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                {filteredMetals.map(sym => {
+                  const checked = isSymbolChecked(sym.symbol);
+                  return (
+                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-950/20 border border-zinc-850/60 rounded-xl hover:border-zinc-800 transition-all select-none">
+                      <button
+                        type="button"
+                        onClick={() => toggleWholeSymbol(sym.symbol)}
+                        className="flex items-center gap-2 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
+                      >
+                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-850 bg-zinc-900'
+                        }`}>
+                          {checked && (
+                            <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                              <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="truncate">
+                          <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
+                          <span className="text-[7.5px] text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <SymbolTfDropdown
+                          symbol={sym.symbol}
+                          selectedTfs={allowedSymbolsList[sym.symbol]?.timeframes || []}
+                          onChange={(tfs) => {
+                            setAllowedSymbolsList(prev => ({
+                              ...prev,
+                              [sym.symbol]: {
+                                timeframes: tfs,
+                                grades: prev[sym.symbol]?.grades || ['All']
+                              }
+                            }));
+                          }}
+                        />
+                        <SymbolGradeDropdown
+                          symbol={sym.symbol}
+                          selectedGrades={allowedSymbolsList[sym.symbol]?.grades || ['All']}
+                          onChange={(grades) => changeSymbolGrades(sym.symbol, grades)}
+                        />
                       </div>
-                      <div className="truncate">
-                        <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
-                        <span className="text-[8px] text-zinc-500 font-bold block uppercase tracking-tight flex items-center gap-1.5">
-                          {sym.name} <span className="text-[6.5px] border border-zinc-800 px-1 rounded-sm bg-zinc-900 text-zinc-400 font-mono font-bold tracking-normal uppercase">{sym.category}</span>
-                        </span>
-                      </div>
-                    </button>
-
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <SymbolTfDropdown
-                        symbol={sym.symbol}
-                        selectedTfs={allowedSymbolsList[sym.symbol]?.timeframes || []}
-                        onChange={(tfs) => {
-                          setAllowedSymbolsList(prev => ({
-                            ...prev,
-                            [sym.symbol]: {
-                              timeframes: tfs,
-                              grades: prev[sym.symbol]?.grades || ['All']
-                            }
-                          }));
-                        }}
-                      />
-                      <SymbolGradeDropdown
-                        symbol={sym.symbol}
-                        selectedGrades={allowedSymbolsList[sym.symbol]?.grades || ['All']}
-                        onChange={(grades) => changeSymbolGrades(sym.symbol, grades)}
-                      />
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
+
+            {/* 2. Indices Card */}
+            <div className="bg-zinc-950/40 border border-zinc-900 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+                <div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <BarChart3 size={14} className="text-blue-400" /> Indices
+                  </h3>
+                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
+                    Enabled: {getActiveCount(indicesList)} / {indicesList.length}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
+                    const bulkChecked = isTfAllChecked(indicesList, tf);
+                    return (
+                      <button
+                        key={tf}
+                        type="button"
+                        onClick={() => toggleTfBulk(indicesList, tf)}
+                        className={`px-1.5 py-0.5 rounded text-[8px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
+                          bulkChecked 
+                            ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
+                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                        }`}
+                      >
+                        {tf.split("/")[0]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                {filteredIndices.map(sym => {
+                  const checked = isSymbolChecked(sym.symbol);
+                  return (
+                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-950/20 border border-zinc-850/60 rounded-xl hover:border-zinc-800 transition-all select-none">
+                      <button
+                        type="button"
+                        onClick={() => toggleWholeSymbol(sym.symbol)}
+                        className="flex items-center gap-2 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
+                      >
+                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-850 bg-zinc-900'
+                        }`}>
+                          {checked && (
+                            <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                              <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="truncate">
+                          <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
+                          <span className="text-[7.5px] text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <SymbolTfDropdown
+                          symbol={sym.symbol}
+                          selectedTfs={allowedSymbolsList[sym.symbol]?.timeframes || []}
+                          onChange={(tfs) => {
+                            setAllowedSymbolsList(prev => ({
+                              ...prev,
+                              [sym.symbol]: {
+                                timeframes: tfs,
+                                grades: prev[sym.symbol]?.grades || ['All']
+                              }
+                            }));
+                          }}
+                        />
+                        <SymbolGradeDropdown
+                          symbol={sym.symbol}
+                          selectedGrades={allowedSymbolsList[sym.symbol]?.grades || ['All']}
+                          onChange={(grades) => changeSymbolGrades(sym.symbol, grades)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Forex Card */}
+            <div className="bg-zinc-950/40 border border-zinc-900 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+                <div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <Compass size={14} className="text-blue-400" /> Forex
+                  </h3>
+                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
+                    Enabled: {getActiveCount(forexList)} / {forexList.length}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
+                    const bulkChecked = isTfAllChecked(forexList, tf);
+                    return (
+                      <button
+                        key={tf}
+                        type="button"
+                        onClick={() => toggleTfBulk(forexList, tf)}
+                        className={`px-1.5 py-0.5 rounded text-[8px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
+                          bulkChecked 
+                            ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
+                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                        }`}
+                      >
+                        {tf.split("/")[0]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {filteredForex.map(sym => {
+                  const checked = isSymbolChecked(sym.symbol);
+                  return (
+                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-950/20 border border-zinc-850/60 rounded-xl hover:border-zinc-800 transition-all select-none">
+                      <button
+                        type="button"
+                        onClick={() => toggleWholeSymbol(sym.symbol)}
+                        className="flex items-center gap-2 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
+                      >
+                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-850 bg-zinc-900'
+                        }`}>
+                          {checked && (
+                            <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                              <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="truncate">
+                          <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
+                          <span className="text-[7.5px] text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <SymbolTfDropdown
+                          symbol={sym.symbol}
+                          selectedTfs={allowedSymbolsList[sym.symbol]?.timeframes || []}
+                          onChange={(tfs) => {
+                            setAllowedSymbolsList(prev => ({
+                              ...prev,
+                              [sym.symbol]: {
+                                timeframes: tfs,
+                                grades: prev[sym.symbol]?.grades || ['All']
+                              }
+                            }));
+                          }}
+                        />
+                        <SymbolGradeDropdown
+                          symbol={sym.symbol}
+                          selectedGrades={allowedSymbolsList[sym.symbol]?.grades || ['All']}
+                          onChange={(grades) => changeSymbolGrades(sym.symbol, grades)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 4. Crypto (Major Only) Card */}
+            <div className="bg-zinc-950/40 border border-zinc-900 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+                <div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <Award size={14} className="text-blue-400" /> Crypto (Major Only)
+                  </h3>
+                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
+                    Enabled: {getActiveCount(cryptoList)} / {cryptoList.length}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {["M5/H1", "M15/H4", "M30/H6", "H1/D1"].map(tf => {
+                    const bulkChecked = isTfAllChecked(cryptoList, tf);
+                    return (
+                      <button
+                        key={tf}
+                        type="button"
+                        onClick={() => toggleTfBulk(cryptoList, tf)}
+                        className={`px-1.5 py-0.5 rounded text-[8px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
+                          bulkChecked 
+                            ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
+                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                        }`}
+                      >
+                        {tf.split("/")[0]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {filteredCrypto.map(sym => {
+                  const checked = isSymbolChecked(sym.symbol);
+                  return (
+                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-950/20 border border-zinc-850/60 rounded-xl hover:border-zinc-800 transition-all select-none">
+                      <button
+                        type="button"
+                        onClick={() => toggleWholeSymbol(sym.symbol)}
+                        className="flex items-center gap-2 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
+                      >
+                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-850 bg-zinc-900'
+                        }`}>
+                          {checked && (
+                            <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
+                              <path fill="none" stroke="currentColor" strokeWidth="4" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="truncate">
+                          <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
+                          <span className="text-[7.5px] text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <SymbolTfDropdown
+                          symbol={sym.symbol}
+                          selectedTfs={allowedSymbolsList[sym.symbol]?.timeframes || []}
+                          onChange={(tfs) => {
+                            setAllowedSymbolsList(prev => ({
+                              ...prev,
+                              [sym.symbol]: {
+                                timeframes: tfs,
+                                grades: prev[sym.symbol]?.grades || ['All']
+                              }
+                            }));
+                          }}
+                        />
+                        <SymbolGradeDropdown
+                          symbol={sym.symbol}
+                          selectedGrades={allowedSymbolsList[sym.symbol]?.grades || ['All']}
+                          onChange={(grades) => changeSymbolGrades(sym.symbol, grades)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
         </div>
 
