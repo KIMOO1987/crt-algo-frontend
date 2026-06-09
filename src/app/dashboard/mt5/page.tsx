@@ -11,30 +11,35 @@ import {
 } from 'lucide-react';
 
 const MT5_SYMBOLS = [
+  // Major Symbols (Metals, Indices, Forex)
   { symbol: 'XAUUSD', name: 'Gold vs US Dollar', category: 'METALS', type: 'major' },
   { symbol: 'XAGUSD', name: 'Silver vs US Dollar', category: 'METALS', type: 'major' },
-  { symbol: 'US100', name: 'Nasdaq 100 Index', category: 'INDICES', type: 'major' },
-  { symbol: 'US500', name: 'S&P 500 Index', category: 'INDICES', type: 'major' },
+  { symbol: 'NAS100', name: 'Nasdaq 100 Index', category: 'INDICES', type: 'major' },
+  { symbol: 'SPX500', name: 'S&P 500 Index', category: 'INDICES', type: 'major' },
   { symbol: 'US30', name: 'Dow Jones Index', category: 'INDICES', type: 'major' },
   { symbol: 'EURUSD', name: 'Euro vs US Dollar', category: 'FOREX', type: 'major' },
   { symbol: 'GBPUSD', name: 'Pound vs US Dollar', category: 'FOREX', type: 'major' },
   { symbol: 'USDJPY', name: 'US Dollar vs Yen', category: 'FOREX', type: 'major' },
   { symbol: 'GBPJPY', name: 'Pound vs Yen', category: 'FOREX', type: 'major' },
+  { symbol: 'AUDUSD', name: 'Australian Dollar vs USD', category: 'FOREX', type: 'major' },
   { symbol: 'EURJPY', name: 'Euro vs Yen', category: 'FOREX', type: 'major' },
-  
-  { symbol: 'AUDUSD', name: 'Australian Dollar vs USD', category: 'FOREX', type: 'alt' },
-  { symbol: 'USDCAD', name: 'USD vs Canadian Dollar', category: 'FOREX', type: 'alt' },
-  { symbol: 'USDCHF', name: 'USD vs Swiss Franc', category: 'FOREX', type: 'alt' },
-  { symbol: 'NZDUSD', name: 'NZ Dollar vs USD', category: 'FOREX', type: 'alt' },
-  { symbol: 'EURGBP', name: 'Euro vs Pound', category: 'FOREX', type: 'alt' },
-  { symbol: 'GER40', name: 'DAX 40 Index', category: 'INDICES', type: 'alt' },
-  { symbol: 'UK100', name: 'FTSE 100 Index', category: 'INDICES', type: 'alt' },
-  { symbol: 'FRA40', name: 'CAC 40 Index', category: 'INDICES', type: 'alt' },
-  { symbol: 'EU50', name: 'Euro Stoxx 50 Index', category: 'INDICES', type: 'alt' },
+  { symbol: 'NZDUSD', name: 'NZ Dollar vs USD', category: 'FOREX', type: 'major' },
+  { symbol: 'CHFJPY', name: 'Swiss Franc vs Yen', category: 'FOREX', type: 'major' },
+
+  // Alt Symbols (Crypto - Major Only)
   { symbol: 'BTCUSD', name: 'Bitcoin vs USD', category: 'CRYPTO', type: 'alt' },
   { symbol: 'ETHUSD', name: 'Ethereum vs USD', category: 'CRYPTO', type: 'alt' },
-  { symbol: 'SOLUSD', name: 'Solana vs USD', category: 'CRYPTO', type: 'alt' }
+  { symbol: 'XRPUSD', name: 'Ripple vs USD', category: 'CRYPTO', type: 'alt' },
+  { symbol: 'ADAUSD', name: 'Cardano vs USD', category: 'CRYPTO', type: 'alt' },
+  { symbol: 'SOLUSD', name: 'Solana vs USD', category: 'CRYPTO', type: 'alt' },
+  { symbol: 'LTCUSD', name: 'Litecoin vs USD', category: 'CRYPTO', type: 'alt' },
+  { symbol: 'LINKUSD', name: 'Chainlink vs USD', category: 'CRYPTO', type: 'alt' },
+  { symbol: 'BNBUSD', name: 'Binance Coin vs USD', category: 'CRYPTO', type: 'alt' },
+  { symbol: 'AVAXUSD', name: 'Avalanche vs USD', category: 'CRYPTO', type: 'alt' },
+  { symbol: 'DOTUSD', name: 'Polkadot vs USD', category: 'CRYPTO', type: 'alt' },
+  { symbol: 'TRXUSD', name: 'Tron vs USD', category: 'CRYPTO', type: 'alt' }
 ];
+
 
 interface SymbolConfig {
   timeframes: string[];
