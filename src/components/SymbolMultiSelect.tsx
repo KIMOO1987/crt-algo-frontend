@@ -54,7 +54,7 @@ export default function SymbolMultiSelect({
   };
 
   return (
-    <div className="relative w-full md:w-60" ref={dropdownRef}>
+    <div className="relative w-full" ref={dropdownRef}>
       <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase ml-2 tracking-widest block mb-1">
         Symbols Checklist
       </label>
@@ -86,7 +86,7 @@ export default function SymbolMultiSelect({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute left-0 mt-2 w-full md:w-64 bg-zinc-950/95 border border-[var(--glass-border)] rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-[99] overflow-hidden"
+            className="absolute left-0 mt-2 w-full bg-zinc-950/95 border border-[var(--glass-border)] rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-[99] overflow-hidden"
           >
             {/* Search Input inside Dropdown */}
             <div className="p-3 border-b border-white/5 relative flex items-center">
