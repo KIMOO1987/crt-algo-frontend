@@ -73,7 +73,32 @@ serve(async (req: Request) => {
       });
     }
 
-    // --- STEP 2: FETCH GLOBAL ACTIVE SIGNALS (max 15 minutes old) ---
+    // --- STEP 2: LOAD PLATFORM CONFIGURATION AND FILTER CHECKLIST ---
+    const platform = url.searchParams.get('platform') || 'MT5'; // default to MT5 if not sent
+    let allowedSymbols: any = null;
+    let isPlatformEnabled = true;
+
+    if (platform === 'MT5' || platform === 'cTrader') {
+      const tableName = platform === 'MT5' ? 'mt5_auth' : 'ctrader_auth';
+      const { data: authConfig, error: authError } = await supabase
+        .from(tableName)
+        .select('allowed_symbols, is_enabled')
+        .eq('user_id', cleanToken)
+        .maybeSingle();
+
+      if (!authError && authConfig) {
+        allowedSymbols = authConfig.allowed_symbols;
+        isPlatformEnabled = authConfig.is_enabled ?? true;
+      }
+    }
+
+    if (!isPlatformEnabled) {
+      return new Response(JSON.stringify([]), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // --- STEP 3: FETCH GLOBAL ACTIVE SIGNALS (max 15 minutes old) ---
     const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const { data: trades, error: tradesError } = await supabase
       .from('signals')
@@ -84,14 +109,56 @@ serve(async (req: Request) => {
 
     if (tradesError) throw tradesError;
 
-    if (!trades || trades.length === 0) {
+    // Filter signals using Allowed Symbols checklist
+    let filteredTrades = trades || [];
+    if (allowedSymbols && typeof allowedSymbols === 'object' && Object.keys(allowedSymbols).length > 0) {
+      filteredTrades = filteredTrades.filter((trade: Signal) => {
+        const tradeSymbol = trade.symbol.toUpperCase().replace("/", "").replace("-", "").replace(".P", "").replace("-P", "").replace(".PERP", "").trim();
+        
+        let matchedKey = null;
+        for (const key of Object.keys(allowedSymbols)) {
+          const cleanKey = key.toUpperCase().replace("/", "").replace("-", "").replace(".P", "").replace("-P", "").replace(".PERP", "").trim();
+          if (tradeSymbol === cleanKey) {
+            matchedKey = key;
+            break;
+          }
+        }
+
+        if (!matchedKey) return false; // Not enabled on checklist
+
+        const symConfig = allowedSymbols[matchedKey];
+        let allowedTfs: string[] = [];
+        let allowedGrades: string[] = ['ALL'];
+
+        if (Array.isArray(symConfig)) {
+          allowedTfs = symConfig;
+        } else if (symConfig && typeof symConfig === 'object') {
+          allowedTfs = symConfig.timeframes || [];
+          allowedGrades = (symConfig.grades || ['ALL']).map((g: string) => g.toUpperCase());
+        }
+
+        // Timeframe alignment check
+        const tradeTf = (trade.tf_alignment || "M5/H1").toUpperCase().replace("-", "/").trim();
+        const allowedTfsUpper = allowedTfs.map(t => t.toUpperCase().replace("-", "/").trim());
+        if (!allowedTfsUpper.includes(tradeTf)) return false;
+
+        // Grade check
+        const tradeGrade = (trade.grade || "A+").toUpperCase().trim();
+        const gradeMatch = allowedGrades.includes('ALL') || allowedGrades.includes(tradeGrade);
+        if (!gradeMatch) return false;
+
+        return true;
+      });
+    }
+
+    if (!filteredTrades || filteredTrades.length === 0) {
       return new Response(JSON.stringify([]), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
     // --- STEP 3: MAP ACTIONS PER TRADE ---
-    const responseBody = (trades as Signal[]).map((trade: Signal) => {
+    const responseBody = (filteredTrades as Signal[]).map((trade: Signal) => {
       let action = "none";
       const status = trade.status?.toUpperCase();
 
