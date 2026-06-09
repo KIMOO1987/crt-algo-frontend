@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     );
 
     // 2. Parse Incoming Request from Dashboard
-    const { action, symbol, volume } = await req.json();
+    const { action, symbol, volume, platform } = await req.json();
 
     // 3. Authenticate User
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -74,11 +74,13 @@ export async function POST(req: Request) {
     }
 
     // 5. Update the Database
-    // We target the specific user's row in bot_signals
+    // We target the specific user's row in bot_signals for the requested platform
+    const platformLabel = platform === 'mt5' ? 'MT5' : 'cTrader';
     const { error: dbError } = await supabase
       .from('bot_signals')
       .update(updateData)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .eq('platform', platformLabel);
 
     if (dbError) {
       // If this fails, the column likely doesn't exist yet
