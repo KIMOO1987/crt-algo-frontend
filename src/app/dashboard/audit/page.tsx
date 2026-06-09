@@ -8,6 +8,7 @@ import CustomSelect from '@/components/CustomSelect';
 import { Search, Activity, Zap, TrendingUp, Layers, Target, Wallet, BarChart3, AlertCircle, ChevronUp, ChevronDown, Calendar, FileSpreadsheet } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
+import GradeMultiSelect from '@/components/GradeMultiSelect';
 import { exportToCSV } from '@/lib/csv-exporter';
 
 // Sub-component remains the same as your original
@@ -34,7 +35,7 @@ export default function SymbolAudit() {
   const { user, loading: authLoading } = useAuth();
 
   // 1. INSTANT HYDRATION
-  const [stats, setStats] = useState<any[]>(() => {
+  const [cachedStats] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('audit_stats_cache');
       return cached ? JSON.parse(cached) : [];
@@ -61,11 +62,19 @@ export default function SymbolAudit() {
 
   // Symbol multi-select filter states
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
+  // Grade multi-select filter states
+  const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
 
-  // Dynamically extract unique symbols from the aggregated stats
+  const [rawSignals, setRawSignals] = useState<any[]>([]);
+
+  // Dynamically extract unique symbols from the raw signals or cached stats
   const uniqueSymbols = useMemo(() => {
-    return Array.from(new Set(stats.map((s: any) => s.symbol.toUpperCase()))).sort();
-  }, [stats]);
+    const source = rawSignals.length > 0 ? rawSignals : [];
+    if (source.length > 0) {
+      return Array.from(new Set(source.map((s: any) => s.symbol.toUpperCase()))).sort();
+    }
+    return Array.from(new Set(cachedStats.map((s: any) => s.symbol.toUpperCase()))).sort();
+  }, [rawSignals, cachedStats]);
 
   const handleSort = (key: string) => {
     setSortConfig(prev => ({
@@ -106,73 +115,7 @@ export default function SymbolAudit() {
         const { data, error } = await query;
 
         if (data) {
-          // 2. Aggregate manually by symbol
-          const symbolMap: { [key: string]: any } = {};
-
-          data.forEach(s => {
-            const sym = s.symbol.toUpperCase();
-            if (!symbolMap[sym]) {
-              symbolMap[sym] = {
-                symbol: sym,
-                total_trades: 0,
-                wins: 0,
-                losses: 0,
-                be: 0,
-                total_rr: 0,
-                gradeCounts: {
-                  'A++': 0,
-                  'A+': 0,
-                  'GOOD': 0,
-                  'NORMAL': 0
-                }
-              };
-            }
-
-            const stats = symbolMap[sym];
-            stats.total_trades++;
-
-            const rawGrade = (s.grade || 'A+').toUpperCase().trim();
-            const cleanGrade = rawGrade.includes('A++') ? 'A++' : rawGrade.includes('A+') ? 'A+' : rawGrade.includes('GOOD') ? 'GOOD' : 'NORMAL';
-            stats.gradeCounts[cleanGrade]++;
-
-            const entry = Number(s.entry_price || 0);
-            const sl = Number(s.sl || 0);
-            const risk = Math.abs(entry - sl);
-            if (!risk) return;
-
-            const status = s.status?.toUpperCase();
-            if (status === 'TP2' || status === 'WIN') {
-              stats.wins++;
-              stats.total_rr += Math.abs(Number(s.tp_secondary || s.tp || 0) - entry) / risk;
-            } else if (status === 'TP1' || status === 'TP1 + SL (BE)') {
-              stats.wins++; // Treat partial as win for audit
-              stats.total_rr += Math.abs(Number(s.tp || 0) - entry) / risk;
-            } else if (status === 'SL' || status === 'LOSS') {
-              stats.losses++;
-              stats.total_rr -= 1;
-            } else {
-              stats.be++;
-            }
-          });
-
-          const formatted = Object.values(symbolMap).map((item: any) => {
-            const gCounts = item.gradeCounts;
-            const gradeWeight = (gCounts['A++'] * 4) + (gCounts['A+'] * 3) + (gCounts['GOOD'] * 2) + (gCounts['NORMAL'] * 1);
-            return {
-              symbol: item.symbol,
-              trades: item.total_trades,
-              wins: item.wins,
-              losses: item.losses,
-              be: item.be,
-              winRate: item.total_trades > 0 ? Number(((item.wins / item.total_trades) * 100).toFixed(1)) : 0,
-              gradeCounts: gCounts,
-              gradeWeight: gradeWeight,
-              totalRR: Number(item.total_rr.toFixed(1))
-            };
-          });
-
-          setStats(formatted);
-          localStorage.setItem('audit_stats_cache', JSON.stringify(formatted));
+          setRawSignals(data);
         }
       } catch (err) {
         console.error("Audit Fetch Error:", err);
@@ -183,6 +126,89 @@ export default function SymbolAudit() {
 
     fetchPerformance();
   }, [user, tfAlignment, dateFrom, dateTo]);
+
+  // Aggregate signals into performance stats by symbol, applying filters dynamically
+  const stats = useMemo(() => {
+    if (loading && rawSignals.length === 0) {
+      return cachedStats;
+    }
+
+    const symbolMap: { [key: string]: any } = {};
+
+    rawSignals.forEach(s => {
+      const rawGrade = (s.grade || 'A+').toUpperCase().trim();
+      const cleanGrade = rawGrade.includes('A++') ? 'A++' : rawGrade.includes('A+') ? 'A+' : rawGrade.includes('GOOD') ? 'GOOD' : 'NORMAL';
+
+      // Apply grade checklist filtering
+      if (selectedGrades.length > 0 && !selectedGrades.includes(cleanGrade)) {
+        return;
+      }
+
+      const sym = s.symbol.toUpperCase();
+      if (!symbolMap[sym]) {
+        symbolMap[sym] = {
+          symbol: sym,
+          total_trades: 0,
+          wins: 0,
+          losses: 0,
+          be: 0,
+          total_rr: 0,
+          gradeCounts: {
+            'A++': 0,
+            'A+': 0,
+            'GOOD': 0,
+            'NORMAL': 0
+          }
+        };
+      }
+
+      const statsObj = symbolMap[sym];
+      statsObj.total_trades++;
+      statsObj.gradeCounts[cleanGrade]++;
+
+      const entry = Number(s.entry_price || 0);
+      const sl = Number(s.sl || 0);
+      const risk = Math.abs(entry - sl);
+      if (!risk) return;
+
+      const status = s.status?.toUpperCase();
+      if (status === 'TP2' || status === 'WIN') {
+        statsObj.wins++;
+        statsObj.total_rr += Math.abs(Number(s.tp_secondary || s.tp || 0) - entry) / risk;
+      } else if (status === 'TP1' || status === 'TP1 + SL (BE)') {
+        statsObj.wins++;
+        statsObj.total_rr += Math.abs(Number(s.tp || 0) - entry) / risk;
+      } else if (status === 'SL' || status === 'LOSS') {
+        statsObj.losses++;
+        statsObj.total_rr -= 1;
+      } else {
+        statsObj.be++;
+      }
+    });
+
+    return Object.values(symbolMap).map((item: any) => {
+      const gCounts = item.gradeCounts;
+      const gradeWeight = (gCounts['A++'] * 4) + (gCounts['A+'] * 3) + (gCounts['GOOD'] * 2) + (gCounts['NORMAL'] * 1);
+      return {
+        symbol: item.symbol,
+        trades: item.total_trades,
+        wins: item.wins,
+        losses: item.losses,
+        be: item.be,
+        winRate: item.total_trades > 0 ? Number(((item.wins / item.total_trades) * 100).toFixed(1)) : 0,
+        gradeCounts: gCounts,
+        gradeWeight: gradeWeight,
+        totalRR: Number(item.total_rr.toFixed(1))
+      };
+    });
+  }, [rawSignals, selectedGrades, cachedStats, loading]);
+
+  // Update cached stats for instant hydration on subsequent loads (only cache full stats)
+  useEffect(() => {
+    if (rawSignals.length > 0 && selectedGrades.length === 0) {
+      localStorage.setItem('audit_stats_cache', JSON.stringify(stats));
+    }
+  }, [rawSignals, selectedGrades, stats]);
 
   // 3. DYNAMIC FILTERING (Optimized with useMemo)
   const filteredStats = useMemo(() => {
@@ -268,16 +294,14 @@ export default function SymbolAudit() {
                 • INSTITUTIONAL PERFORMANCE BREAKDOWN BY PAIR •
               </p>
             </div>
-          </div>
-
-          {/* Filters Bar */}
-          <div className="glass-panel p-4 md:p-5 w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 items-end shadow-lg">
+          </div>          {/* Filters Bar */}
+          <div className="glass-panel p-4 md:p-5 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end shadow-lg">
             <div className="flex flex-col gap-1.5 w-full">
-              <span className="text-[10px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider ml-1">From Date</span>
+              <span className="text-[10px] font-bold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider ml-1">From Date</span>
               <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input-modern h-[42px] px-4 text-xs font-semibold text-foreground bg-[var(--input-bg)] border border-[var(--input-border)] outline-none w-full cursor-pointer" />
             </div>
             <div className="flex flex-col gap-1.5 w-full">
-              <span className="text-[10px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider ml-1">To Date</span>
+              <span className="text-[10px] font-bold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider ml-1">To Date</span>
               <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input-modern h-[42px] px-4 text-xs font-semibold text-foreground bg-[var(--input-bg)] border border-[var(--input-border)] outline-none w-full cursor-pointer" />
             </div>
 
@@ -313,7 +337,11 @@ export default function SymbolAudit() {
               <SymbolMultiSelect symbols={uniqueSymbols} selectedSymbols={selectedSymbols} onChange={setSelectedSymbols} />
             </div>
 
-            <div className="flex flex-col gap-1.5 w-full">
+            <div className="w-full flex flex-col gap-1.5">
+              <GradeMultiSelect selectedGrades={selectedGrades} onChange={setSelectedGrades} />
+            </div>
+
+            <div className="flex flex-col gap-1.5 w-full sm:col-span-2 lg:col-span-3 xl:col-span-2">
               <span className="text-[10px] font-bold text-zinc-555 dark:text-zinc-400 uppercase tracking-wider ml-1">Search & Export</span>
               <div className="flex gap-2 w-full h-[42px]">
                 <div className="relative flex-grow h-full">
