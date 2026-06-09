@@ -261,6 +261,13 @@ export default function MT5Dashboard() {
     return res;
   };
 
+  const getActiveCount = (list: string[]) => {
+    return list.filter(sym => {
+      const config = allowedSymbolsList[sym];
+      return config && config.timeframes && config.timeframes.length > 0;
+    }).length;
+  };
+
   const fetchDashboardData = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
