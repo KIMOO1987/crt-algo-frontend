@@ -112,12 +112,19 @@ serve(async (req: Request) => {
     // Filter signals using Allowed Symbols checklist
     let filteredTrades = trades || [];
     if (allowedSymbols && typeof allowedSymbols === 'object' && Object.keys(allowedSymbols).length > 0) {
+      const normalizeSymbol = (s: string) => {
+        let c = s.toUpperCase().replace("/", "").replace("-", "").replace(".P", "").replace("-P", "").replace(".PERP", "").trim();
+        if (c === "US100" || c === "NASDAQ" || c === "NASDAQ100" || c === "NDX100" || c === "USTEC" || c === "Nasdaq100") return "NAS100";
+        if (c === "US500" || c === "SP500" || c === "SPX" || c === "SPX500") return "SPX500";
+        return c;
+      };
+
       filteredTrades = filteredTrades.filter((trade: Signal) => {
-        const tradeSymbol = trade.symbol.toUpperCase().replace("/", "").replace("-", "").replace(".P", "").replace("-P", "").replace(".PERP", "").trim();
+        const tradeSymbol = normalizeSymbol(trade.symbol);
         
         let matchedKey = null;
         for (const key of Object.keys(allowedSymbols)) {
-          const cleanKey = key.toUpperCase().replace("/", "").replace("-", "").replace(".P", "").replace("-P", "").replace(".PERP", "").trim();
+          const cleanKey = normalizeSymbol(key);
           if (tradeSymbol === cleanKey) {
             matchedKey = key;
             break;
