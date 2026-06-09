@@ -83,7 +83,7 @@ function SymbolGradeDropdown({ symbol, selectedGrades, onChange }: { symbol: str
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border border-zinc-800 text-zinc-400 bg-zinc-900/40 hover:text-white hover:bg-zinc-800 shrink-0 flex items-center gap-1 cursor-pointer"
+        className="px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-400 bg-zinc-100/50 dark:bg-zinc-900/40 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-zinc-800 shrink-0 flex items-center gap-1 cursor-pointer"
         title={`Configure grades for ${symbol}`}
       >
         <span>Grades: {displayText}</span>
@@ -91,7 +91,7 @@ function SymbolGradeDropdown({ symbol, selectedGrades, onChange }: { symbol: str
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1.5 w-32 rounded-xl bg-zinc-950 border border-zinc-800 p-2 shadow-2xl z-50 space-y-1 animate-fadeIn">
+        <div className="absolute right-0 mt-1.5 w-32 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-2 shadow-2xl z-50 space-y-1 animate-fadeIn">
           {options.map(opt => {
             const checked = selectedGrades.includes(opt);
             return (
@@ -99,10 +99,10 @@ function SymbolGradeDropdown({ symbol, selectedGrades, onChange }: { symbol: str
                 key={opt}
                 type="button"
                 onClick={() => handleToggle(opt)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-mono font-bold text-left rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition-all cursor-pointer"
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-mono font-bold text-left rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-all cursor-pointer"
               >
                 <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
-                  checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-800 bg-zinc-900'
+                  checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900'
                 }`}>
                   {checked && (
                     <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
@@ -163,7 +163,7 @@ function SymbolTfDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border border-zinc-800 text-zinc-400 bg-zinc-900/40 hover:text-white hover:bg-zinc-800 shrink-0 flex items-center gap-1 cursor-pointer"
+        className="px-2.5 py-1 rounded text-[10px] font-black font-mono tracking-tighter uppercase transition-all select-none border border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-400 bg-zinc-100/50 dark:bg-zinc-900/40 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/50 dark:hover:bg-zinc-800 shrink-0 flex items-center gap-1 cursor-pointer"
         title={`Configure timeframes for ${symbol}`}
       >
         <span>TFs: {displayText}</span>
@@ -171,7 +171,7 @@ function SymbolTfDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1.5 w-32 rounded-xl bg-zinc-950 border border-zinc-800 p-2 shadow-2xl z-50 space-y-1 animate-fadeIn">
+        <div className="absolute right-0 mt-1.5 w-32 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-2 shadow-2xl z-50 space-y-1 animate-fadeIn">
           {options.map(opt => {
             const checked = selectedTfs.includes(opt);
             return (
@@ -179,10 +179,10 @@ function SymbolTfDropdown({
                 key={opt}
                 type="button"
                 onClick={() => handleToggle(opt)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-mono font-bold text-left rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition-all cursor-pointer"
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-mono font-bold text-left rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-all cursor-pointer"
               >
                 <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
-                  checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-800 bg-zinc-900'
+                  checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900'
                 }`}>
                   {checked && (
                     <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
@@ -652,7 +652,7 @@ export default function MT5Dashboard() {
 
   return (
     <AccessGuard requiredTier={2} tierName="PRO">
-      <div className="w-full relative z-10 space-y-6 md:space-y-8 text-white">
+      <div className="w-full relative z-10 space-y-6 md:space-y-8 text-zinc-900 dark:text-white">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 md:mb-12 border-b border-zinc-800 pb-8">
@@ -696,7 +696,7 @@ export default function MT5Dashboard() {
           </div>
           <div className="glass-panel p-5">
             <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Break Evens</span>
-            <p className="text-2xl font-black mt-2 font-mono text-zinc-400">✓ {metrics.bes}</p>
+            <p className="text-2xl font-black mt-2 font-mono text-zinc-600 dark:text-zinc-400">✓ {metrics.bes}</p>
           </div>
         </div>
 
@@ -706,21 +706,21 @@ export default function MT5Dashboard() {
             <BarChart3 size={16} /> MT5 Performance Board
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-zinc-950/50 border border-zinc-800 p-6 rounded-2xl">
+            <div className="bg-zinc-100/50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl">
               <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Opening Balance</span>
               <p className="text-3xl font-black mt-2 font-mono">${metrics.opening.toFixed(2)}</p>
             </div>
-            <div className="bg-zinc-950/50 border border-zinc-800 p-6 rounded-2xl">
+            <div className="bg-zinc-100/50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl">
               <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Closing Balance</span>
               <p className="text-3xl font-black mt-2 font-mono">${metrics.closing.toFixed(2)}</p>
             </div>
-            <div className="bg-zinc-950/50 border border-zinc-800 p-6 rounded-2xl flex flex-col justify-between">
+            <div className="bg-zinc-100/50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl flex flex-col justify-between">
               <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Net Realized PnL</span>
               <div className="flex items-center gap-2 mt-2">
-                <p className={`text-3xl font-black font-mono ${metrics.pnl >= 0 ? 'text-emerald-400' : 'text-red-500'}`}>
+                <p className={`text-3xl font-black font-mono ${metrics.pnl >= 0 ? 'text-emerald-450' : 'text-red-500'}`}>
                   {metrics.pnl >= 0 ? `+$${metrics.pnl.toFixed(2)}` : `-$${Math.abs(metrics.pnl).toFixed(2)}`}
                 </p>
-                {metrics.pnl >= 0 ? <ArrowUpRight className="text-emerald-400" /> : <ArrowDownRight className="text-red-500" />}
+                {metrics.pnl >= 0 ? <ArrowUpRight className="text-emerald-450" /> : <ArrowDownRight className="text-red-500" />}
               </div>
             </div>
           </div>
@@ -735,29 +735,29 @@ export default function MT5Dashboard() {
             <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">Read-Only</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 font-mono text-xs">
-            <div className="bg-zinc-950/30 border border-zinc-850 p-4 rounded-xl">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-850 p-4 rounded-xl">
               <span className="text-[8px] text-zinc-500 block uppercase tracking-wider mb-1">Account Mode</span>
-              <span className="font-bold uppercase text-white">{botConfig.account_mode}</span>
+              <span className="font-bold uppercase text-zinc-900 dark:text-white">{botConfig.account_mode}</span>
             </div>
-            <div className="bg-zinc-950/30 border border-zinc-850 p-4 rounded-xl">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-850 p-4 rounded-xl">
               <span className="text-[8px] text-zinc-500 block uppercase tracking-wider mb-1">Base Capital</span>
-              <span className="font-bold text-white">${botConfig.base_capital}</span>
+              <span className="font-bold text-zinc-900 dark:text-white">${botConfig.base_capital}</span>
             </div>
-            <div className="bg-zinc-950/30 border border-zinc-850 p-4 rounded-xl">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-850 p-4 rounded-xl">
               <span className="text-[8px] text-zinc-500 block uppercase tracking-wider mb-1">Daily Risk</span>
-              <span className="font-bold text-white">${botConfig.daily_risk_wallet}</span>
+              <span className="font-bold text-zinc-900 dark:text-white">${botConfig.daily_risk_wallet}</span>
             </div>
-            <div className="bg-zinc-950/30 border border-zinc-850 p-4 rounded-xl">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-850 p-4 rounded-xl">
               <span className="text-[8px] text-zinc-500 block uppercase tracking-wider mb-1">Risk Percentage</span>
-              <span className="font-bold text-white">{botConfig.risk_percentage}%</span>
+              <span className="font-bold text-zinc-900 dark:text-white">{botConfig.risk_percentage}%</span>
             </div>
-            <div className="bg-zinc-950/30 border border-zinc-850 p-4 rounded-xl">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-850 p-4 rounded-xl">
               <span className="text-[8px] text-zinc-500 block uppercase tracking-wider mb-1">Min RR</span>
-              <span className="font-bold text-white">{botConfig.rr} R</span>
+              <span className="font-bold text-zinc-900 dark:text-white">{botConfig.rr} R</span>
             </div>
-            <div className="bg-zinc-950/30 border border-zinc-850 p-4 rounded-xl">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/30 border border-zinc-200 dark:border-zinc-850 p-4 rounded-xl">
               <span className="text-[8px] text-zinc-500 block uppercase tracking-wider mb-1">Max Concurrent</span>
-              <span className="font-bold text-white">{botConfig.max_concurrent_setups}</span>
+              <span className="font-bold text-zinc-900 dark:text-white">{botConfig.max_concurrent_setups}</span>
             </div>
           </div>
         </div>
@@ -778,20 +778,20 @@ export default function MT5Dashboard() {
               placeholder="Search all symbols..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-xs outline-none w-48 focus:border-blue-500 transition-all font-mono text-white"
+              className="bg-white/50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-xs outline-none w-48 focus:border-blue-500 transition-all font-mono text-zinc-900 dark:text-white"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
             {/* 1. Metals Card */}
-            <div className="bg-zinc-950/40 border border-zinc-900 p-6 rounded-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-900 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-900 pb-3">
                 <div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                     <Flame size={14} className="text-blue-400" /> Metals
                   </h3>
-                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
+                  <span className="text-[8px] font-mono text-zinc-550 dark:text-zinc-500 uppercase">
                     Enabled: {getActiveCount(metalsList)} / {metalsList.length}
                   </span>
                 </div>
@@ -806,7 +806,7 @@ export default function MT5Dashboard() {
                         className={`px-1.5 py-0.5 rounded text-[8px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
                           bulkChecked 
                             ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
-                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                            : 'border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-350 font-bold'
                         }`}
                       >
                         {tf.split("/")[0]}
@@ -820,14 +820,14 @@ export default function MT5Dashboard() {
                 {filteredMetals.map(sym => {
                   const checked = isSymbolChecked(sym.symbol);
                   return (
-                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-950/20 border border-zinc-850/60 rounded-xl hover:border-zinc-800 transition-all select-none">
+                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-100/10 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-850/60 rounded-xl hover:border-zinc-350 dark:hover:border-zinc-800 transition-all select-none">
                       <button
                         type="button"
                         onClick={() => toggleWholeSymbol(sym.symbol)}
                         className="flex items-center gap-2 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
                       >
                         <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
-                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-850 bg-zinc-900'
+                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-300 dark:border-zinc-850 bg-zinc-50 dark:bg-zinc-900'
                         }`}>
                           {checked && (
                             <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
@@ -836,8 +836,8 @@ export default function MT5Dashboard() {
                           )}
                         </div>
                         <div className="truncate">
-                          <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
-                          <span className="text-[7.5px] text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
+                          <span className="text-xs font-black font-mono block text-zinc-900 dark:text-white">{sym.symbol}</span>
+                          <span className="text-[7.5px] text-zinc-550 dark:text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
                         </div>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -867,13 +867,13 @@ export default function MT5Dashboard() {
             </div>
 
             {/* 2. Indices Card */}
-            <div className="bg-zinc-950/40 border border-zinc-900 p-6 rounded-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-900 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-900 pb-3">
                 <div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                     <BarChart3 size={14} className="text-blue-400" /> Indices
                   </h3>
-                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
+                  <span className="text-[8px] font-mono text-zinc-550 dark:text-zinc-500 uppercase">
                     Enabled: {getActiveCount(indicesList)} / {indicesList.length}
                   </span>
                 </div>
@@ -888,7 +888,7 @@ export default function MT5Dashboard() {
                         className={`px-1.5 py-0.5 rounded text-[8px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
                           bulkChecked 
                             ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
-                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                            : 'border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-350 font-bold'
                         }`}
                       >
                         {tf.split("/")[0]}
@@ -902,14 +902,14 @@ export default function MT5Dashboard() {
                 {filteredIndices.map(sym => {
                   const checked = isSymbolChecked(sym.symbol);
                   return (
-                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-950/20 border border-zinc-850/60 rounded-xl hover:border-zinc-800 transition-all select-none">
+                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-100/10 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-850/60 rounded-xl hover:border-zinc-350 dark:hover:border-zinc-800 transition-all select-none">
                       <button
                         type="button"
                         onClick={() => toggleWholeSymbol(sym.symbol)}
                         className="flex items-center gap-2 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
                       >
                         <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
-                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-850 bg-zinc-900'
+                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-300 dark:border-zinc-850 bg-zinc-50 dark:bg-zinc-900'
                         }`}>
                           {checked && (
                             <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
@@ -918,8 +918,8 @@ export default function MT5Dashboard() {
                           )}
                         </div>
                         <div className="truncate">
-                          <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
-                          <span className="text-[7.5px] text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
+                          <span className="text-xs font-black font-mono block text-zinc-900 dark:text-white">{sym.symbol}</span>
+                          <span className="text-[7.5px] text-zinc-550 dark:text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
                         </div>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -949,13 +949,13 @@ export default function MT5Dashboard() {
             </div>
 
             {/* 3. Forex Card */}
-            <div className="bg-zinc-950/40 border border-zinc-900 p-6 rounded-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-900 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-900 pb-3">
                 <div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                     <Compass size={14} className="text-blue-400" /> Forex
                   </h3>
-                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
+                  <span className="text-[8px] font-mono text-zinc-550 dark:text-zinc-500 uppercase">
                     Enabled: {getActiveCount(forexList)} / {forexList.length}
                   </span>
                 </div>
@@ -970,7 +970,7 @@ export default function MT5Dashboard() {
                         className={`px-1.5 py-0.5 rounded text-[8px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
                           bulkChecked 
                             ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
-                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                            : 'border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-350 font-bold'
                         }`}
                       >
                         {tf.split("/")[0]}
@@ -984,14 +984,14 @@ export default function MT5Dashboard() {
                 {filteredForex.map(sym => {
                   const checked = isSymbolChecked(sym.symbol);
                   return (
-                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-950/20 border border-zinc-850/60 rounded-xl hover:border-zinc-800 transition-all select-none">
+                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-100/10 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-850/60 rounded-xl hover:border-zinc-350 dark:hover:border-zinc-800 transition-all select-none">
                       <button
                         type="button"
                         onClick={() => toggleWholeSymbol(sym.symbol)}
                         className="flex items-center gap-2 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
                       >
                         <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
-                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-850 bg-zinc-900'
+                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-300 dark:border-zinc-850 bg-zinc-50 dark:bg-zinc-900'
                         }`}>
                           {checked && (
                             <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
@@ -1000,8 +1000,8 @@ export default function MT5Dashboard() {
                           )}
                         </div>
                         <div className="truncate">
-                          <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
-                          <span className="text-[7.5px] text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
+                          <span className="text-xs font-black font-mono block text-zinc-900 dark:text-white">{sym.symbol}</span>
+                          <span className="text-[7.5px] text-zinc-550 dark:text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
                         </div>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -1031,13 +1031,13 @@ export default function MT5Dashboard() {
             </div>
 
             {/* 4. Crypto (Major Only) Card */}
-            <div className="bg-zinc-950/40 border border-zinc-900 p-6 rounded-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+            <div className="bg-zinc-100/30 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-900 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-900 pb-3">
                 <div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                     <Award size={14} className="text-blue-400" /> Crypto (Major Only)
                   </h3>
-                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
+                  <span className="text-[8px] font-mono text-zinc-550 dark:text-zinc-500 uppercase">
                     Enabled: {getActiveCount(cryptoList)} / {cryptoList.length}
                   </span>
                 </div>
@@ -1052,7 +1052,7 @@ export default function MT5Dashboard() {
                         className={`px-1.5 py-0.5 rounded text-[8px] font-bold font-mono tracking-tighter uppercase transition-all border shrink-0 cursor-pointer ${
                           bulkChecked 
                             ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
-                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                            : 'border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-350 font-bold'
                         }`}
                       >
                         {tf.split("/")[0]}
@@ -1066,14 +1066,14 @@ export default function MT5Dashboard() {
                 {filteredCrypto.map(sym => {
                   const checked = isSymbolChecked(sym.symbol);
                   return (
-                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-950/20 border border-zinc-850/60 rounded-xl hover:border-zinc-800 transition-all select-none">
+                    <div key={sym.symbol} className="flex items-center justify-between p-2.5 bg-zinc-100/10 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-850/60 rounded-xl hover:border-zinc-350 dark:hover:border-zinc-800 transition-all select-none">
                       <button
                         type="button"
                         onClick={() => toggleWholeSymbol(sym.symbol)}
                         className="flex items-center gap-2 text-left focus:outline-none cursor-pointer flex-1 min-w-0"
                       >
                         <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
-                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-850 bg-zinc-900'
+                          checked ? 'border-blue-500 bg-blue-500 text-black' : 'border-zinc-300 dark:border-zinc-855 bg-zinc-50 dark:bg-zinc-900'
                         }`}>
                           {checked && (
                             <svg className="w-2.5 h-2.5 fill-current stroke-2" viewBox="0 0 24 24">
@@ -1082,8 +1082,8 @@ export default function MT5Dashboard() {
                           )}
                         </div>
                         <div className="truncate">
-                          <span className="text-xs font-black font-mono block text-white">{sym.symbol}</span>
-                          <span className="text-[7.5px] text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
+                          <span className="text-xs font-black font-mono block text-zinc-900 dark:text-white">{sym.symbol}</span>
+                          <span className="text-[7.5px] text-zinc-550 dark:text-zinc-500 font-bold block uppercase tracking-tight">{sym.name}</span>
                         </div>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -1180,13 +1180,13 @@ export default function MT5Dashboard() {
 
         {/* Live log Terminal */}
         <div className="glass-panel overflow-hidden">
-          <div className="flex border-b border-zinc-850 bg-zinc-950/60 p-2 gap-1 flex-wrap">
+          <div className="flex border-b border-zinc-200 dark:border-zinc-850 bg-zinc-50/50 dark:bg-zinc-950/60 p-2 gap-1 flex-wrap">
             <button
               onClick={() => setTerminalTab('trade')}
               className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                 terminalTab === 'trade' 
-                  ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
-                  : 'text-zinc-500 hover:text-white border border-transparent'
+                  ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
+                  : 'text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white border border-transparent'
               }`}
             >
               Trade executions Log
@@ -1195,20 +1195,20 @@ export default function MT5Dashboard() {
               onClick={() => setTerminalTab('bridge')}
               className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                 terminalTab === 'bridge' 
-                  ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
-                  : 'text-zinc-500 hover:text-white border border-transparent'
+                  ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
+                  : 'text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white border border-transparent'
               }`}
             >
               Bridge Log Terminal
             </button>
           </div>
 
-          <div className="p-6 bg-zinc-950/80 font-mono text-[11px] leading-relaxed">
+          <div className="p-6 bg-white/80 dark:bg-zinc-950/80 font-mono text-[11px] leading-relaxed text-zinc-800 dark:text-zinc-350">
             {terminalTab === 'trade' ? (
               <div className="space-y-2.5 overflow-x-auto">
                 <table className="w-full text-left border-collapse select-text">
                   <thead>
-                    <tr className="border-b border-zinc-850 text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                    <tr className="border-b border-zinc-200 dark:border-zinc-850 text-zinc-550 dark:text-zinc-500 text-[10px] font-black uppercase tracking-widest">
                       <th className="pb-3 pr-4">Time</th>
                       <th className="pb-3 pr-4">Ticket</th>
                       <th className="pb-3 pr-4">Symbol</th>
@@ -1220,38 +1220,38 @@ export default function MT5Dashboard() {
                       <th className="pb-3 text-right">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-900/50">
+                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-900/50">
                     {rawExecutions.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="py-6 text-center text-zinc-600 font-bold uppercase tracking-wider">
+                        <td colSpan={9} className="py-6 text-center text-zinc-500 font-bold uppercase tracking-wider">
                           No MT5 executions recorded yet.
                         </td>
                       </tr>
                     ) : (
                       [...rawExecutions].reverse().map(e => (
-                        <tr key={e.id} className="hover:bg-zinc-900/10 transition-colors">
-                          <td className="py-3 pr-4 text-zinc-500 whitespace-nowrap">{new Date(e.executed_at).toLocaleString()}</td>
-                          <td className="py-3 pr-4 text-zinc-400 font-mono">{e.position_id || '---'}</td>
-                          <td className="py-3 pr-4 font-black">{e.symbol}</td>
+                        <tr key={e.id} className="hover:bg-zinc-100/50 dark:hover:bg-zinc-900/10 transition-colors">
+                          <td className="py-3 pr-4 text-zinc-550 dark:text-zinc-500 whitespace-nowrap">{new Date(e.executed_at).toLocaleString()}</td>
+                          <td className="py-3 pr-4 text-zinc-650 dark:text-zinc-400 font-mono">{e.position_id || '---'}</td>
+                          <td className="py-3 pr-4 font-black text-zinc-900 dark:text-zinc-200">{e.symbol}</td>
                           <td className="py-3 pr-4 whitespace-nowrap">
                             <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
-                              e.side === 'BUY' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                              e.side === 'BUY' ? 'bg-emerald-550/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
                             }`}>
                               {e.side}
                             </span>
                           </td>
-                          <td className="py-3 pr-4 font-bold text-zinc-400">{e.tf_alignment || '---'}</td>
-                          <td className="py-3 pr-4 font-mono font-bold text-zinc-300">{e.entry_price ? `$${parseFloat(e.entry_price).toFixed(5)}` : '---'}</td>
-                          <td className="py-3 pr-4 font-mono text-zinc-300">{e.quantity}</td>
-                          <td className={`py-3 pr-4 text-right font-bold font-mono ${e.pnl > 0 ? 'text-emerald-400' : e.pnl < 0 ? 'text-red-500' : 'text-zinc-500'}`}>
+                          <td className="py-3 pr-4 font-bold text-zinc-600 dark:text-zinc-400">{e.tf_alignment || '---'}</td>
+                          <td className="py-3 pr-4 font-mono font-bold text-zinc-800 dark:text-zinc-300">{e.entry_price ? `$${parseFloat(e.entry_price).toFixed(5)}` : '---'}</td>
+                          <td className="py-3 pr-4 font-mono text-zinc-800 dark:text-zinc-300">{e.quantity}</td>
+                          <td className={`py-3 pr-4 text-right font-bold font-mono ${e.pnl > 0 ? 'text-emerald-600 dark:text-emerald-400' : e.pnl < 0 ? 'text-red-650 dark:text-red-500' : 'text-zinc-500'}`}>
                             {e.pnl > 0 ? `+$${parseFloat(e.pnl).toFixed(2)}` : e.pnl < 0 ? `-$${Math.abs(parseFloat(e.pnl)).toFixed(2)}` : '$0.00'}
                           </td>
                           <td className="py-3 text-right whitespace-nowrap">
                             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                              e.status === 'ENTRY' ? 'bg-zinc-800 text-zinc-400 border border-zinc-700' :
-                              ['TP2_HIT', 'WIN'].includes(e.status) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                              ['SL_HIT', 'LOSS'].includes(e.status) ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                              'bg-zinc-900 text-zinc-500 border border-zinc-800'
+                              e.status === 'ENTRY' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700' :
+                              ['TP2_HIT', 'WIN'].includes(e.status) ? 'bg-emerald-500/20 text-emerald-650 dark:text-emerald-400 border border-emerald-500/30' :
+                              ['SL_HIT', 'LOSS'].includes(e.status) ? 'bg-red-500/20 text-red-650 dark:text-red-400 border border-red-500/30' :
+                              'bg-zinc-100 dark:bg-zinc-900 text-zinc-500 border border-zinc-200 dark:border-zinc-800'
                             }`}>
                               {e.status}
                             </span>
@@ -1265,20 +1265,20 @@ export default function MT5Dashboard() {
             ) : (
               <div className="space-y-1.5 max-h-[400px] overflow-y-auto custom-scrollbar select-text pr-2">
                 {bridgeLogs.length === 0 ? (
-                  <p className="text-center py-6 text-zinc-600 font-bold uppercase tracking-wider">No Bridge signals received yet.</p>
+                  <p className="text-center py-6 text-zinc-500 dark:text-zinc-600 font-bold uppercase tracking-wider">No Bridge signals received yet.</p>
                 ) : (
                   [...bridgeLogs].reverse().map((log, i) => {
                     const isError = log.includes("[ERROR]") || log.includes("❌");
                     const isSuccess = log.includes("[SUCCESS]") || log.includes("✅");
                     const isWarning = log.includes("[WARNING]") || log.includes("⚠️");
                     
-                    let colorClass = "text-zinc-400";
-                    if (isError) colorClass = "text-red-400";
-                    else if (isSuccess) colorClass = "text-emerald-400";
-                    else if (isWarning) colorClass = "text-amber-400";
+                    let colorClass = "text-zinc-600 dark:text-zinc-400";
+                    if (isError) colorClass = "text-red-600 dark:text-red-400";
+                    else if (isSuccess) colorClass = "text-emerald-600 dark:text-emerald-400";
+                    else if (isWarning) colorClass = "text-amber-600 dark:text-amber-400";
                     
                     return (
-                      <div key={i} className={`py-1 border-b border-zinc-900/30 font-mono tracking-tight ${colorClass}`}>
+                      <div key={i} className={`py-1 border-b border-zinc-100 dark:border-zinc-900/30 font-mono tracking-tight ${colorClass}`}>
                         {log}
                       </div>
                     );
@@ -1311,8 +1311,8 @@ export default function MT5Dashboard() {
                     0{i + 1}
                   </div>
                   <div className="space-y-2">
-                    <h4 className="text-sm font-black uppercase tracking-tight text-white">{step.title}</h4>
-                    <p className="text-xs text-zinc-500 leading-relaxed font-medium">{step.desc}</p>
+                    <h4 className="text-sm font-black uppercase tracking-tight text-zinc-900 dark:text-white">{step.title}</h4>
+                    <p className="text-xs text-zinc-550 dark:text-zinc-500 leading-relaxed font-medium">{step.desc}</p>
                   </div>
                 </div>
               ))}

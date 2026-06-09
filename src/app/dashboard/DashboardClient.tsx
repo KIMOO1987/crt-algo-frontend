@@ -170,7 +170,7 @@ export default function DashboardClient({ tier, expiryDate, userProfile }: Dashb
                    </span>
                    <button 
                       onClick={handleCopyLicense}
-                      className="ml-1.5 hover:bg-white/10 p-1 rounded transition-all flex items-center justify-center cursor-pointer group"
+                      className="ml-1.5 hover:bg-zinc-200/50 dark:hover:bg-white/10 p-1 rounded transition-all flex items-center justify-center cursor-pointer group"
                       title="Copy License Key"
                    >
                       {copied ? (

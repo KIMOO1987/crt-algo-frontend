@@ -213,8 +213,8 @@ export default function PaymentsPage() {
               className={`relative p-8 md:p-10 flex flex-col cursor-pointer transition-all duration-500 group glass-panel ${selectedPlan?.id === plan.id
                 ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_50px_rgba(59,130,246,0.2)] transform md:-translate-y-4 z-10'
                 : recommendedPlan?.id === plan.id
-                  ? 'bg-gradient-to-br from-white/[0.08] to-white/[0.02] border-white/20 shadow-2xl hover:border-white/30'
-                  : 'hover:bg-white/[0.06]'
+                  ? 'bg-zinc-100/50 dark:bg-white/[0.08] border-zinc-200 dark:border-white/20 shadow-2xl hover:border-zinc-350 dark:hover:border-white/30'
+                  : 'hover:bg-zinc-100/80 dark:hover:bg-white/[0.06]'
                 }`}
             >
               {recommendedPlan?.id === plan.id && (

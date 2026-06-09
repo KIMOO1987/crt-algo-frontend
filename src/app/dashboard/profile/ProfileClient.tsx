@@ -236,13 +236,13 @@ export default function ProfileClient({ initialData, tier, expiryDate }: any) {
                   />
                   <div className="relative group cursor-pointer shadow-[0_0_15px_rgba(0,0,0,0.5)] rounded-full" onClick={handleAvatarClick}>
                     {avatarLoading ? (
-                      <div className="w-14 h-14 rounded-full bg-white/[0.05] border border-blue-500/50 flex items-center justify-center overflow-hidden animate-pulse shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                      <div className="w-14 h-14 rounded-full bg-zinc-200/50 dark:bg-white/[0.05] border border-blue-500/50 flex items-center justify-center overflow-hidden animate-pulse shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                         <Activity size={20} className="text-blue-400" />
                       </div>
                     ) : avatarUrl ? (
                       <img src={avatarUrl} alt="User Avatar" className="w-14 h-14 rounded-full object-cover border-2 border-[var(--glass-border)] group-hover:border-blue-500/50 transition-colors" />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-white/[0.05] border border-[var(--glass-border)] flex items-center justify-center overflow-hidden group-hover:border-blue-500/50 transition-colors">
+                      <div className="w-14 h-14 rounded-full bg-zinc-200/50 dark:bg-white/[0.05] border border-[var(--glass-border)] flex items-center justify-center overflow-hidden group-hover:border-blue-500/50 transition-colors">
                         <User size={24} className="text-zinc-700 dark:text-zinc-400 group-hover:text-blue-400 transition-colors" />
                       </div>
                     )}
@@ -339,7 +339,7 @@ export default function ProfileClient({ initialData, tier, expiryDate }: any) {
                 </div>
               </div>
               <button onClick={handlePasswordChange} disabled={passwordLoading} className={`w-full mt-8 py-4 text-zinc-900 dark:text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-3 group ${
-                  passwordLoading ? 'bg-white/[0.05] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 cursor-not-allowed' : 'bg-[var(--glass-bg)] hover:bg-white/[0.05] border border-[var(--glass-border)] hover:border-red-500/50 hover:shadow-[0_0_30px_rgba(239,68,68,0.2)]'
+                  passwordLoading ? 'bg-zinc-100/50 dark:bg-white/[0.05] border border-[var(--glass-border)] text-zinc-650 dark:text-zinc-500 cursor-not-allowed' : 'bg-[var(--glass-bg)] hover:bg-zinc-100/80 dark:hover:bg-white/[0.05] border border-[var(--glass-border)] hover:border-red-500/50 hover:shadow-[0_0_30px_rgba(239,68,68,0.2)]'
               }`}>
                 {passwordLoading ? <RefreshCcw size={16} className="animate-spin text-zinc-700 dark:text-zinc-400" /> : <Lock size={16} className="group-hover:text-red-400 transition-colors" />}
                 {passwordLoading ? 'Rotating Keys...' : 'Update Credentials'}

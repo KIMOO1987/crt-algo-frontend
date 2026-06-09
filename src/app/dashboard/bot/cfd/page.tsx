@@ -331,8 +331,8 @@ export default function CFDBotDocumentation() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-[#0a0c10] rounded-[3rem] p-12 border border-zinc-800 shadow-2xl">
-                  <h4 className="text-xl font-black italic uppercase text-white mb-8 flex items-center gap-3">
+                <div className="bg-white dark:bg-[#0a0c10] rounded-[3rem] p-12 border border-zinc-200 dark:border-zinc-800 shadow-2xl">
+                  <h4 className="text-xl font-black italic uppercase text-zinc-900 dark:text-white mb-8 flex items-center gap-3">
                     <Radio size={20} className="text-blue-500" />
                     Terminal Log Indicators
                   </h4>
@@ -345,7 +345,7 @@ export default function CFDBotDocumentation() {
                     ].map((item, i) => (
                       <div key={i} className="space-y-3">
                         <p className={`text-[11px] font-bold uppercase tracking-widest ${item.color}`}>{item.code}</p>
-                        <p className="text-[10px] text-zinc-600 leading-relaxed">{item.desc}</p>
+                        <p className="text-[10px] text-zinc-600 dark:text-zinc-400 leading-relaxed">{item.desc}</p>
                       </div>
                     ))}
                   </div>
