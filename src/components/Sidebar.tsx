@@ -79,11 +79,13 @@ export default function Sidebar({ tier, role }: { tier: number; role?: string })
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      const theme = window.localStorage.getItem('theme');
       window.localStorage.clear();
+      if (theme) window.localStorage.setItem('theme', theme);
       window.sessionStorage.clear();
-      window.location.href = '/login';
+      window.location.href = '/';
     } catch (error) {
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 
