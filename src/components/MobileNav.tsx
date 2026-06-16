@@ -6,7 +6,7 @@ import {
   LayoutGrid, Clock, History, Zap, Compass, BarChart3,
   CheckSquare, LineChart, User, CreditCard,
   LogOut, Lock, X, Menu, ShieldCheck,
-  Terminal, Activity, Cpu
+  Terminal, Activity, Cpu, Settings, UserPlus, Mail
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -66,6 +66,48 @@ export default function MobileNav({ tier, role }: { tier: number; role?: string 
   const [isButtonVisible, setIsButtonVisible] = useState(true);
   const pathname = usePathname();
   const isStaff = role === 'admin' || role === 'moderator';
+  const isAdmin = role === 'admin';
+
+  // Construct dynamic menu groups based on role
+  const dynamicMenuGroups = [...menuGroups];
+
+  if (isStaff) {
+    const systemControlItems = [
+      { name: 'Signals Manager', path: '/admin/signals', icon: Activity, minTier: 0 },
+      { name: 'Plans Editor', path: '/admin/plans', icon: Settings, minTier: 0 },
+    ];
+    if (isAdmin) {
+      systemControlItems.push({ name: 'Staff Manager', path: '/admin/staff', icon: UserPlus, minTier: 0 });
+    }
+
+    const userManagementItems = [
+      { name: 'New User', path: '/admin/new-user', icon: UserPlus, minTier: 0 },
+      { name: 'Premium Members', path: '/admin/premium', icon: UserPlus, minTier: 0 },
+      { name: 'Free Members', path: '/admin/users', icon: UserPlus, minTier: 0 },
+      { name: 'Reset Requests', path: '/admin/resets', icon: UserPlus, minTier: 0 },
+      { name: 'TV Invites', path: '/admin/tv-invites', icon: Activity, minTier: 0 },
+      { name: 'Contact Messages', path: '/admin/inquiries', icon: Mail, minTier: 0 },
+    ];
+
+    dynamicMenuGroups.push({
+      label: 'SYSTEM CONTROL',
+      items: systemControlItems
+    });
+
+    dynamicMenuGroups.push({
+      label: 'USER MANAGEMENT',
+      items: userManagementItems
+    });
+
+    if (isAdmin) {
+      dynamicMenuGroups.push({
+        label: 'FINANCIAL',
+        items: [
+          { name: 'Payment Terminal', path: '/admin/payments', icon: CreditCard, minTier: 0 }
+        ]
+      });
+    }
+  }
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -73,6 +115,7 @@ export default function MobileNav({ tier, role }: { tier: number; role?: string 
   );
 
   useEffect(() => {
+
     document.body.style.overflow = isOpen ? 'hidden' : 'unset';
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
@@ -170,7 +213,7 @@ export default function MobileNav({ tier, role }: { tier: number; role?: string 
                 <button onClick={() => setIsOpen(false)} className="p-2 opacity-50 hover:opacity-100 transition-colors"><X size={24} /></button>
               </div>
               <nav className="flex-1 overflow-y-auto space-y-8 no-scrollbar pb-20 relative z-10">
-                {menuGroups.map((group) => (
+                {dynamicMenuGroups.map((group) => (
                   <div key={group.label}>
                     <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 tracking-[0.2em] mb-4 px-3 uppercase">{group.label}</p>
                     <div className="space-y-1">

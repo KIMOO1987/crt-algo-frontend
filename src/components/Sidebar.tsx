@@ -5,7 +5,7 @@ import {
   LayoutGrid, Clock, History, Zap, Compass, BarChart3,
   CheckSquare, LineChart, User, CreditCard,
   LogOut, Lock, X, Menu, ShieldCheck,
-  Terminal, Activity, Cpu
+  Terminal, Activity, Cpu, Settings, UserPlus, Mail
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -75,19 +75,48 @@ export default function Sidebar({ tier, role }: { tier: number; role?: string })
 
   // Staff check: Admin and Moderator get full access
   const isStaff = role === 'admin' || role === 'moderator';
+  const isAdmin = role === 'admin';
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      const theme = window.localStorage.getItem('theme');
-      window.localStorage.clear();
-      if (theme) window.localStorage.setItem('theme', theme);
-      window.sessionStorage.clear();
-      window.location.href = '/';
-    } catch (error) {
-      window.location.href = '/';
+  // Construct dynamic menu groups based on role
+  const dynamicMenuGroups = [...menuGroups];
+
+  if (isStaff) {
+    const systemControlItems = [
+      { name: 'Signals Manager', path: '/admin/signals', icon: Activity, minTier: 0 },
+      { name: 'Plans Editor', path: '/admin/plans', icon: Settings, minTier: 0 },
+    ];
+    if (isAdmin) {
+      systemControlItems.push({ name: 'Staff Manager', path: '/admin/staff', icon: UserPlus, minTier: 0 });
     }
-  };
+
+    const userManagementItems = [
+      { name: 'New User', path: '/admin/new-user', icon: UserPlus, minTier: 0 },
+      { name: 'Premium Members', path: '/admin/premium', icon: UserPlus, minTier: 0 },
+      { name: 'Free Members', path: '/admin/users', icon: UserPlus, minTier: 0 },
+      { name: 'Reset Requests', path: '/admin/resets', icon: UserPlus, minTier: 0 },
+      { name: 'TV Invites', path: '/admin/tv-invites', icon: Activity, minTier: 0 },
+      { name: 'Contact Messages', path: '/admin/inquiries', icon: Mail, minTier: 0 },
+    ];
+
+    dynamicMenuGroups.push({
+      label: 'SYSTEM CONTROL',
+      items: systemControlItems
+    });
+
+    dynamicMenuGroups.push({
+      label: 'USER MANAGEMENT',
+      items: userManagementItems
+    });
+
+    if (isAdmin) {
+      dynamicMenuGroups.push({
+        label: 'FINANCIAL',
+        items: [
+          { name: 'Payment Terminal', path: '/admin/payments', icon: CreditCard, minTier: 0 }
+        ]
+      });
+    }
+  }
 
   if (!mounted) return null;
 
@@ -115,7 +144,8 @@ export default function Sidebar({ tier, role }: { tier: number; role?: string })
           </div>
 
           <nav className="flex-1 overflow-y-auto pr-2 no-scrollbar">
-            {menuGroups.map((group) => (
+            {dynamicMenuGroups.map((group) => (
+
               <div key={group.label} className="mb-8">
                 <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 tracking-[0.2em] mb-4 px-3 uppercase">{group.label}</p>
                 <div className="space-y-1">
