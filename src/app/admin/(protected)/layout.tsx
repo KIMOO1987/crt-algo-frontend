@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import AdminSidebar from '@/components/AdminSidebar';
-import AdminMobileNav from '@/components/AdminMobileNav';
+import Sidebar from '@/components/Sidebar';
+import MobileNav from '@/components/MobileNav';
 import { Providers } from '@/components/Providers';
 import { Loader2 } from 'lucide-react';
 
@@ -46,10 +46,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <Providers>
       <div className="flex min-h-screen relative overflow-hidden bg-background">
-        <AdminSidebar userRole={role || 'user'} />
+        <Sidebar tier={3} role={role || 'user'} />
         
         <div className="flex-1 flex flex-col min-w-0 lg:pl-72">
-          <AdminMobileNav userRole={role || 'user'} />
+          <MobileNav tier={3} role={role || 'user'} />
+
 
           <main id="main-scroll-container" className="flex-1 overflow-y-auto w-full custom-scrollbar relative">
             <div className="h-full w-full p-4 md:p-8 lg:p-10 flex flex-col max-w-[1700px] mx-auto">
