@@ -73,6 +73,19 @@ export default function Sidebar({ tier, role }: { tier: number; role?: string })
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      const theme = window.localStorage.getItem('theme');
+      window.localStorage.clear();
+      if (theme) window.localStorage.setItem('theme', theme);
+      window.sessionStorage.clear();
+      window.location.href = '/';
+    } catch (error) {
+      window.location.href = '/';
+    }
+  };
+
   // Staff check: Admin and Moderator get full access
   const isStaff = role === 'admin' || role === 'moderator';
   const isAdmin = role === 'admin';
