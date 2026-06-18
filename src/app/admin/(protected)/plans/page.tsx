@@ -14,18 +14,40 @@ export default function PlanManager() {
 
   async function fetchPlans() {
     const { data } = await supabase.from('plans').select('*').order('price', { ascending: true });
-    if (data) setPlans(data);
+    if (data) {
+      const plansWithText = data.map(p => ({
+        ...p,
+        features: p.features || [],
+        features_text: (p.features || []).join(', ')
+      }));
+      setPlans(plansWithText);
+    }
     setLoading(false);
   }
 
   async function updatePlan(id: string, plan: any) {
     setSaving(id);
     
+    // Parse features_text back to features array
+    const parsedFeatures = (plan.features_text || '')
+      .split(',')
+      .map((f: string) => f.trim())
+      .filter((f: string) => f !== '');
+    
     // Only send editable fields to prevent system field update errors
-    const { id: _, created_at: __, ...updates } = plan;
+    const { id: _, created_at: __, features_text: ___, ...updates } = plan;
+    updates.features = parsedFeatures;
     
     const { error } = await supabase.from('plans').update(updates).eq('id', id);
-    if (!error) alert("Plan Updated Successfully!");
+    if (!error) {
+      alert("Plan Updated Successfully!");
+      setPlans(prevPlans => prevPlans.map(p => {
+        if (p.id === id) {
+          return { ...p, features: parsedFeatures, features_text: parsedFeatures.join(', ') };
+        }
+        return p;
+      }));
+    }
     else alert(`Update Error: ${error.message}`);
     setSaving(null);
   }
@@ -127,10 +149,10 @@ export default function PlanManager() {
                 <div className="relative z-10 space-y-2">
                   <label className="text-[9px] md:text-[10px] font-black text-zinc-500 uppercase ml-1 tracking-widest block">Features (Comma Separated)</label>
                   <textarea 
-                    value={plan.features.join(', ')} 
+                    value={plan.features_text ?? ''} 
                     onChange={(e) => {
                       const newPlans = [...plans];
-                      newPlans.find(p => p.id === plan.id).features = e.target.value.split(',').map((f: string) => f.trim());
+                      newPlans.find(p => p.id === plan.id).features_text = e.target.value;
                       setPlans(newPlans);
                     }}
                     className="w-full bg-[var(--input-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-3.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-orange-500/50 hover:border-white/20 transition-all h-28 resize-none"
