@@ -1299,7 +1299,7 @@ export default function MT5Dashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
               {[
-                { title: 'MT5 Configuration', desc: 'Go to Tools > Options > Expert Advisors. Check "Allow WebRequest" and add: http://129.159.218.33.sslip.io, http://backend.129.159.218.33.sslip.io and http://api.129.159.218.33.sslip.io' },
+                { title: 'MT5 Configuration', desc: 'Go to Tools > Options > Expert Advisors. Check "Allow WebRequest" and add: https://crtalgo.online, https://backend.crtalgo.online and https ://api.crtalgo.online' },
                 { title: 'Files Deployment', desc: 'Copy your downloaded .ex5 file. In MT5, go to File > Open Data Folder > MQL5 > Experts, and paste the file.' },
                 { title: 'Expert Activation', desc: 'Drag the CRT-ALGO EA onto any chart. Ensure "Allow Algorithmic Trading" is enabled in the common tab.' },
                 { title: 'Cloud Sync', desc: 'Copy your Unique UUID (License Key) from your profile settings and paste it into the "License Key" parameter in the EA settings.' },
