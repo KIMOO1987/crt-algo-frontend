@@ -25,17 +25,20 @@ export default function PlanManager() {
     setLoading(false);
   }
 
-  async function updatePlan(id: string, plan: any) {
+  async function updatePlan(id: string) {
+    const currentPlan = plans.find(p => p.id === id);
+    if (!currentPlan) return;
+    
     setSaving(id);
     
     // Parse features_text back to features array
-    const parsedFeatures = (plan.features_text || '')
+    const parsedFeatures = (currentPlan.features_text || '')
       .split(',')
       .map((f: string) => f.trim())
       .filter((f: string) => f !== '');
     
     // Only send editable fields to prevent system field update errors
-    const { id: _, created_at: __, features_text: ___, ...updates } = plan;
+    const { id: _, created_at: __, features_text: ___, ...updates } = currentPlan;
     updates.features = parsedFeatures;
     
     const { error } = await supabase.from('plans').update(updates).eq('id', id);
@@ -91,7 +94,7 @@ export default function PlanManager() {
                    <Edit3 className={isTrial ? "text-fuchsia-400" : "text-orange-500"} size={20} /> {plan.name}
                  </h2>
                  <button 
-                  onClick={() => updatePlan(plan.id, plan)}
+                  onClick={() => updatePlan(plan.id)}
                   disabled={saving === plan.id}
                   className={`w-full md:w-auto px-8 py-3.5 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 cursor-pointer ${
                     saving === plan.id 
@@ -113,9 +116,12 @@ export default function PlanManager() {
                     type="number" 
                     value={plan.price} 
                     onChange={(e) => {
-                      const newPlans = [...plans];
-                      newPlans.find(p => p.id === plan.id).price = Number(e.target.value);
-                      setPlans(newPlans);
+                      setPlans(prevPlans => prevPlans.map(p => {
+                        if (p.id === plan.id) {
+                          return { ...p, price: Number(e.target.value) };
+                        }
+                        return p;
+                      }));
                     }}
                     className="w-full bg-[var(--input-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-3.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-orange-500/50 hover:border-white/20 transition-all"
                   />
@@ -126,9 +132,12 @@ export default function PlanManager() {
                     type="text" 
                     value={plan.duration_text} 
                     onChange={(e) => {
-                      const newPlans = [...plans];
-                      newPlans.find(p => p.id === plan.id).duration_text = e.target.value;
-                      setPlans(newPlans);
+                      setPlans(prevPlans => prevPlans.map(p => {
+                        if (p.id === plan.id) {
+                          return { ...p, duration_text: e.target.value };
+                        }
+                        return p;
+                      }));
                     }}
                     className="w-full bg-[var(--input-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-3.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-orange-500/50 hover:border-white/20 transition-all"
                   />
@@ -139,9 +148,12 @@ export default function PlanManager() {
                     type="number" 
                     value={plan.duration} 
                     onChange={(e) => {
-                      const newPlans = [...plans];
-                      newPlans.find(p => p.id === plan.id).duration = Number(e.target.value);
-                      setPlans(newPlans);
+                      setPlans(prevPlans => prevPlans.map(p => {
+                        if (p.id === plan.id) {
+                          return { ...p, duration: Number(e.target.value) };
+                        }
+                        return p;
+                      }));
                     }}
                     className="w-full bg-[var(--input-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-3.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-orange-500/50 hover:border-white/20 transition-all"
                   />
@@ -151,9 +163,12 @@ export default function PlanManager() {
                   <textarea 
                     value={plan.features_text ?? ''} 
                     onChange={(e) => {
-                      const newPlans = [...plans];
-                      newPlans.find(p => p.id === plan.id).features_text = e.target.value;
-                      setPlans(newPlans);
+                      setPlans(prevPlans => prevPlans.map(p => {
+                        if (p.id === plan.id) {
+                          return { ...p, features_text: e.target.value };
+                        }
+                        return p;
+                      }));
                     }}
                     className="w-full bg-[var(--input-bg)] border border-[var(--glass-border)] rounded-xl px-4 py-3.5 text-xs font-mono font-bold text-zinc-900 dark:text-white outline-none focus:border-orange-500/50 hover:border-white/20 transition-all h-28 resize-none"
                   />
