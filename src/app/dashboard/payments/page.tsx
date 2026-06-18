@@ -233,7 +233,7 @@ export default function PaymentsPage() {
               </div>
 
               <div className="space-y-4 mb-10 flex-1">
-                {plan.features.map((feature: string) => (
+                {(plan.features || []).map((feature: string) => (
                   <div key={feature} className="flex items-center gap-4">
                     <div className="p-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]">
                       <Check size={12} strokeWidth={3} />
