@@ -102,35 +102,44 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleCryptoSubmit = async () => {
-    if (!cryptoHash || !selectedPlan) return;
+  const handlePayWithNowPayments = async () => {
+    if (!selectedPlan) return;
     setCryptoStatus('submitting');
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (user) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          pending_crypto_hash: cryptoHash,
-          last_payment_method: 'CRYPTO',
-          pending_plan_id: selectedPlan.id
-        })
-        .eq('id', user.id);
-
-      if (!error) {
-        setCryptoStatus('success');
-        setTimeout(() => {
-          setSelectedPlan(null);
-          setCryptoStatus('idle');
-          setCryptoHash('');
-        }, 3000);
-      } else {
-        alert("Error saving transaction: " + error.message);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("Please login to proceed to checkout.");
         setCryptoStatus('idle');
+        return;
       }
-    } else {
-      alert("Please login to submit payment.");
+
+      const response = await fetch('/api/payments/create-nowpayments-invoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ planId: selectedPlan.id }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.invoice_url) {
+        throw new Error(data.error || 'Failed to generate invoice checkout link');
+      }
+
+      setCryptoStatus('success');
+      
+      // Open the invoice page
+      window.open(data.invoice_url, '_blank', 'noopener,noreferrer');
+
+      // Reset selection state after successful redirection
+      setTimeout(() => {
+        setSelectedPlan(null);
+        setCryptoStatus('idle');
+      }, 4000);
+
+    } catch (err: any) {
+      alert(err.message || 'Payment initiation failed. Please try again.');
       setCryptoStatus('idle');
     }
   };
@@ -254,68 +263,56 @@ export default function PaymentsPage() {
         </div>
         {selectedPlan && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
-            <div className="w-full max-w-xl p-8 md:p-10 glass-panel shadow-[0_0_100px_rgba(0,0,0,0.8)] max-h-[90vh] overflow-y-auto relative">
+            <div className="w-full max-w-md p-8 md:p-10 glass-panel shadow-[0_0_100px_rgba(0,0,0,0.8)] max-h-[90vh] overflow-y-auto relative">
               <div className="absolute top-0 left-0 w-full h-full bg-blue-500/5 blur-[100px] pointer-events-none" />
-              <div className="relative z-10">
+              <div className="relative z-10 flex flex-col h-full">
                 <div className="flex justify-between items-start mb-8 border-b border-[var(--glass-border)] pb-6">
                   <div>
                     <h2 className="text-2xl font-black italic tracking-tighter uppercase drop-shadow-md">Checkout</h2>
                     <p className="text-[10px] text-zinc-600 dark:text-zinc-500 font-bold uppercase tracking-widest mt-2">
-                      Global License Provisioning
+                      Secure Instant Provisioning
                     </p>
                   </div>
-                  <button onClick={() => { setSelectedPlan(null); setCryptoStatus('idle'); setCryptoHash(''); }} className="p-2.5 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:bg-white/[0.08] hover:text-zinc-900 dark:text-white rounded-xl transition-all"><X size={20} className="text-zinc-600 dark:text-zinc-500" /></button>
+                  <button onClick={() => { setSelectedPlan(null); setCryptoStatus('idle'); }} className="p-2.5 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:bg-white/[0.08] hover:text-zinc-900 dark:text-white rounded-xl transition-all"><X size={20} className="text-zinc-600 dark:text-zinc-500" /></button>
                 </div>
 
-                <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
+                <div className="space-y-6 flex-1 flex flex-col justify-center animate-in slide-in-from-bottom-2 duration-300">
+                  <div className="p-6 rounded-2xl bg-zinc-900/40 border border-[var(--glass-border)] text-center space-y-3 shadow-lg">
+                    <p className="text-[9px] font-black uppercase text-zinc-500 tracking-[0.25em]">Selected License Plan</p>
+                    <h3 className="text-xl font-black italic uppercase tracking-tight text-white">{selectedPlan.name}</h3>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-black text-orange-400">${selectedPlan.price}</span>
+                      <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">/ {selectedPlan.duration_text}</span>
+                    </div>
+                  </div>
+
                   <p className="text-[10px] text-zinc-600 dark:text-zinc-500 font-bold uppercase tracking-widest text-center leading-relaxed">
-                    Send exactly <span className="text-orange-400">${selectedPlan.price}</span> to one of the addresses below.
-                    <br />Then paste your transaction hash (TxID) for verification.
+                    Click below to open our secure NOWPayments portal. You can complete the payment in BTC, USDT (TRC20/BSC), or other major coins.
                   </p>
-                  <div className="grid gap-3">
-                    {WALLETS.map((w) => (
-                      <div key={w.network} className="bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-[var(--glass-border)] p-4 rounded-2xl flex justify-between items-center group hover:bg-white/[0.06] transition-colors">
-                        <div>
-                          <p className="text-[9px] font-bold text-zinc-600 dark:text-zinc-500 uppercase tracking-widest mb-1.5">{w.network}</p>
-                          <p className="text-xs font-mono font-bold text-zinc-800 dark:text-zinc-300 tracking-tight">{w.address}</p>
-                        </div>
-                        <button onClick={() => copyToClipboard(w.address)} className="p-2.5 bg-[var(--glass-bg)] border border-[var(--glass-border)] hover:bg-white/[0.1] rounded-xl transition-all shadow-lg">
-                          {copied === w.address ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} className="text-zinc-700 dark:text-zinc-400 group-hover:text-zinc-900 dark:text-white" />}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
 
-                  <div className="space-y-3 pt-4 border-t border-[var(--glass-border)]">
-                    <label className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase tracking-widest block ml-1">Transaction Hash (TxID)</label>
-                    <input
-                      type="text"
-                      value={cryptoHash}
-                      onChange={(e) => setCryptoHash(e.target.value)}
-                      placeholder="Paste your transaction hash (TxID) here..."
-                      className="input-modern w-full font-mono focus:border-orange-500/50 hover:border-white/20"
-                    />
-                    <button
-                      onClick={handleCryptoSubmit}
-                      disabled={!cryptoHash || cryptoStatus !== 'idle'}
-                      className={`btn-modern w-full flex items-center justify-center gap-3 py-4
-                        ${cryptoStatus === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_30px_rgba(52,211,153,0.2)]' : ''}
-                        ${cryptoStatus === 'submitting' ? 'opacity-70 cursor-not-allowed bg-none shadow-none text-zinc-500' : ''}`}
-                    >
-                      {cryptoStatus === 'idle' && <><ShieldCheck size={18} className="text-orange-200" /> Submit for Validation</>}
-                      {cryptoStatus === 'submitting' && <Loader2 className="animate-spin text-zinc-700 dark:text-zinc-400" size={18} />}
-                      {cryptoStatus === 'success' && <><CheckCircle2 size={18} /> Request Sent - Awaiting Admin</>}
-                    </button>
-                  </div>
+                  <button
+                    onClick={handlePayWithNowPayments}
+                    disabled={cryptoStatus !== 'idle'}
+                    className={`btn-modern w-full flex items-center justify-center gap-3 py-4 cursor-pointer font-black text-xs uppercase tracking-widest shadow-lg transition-all
+                      ${cryptoStatus === 'success' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_30px_rgba(52,211,153,0.2)]' : 'bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white border-orange-500/30'}
+                      ${cryptoStatus === 'submitting' ? 'opacity-75 cursor-not-allowed' : ''}`}
+                  >
+                    {cryptoStatus === 'idle' && <><Bitcoin size={18} className="text-orange-200 animate-pulse" /> Pay with Crypto (NOWPayments)</>}
+                    {cryptoStatus === 'submitting' && <><Loader2 className="animate-spin text-zinc-300" size={18} /> Preparing Checkout Portal...</>}
+                    {cryptoStatus === 'success' && <><CheckCircle2 size={18} className="text-emerald-400 animate-bounce" /> Portal Opened. Awaiting Payment...</>}
+                  </button>
 
-                  <div className="flex items-center gap-2 px-2 opacity-50 justify-center">
-                    <Clock size={12} className="text-zinc-600 dark:text-zinc-500" />
-                    <p className="text-[9px] text-zinc-600 dark:text-zinc-500 font-bold uppercase tracking-widest">Verified within 1-12 hours of confirmation.</p>
-                  </div>
+                  {cryptoStatus === 'success' && (
+                    <div className="text-center p-3.5 bg-emerald-500/5 border border-emerald-500/10 rounded-xl animate-pulse">
+                      <p className="text-[9px] font-black uppercase text-emerald-400 tracking-widest">
+                        Checkout opened in a new tab. Your license upgrades automatically once paid.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-[9px] text-zinc-600 text-center mt-8 uppercase font-bold tracking-widest leading-loose">
-                  Institutional-grade payment verification.
+                  Institutional Cryptographic Gateway
                 </p>
               </div>
             </div>
