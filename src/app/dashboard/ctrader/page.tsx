@@ -1289,6 +1289,81 @@ export default function CTraderDashboard() {
           </div>
         </div>
 
+        {/* Bot Downloading Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Pro Tier Card */}
+          <div className="group relative glass-panel p-8 md:p-12 overflow-hidden hover:border-cyan-500/30 transition-all duration-300 hover:shadow-[0_0_50px_rgba(6,182,212,0.05)] hover:-translate-y-0.5">
+            <div className="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity">
+              <ShieldCheck size={120} className="text-cyan-500 dark:text-cyan-400" />
+            </div>
+            <div className="relative z-10 space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-widest">
+                Standard Access
+              </div>
+              <h3 className="text-3xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white">CRT-ALGO<span className="text-cyan-500">Pro</span></h3>
+              <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
+                Automated trend-following for cTrader users. Focuses on safe execution and capital preservation.
+              </p>
+              <ul className="space-y-4 pt-4">
+                {[
+                  'Simplified Market Orders',
+                  'Trend-Alignment Auto-Filter',
+                  'Prop-Firm Risk Management',
+                  'Standard High-Quality Sweeps',
+                  '3 Max Concurrent Setups'
+                ].map((feat, i) => (
+                  <li key={i} className="flex items-center gap-3 text-xs font-bold text-zinc-600 dark:text-zinc-300">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" /> {feat}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Pro.algo`}
+                download
+                className="w-full py-4 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-center block text-zinc-900 dark:text-white cursor-pointer"
+              >
+                Download Pro cBot
+              </a>
+            </div>
+          </div>
+
+          {/* Ultimate Tier Card */}
+          <div className="group relative bg-gradient-to-br from-cyan-600/5 to-blue-600/5 dark:from-cyan-600/10 dark:to-blue-600/5 border border-cyan-500/20 p-8 md:p-12 rounded-[1.25rem] overflow-hidden shadow-[0_0_50px_rgba(6,182,212,0.05)] hover:border-blue-500/30 transition-all duration-300 hover:shadow-[0_0_60px_rgba(59,130,246,0.08)] hover:-translate-y-0.5">
+            <div className="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity">
+              <Terminal size={120} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="relative z-10 space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 dark:bg-blue-500/20 border border-blue-500/20 dark:border-blue-500/30 rounded-full text-[10px] font-black text-blue-600 dark:text-blue-300 uppercase tracking-widest">
+                Elite Access
+              </div>
+              <h3 className="text-3xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white">CRT-ALGO<span className="text-blue-500">Ultimate</span></h3>
+              <p className="text-zinc-655 dark:text-zinc-355 text-sm leading-relaxed">
+                Maximum precision for cTrader. Use institutional-grade limit entries and deep confluence filtering.
+              </p>
+              <ul className="space-y-4 pt-4">
+                {[
+                  'OTE Zone Limit Orders (Auto-R:R)',
+                  'Full Confluence Controls',
+                  'Advanced AI Filter Matrix',
+                  'Dynamic Risk Scaling',
+                  '5+ Max Concurrent Setups'
+                ].map((feat, i) => (
+                  <li key={i} className="flex items-center gap-3 text-xs font-bold text-zinc-600 dark:text-blue-200">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400" /> {feat}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Ultimate.algo`}
+                download
+                className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-500/20 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl text-center block cursor-pointer"
+              >
+                Download Ultimate cBot
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Installation Guide */}
         <div className="glass-panel p-8 md:p-16">
           <div className="max-w-4xl mx-auto space-y-12">

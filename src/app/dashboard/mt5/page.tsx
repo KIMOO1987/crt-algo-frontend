@@ -1289,6 +1289,81 @@ export default function MT5Dashboard() {
           </div>
         </div>
 
+        {/* Bot Downloading Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Pro Tier Card */}
+          <div className="group relative glass-panel p-8 md:p-12 overflow-hidden hover:border-blue-500/30 transition-all duration-300 hover:shadow-[0_0_50px_rgba(59,130,246,0.05)] hover:-translate-y-0.5">
+            <div className="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity">
+              <ShieldCheck size={120} className="text-blue-500 dark:text-blue-400" />
+            </div>
+            <div className="relative z-10 space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                Standard Access
+              </div>
+              <h3 className="text-3xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white">CRT-ALGO<span className="text-blue-500">Pro</span></h3>
+              <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
+                Designed for traders who want a simplified, automated experience. Pro tier focuses on trend-following stability.
+              </p>
+              <ul className="space-y-4 pt-4">
+                {[
+                  'Direct Market Execution',
+                  'Trend-Alignment Auto-Filter',
+                  'High-Quality Sweep Priority',
+                  'Standard Risk Management',
+                  '3 Max Concurrent Setups'
+                ].map((feat, i) => (
+                  <li key={i} className="flex items-center gap-3 text-xs font-bold text-zinc-600 dark:text-zinc-300">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> {feat}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Pro.ex5`}
+                download
+                className="w-full py-4 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-center block text-zinc-900 dark:text-white cursor-pointer"
+              >
+                Download Pro EA
+              </a>
+            </div>
+          </div>
+
+          {/* Ultimate Tier Card */}
+          <div className="group relative bg-gradient-to-br from-blue-600/5 to-indigo-600/5 dark:from-blue-600/10 dark:to-indigo-600/5 border border-blue-500/20 p-8 md:p-12 rounded-[1.25rem] overflow-hidden shadow-[0_0_50px_rgba(59,130,246,0.05)] hover:border-indigo-500/30 transition-all duration-300 hover:shadow-[0_0_60px_rgba(99,102,241,0.08)] hover:-translate-y-0.5">
+            <div className="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity">
+              <Terminal size={120} className="text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="relative z-10 space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-500/20 dark:border-indigo-500/30 rounded-full text-[10px] font-black text-indigo-600 dark:text-indigo-300 uppercase tracking-widest">
+                Elite Access
+              </div>
+              <h3 className="text-3xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white">CRT-ALGO<span className="text-indigo-500 dark:text-indigo-400">Ultimate</span></h3>
+              <p className="text-zinc-650 dark:text-zinc-355 text-sm leading-relaxed">
+                The ultimate institutional toolkit. Take full control of entry precision and confluence matrix filtering.
+              </p>
+              <ul className="space-y-4 pt-4">
+                {[
+                  'OTE Zone Limit Entry (Best R:R)',
+                  'Full Confluence Control (Regime/Sweep)',
+                  'Advanced AI Volume/VWAP Filter',
+                  'Dynamic Risk Auto-Scaling',
+                  '5+ Max Concurrent Setups'
+                ].map((feat, i) => (
+                  <li key={i} className="flex items-center gap-3 text-xs font-bold text-zinc-600 dark:text-indigo-200">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" /> {feat}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Ultimate.ex5`}
+                download
+                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border border-blue-500/20 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl text-center block cursor-pointer"
+              >
+                Download Ultimate EA
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Installation Guide */}
         <div className="glass-panel p-8 md:p-16">
           <div className="max-w-4xl mx-auto space-y-12">
