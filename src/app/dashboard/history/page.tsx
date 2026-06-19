@@ -10,7 +10,7 @@ import CustomSelect from '@/components/CustomSelect';
 import { 
   Search, Activity, Target, Shield, Clock, Zap, 
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
-  ArrowUpRight, Layout, AlertCircle, FileSpreadsheet, ChevronDown
+  ArrowUpRight, Layout, AlertCircle, FileSpreadsheet, ChevronDown, Award, Star
 } from 'lucide-react';
 import { normalizeSymbol, getSymbolCategory } from '@/lib/symbol-mapper';
 import SymbolMultiSelect from '@/components/SymbolMultiSelect';
@@ -114,6 +114,7 @@ const SignalCard = ({ signal, onClick }: { signal: any, onClick: () => void }) =
           <TradeDataRow icon={<Target size={12} className="text-emerald-500"/>} label="TP-1 (EQ)" value={`${Number(signal.tp || 0).toFixed(5)} (${calculateTargetRR(signal.tp, signal.entry_price, signal.sl)})`} valueClass="text-emerald-500" />
           <TradeDataRow icon={<Zap size={12} className="text-amber-500"/>} label="TP-2 (TARGET)" value={signal.tp_secondary ? `${Number(signal.tp_secondary).toFixed(5)} (${calculateTargetRR(signal.tp_secondary, signal.entry_price, signal.sl)})` : '---'} valueClass="text-amber-500" />
           <div className="my-2 border-t border-[var(--glass-border)]" />
+          <TradeDataRow icon={<Award size={12} className="text-blue-500 dark:text-blue-400"/>} label="Grading" value={renderGradeStars(signal.grade)} valueClass="text-blue-500 dark:text-blue-400 font-extrabold uppercase animate-pulse" />
           <TradeDataRow icon={<Layout size={12} className="text-zinc-500"/>} label="Confluences" value={signal.confluences || 'Institutional Bias Confirmed'} valueClass="text-zinc-650 dark:text-zinc-400 text-[11px] italic" />
           <div className="flex justify-between items-center pt-3.5 mt-1.5">
             <span className="text-[9px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider">Time Elapsed</span>
@@ -386,5 +387,39 @@ export default function SignalsPage() {
         </AnimatePresence>
       </div>
     </AccessGuard>
+  );
+}
+
+function renderGradeStars(grade: string | undefined) {
+  const g = (grade || 'A+').toUpperCase().trim();
+  let starsCount = 4; // Default for A+
+  let cleanLabel = 'A+';
+
+  if (g.includes('A++')) {
+    starsCount = 5;
+    cleanLabel = 'A++';
+  } else if (g.includes('A+')) {
+    starsCount = 4;
+    cleanLabel = 'A+';
+  } else if (g.includes('GOOD')) {
+    starsCount = 3;
+    cleanLabel = 'GOOD';
+  } else if (g.includes('NORMAL')) {
+    starsCount = 2;
+    cleanLabel = 'NORMAL';
+  } else {
+    cleanLabel = g;
+    starsCount = g.includes('A') ? 4 : 2;
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>{cleanLabel}</span>
+      <span className="inline-flex items-center gap-0.5 text-amber-500">
+        {Array.from({ length: starsCount }).map((_, i) => (
+          <Star key={i} size={11} fill="currentColor" className="stroke-none" />
+        ))}
+      </span>
+    </span>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/hooks/useAuth';
 import AccessGuard from '@/components/AccessGuard';
@@ -128,9 +128,9 @@ export default function PerformancePage() {
   const { user, loading: authLoading } = useAuth();
   
   // Instant Hydration from localStorage
-  const [history, setHistory] = useState<any[]>(() => {
+  const [symbolPerformance, setSymbolPerformance] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('perf_history_cache');
+      const cached = localStorage.getItem('perf_symbol_perf_cache');
       return cached ? JSON.parse(cached) : [];
     }
     return [];
@@ -146,7 +146,7 @@ export default function PerformancePage() {
 
   const [loading, setLoading] = useState(() => {
     if (typeof window !== 'undefined') {
-      return !localStorage.getItem('perf_history_cache');
+      return !localStorage.getItem('perf_symbol_perf_cache');
     }
     return true;
   });
@@ -160,7 +160,7 @@ export default function PerformancePage() {
   const [assetClass, setAssetClass] = useState('ALL');
   const [tfAlignment, setTfAlignment] = useState('ALL');
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({
-    key: 'created_at',
+    key: 'net_r',
     direction: 'desc'
   });
 
@@ -190,7 +190,7 @@ export default function PerformancePage() {
     }));
   };
 
-  const fetchPerformance = useCallback(async (page: number, isSilent = false) => {
+  const fetchPerformance = useCallback(async (isSilent = false) => {
     if (!user) {
       if (!isSilent) setLoading(false);
       return;
@@ -198,67 +198,35 @@ export default function PerformancePage() {
     if (!isSilent) setLoading(true);
 
     try {
-      // 1. Fetch RAW data directly to include PUBLIC signals (user_id is NULL)
-      let query = supabase.from('signals').select('*', { count: 'exact' });
+      // Fetch ALL signals matching filter criteria to calculate AGGREGATE stats and symbol performance
+      let statsQuery = supabase
+        .from('signals')
+        .select('status, entry_price, sl, tp, tp_secondary, symbol, category')
+        .eq('is_active', false);
 
-      // Only show completed/inactive signals in history
-      query = query.eq('is_active', false);
-
-      if (searchTerm) {
-        query = query.ilike('symbol', `%${searchTerm}%`);
-      }
-      if (assetClass !== 'ALL') {
-        query = query.eq('category', assetClass);
-      }
-      if (tfAlignment !== 'ALL') {
-        query = query.eq('tf_alignment', tfAlignment);
-      }
-      if (selectedSymbols.length > 0) {
-        query = query.in('symbol', selectedSymbols);
-      }
-      if (dateFrom) {
-        query = query.gte('created_at', new Date(dateFrom).toISOString());
-      }
+      if (searchTerm) statsQuery = statsQuery.ilike('symbol', `%${searchTerm}%`);
+      if (assetClass !== 'ALL') statsQuery = statsQuery.eq('category', assetClass);
+      if (tfAlignment !== 'ALL') statsQuery = statsQuery.eq('tf_alignment', tfAlignment);
+      if (selectedSymbols.length > 0) statsQuery = statsQuery.in('symbol', selectedSymbols);
+      if (dateFrom) statsQuery = statsQuery.gte('created_at', new Date(dateFrom).toISOString());
       if (dateTo) {
         const toDate = new Date(dateTo);
         toDate.setDate(toDate.getDate() + 1);
-        query = query.lte('created_at', toDate.toISOString());
+        statsQuery = statsQuery.lte('created_at', toDate.toISOString());
       }
 
-      const from = (page - 1) * ITEMS_PER_PAGE;
-      const { data, count, error } = await query
-        .order(sortConfig.key, { ascending: sortConfig.direction === 'asc' })
-        .range(from, from + ITEMS_PER_PAGE - 1);
+      const { data: allData } = await statsQuery;
 
-      if (data) {
-        // 2. Fetch ALL signals for this user/public to calculate AGGREGATE stats
-        // We apply the same filters here so stats reflect the current view
-        let statsQuery = supabase
-          .from('signals')
-          .select('status, entry_price, sl, tp, tp_secondary, symbol, category')
-          .eq('is_active', false);
-
-        if (searchTerm) statsQuery = statsQuery.ilike('symbol', `%${searchTerm}%`);
-        if (assetClass !== 'ALL') statsQuery = statsQuery.eq('category', assetClass);
-        if (tfAlignment !== 'ALL') statsQuery = statsQuery.eq('tf_alignment', tfAlignment);
-        if (selectedSymbols.length > 0) statsQuery = statsQuery.in('symbol', selectedSymbols);
-        if (dateFrom) statsQuery = statsQuery.gte('created_at', new Date(dateFrom).toISOString());
-        if (dateTo) {
-          const toDate = new Date(dateTo);
-          toDate.setDate(toDate.getDate() + 1);
-          statsQuery = statsQuery.lte('created_at', toDate.toISOString());
-        }
-
-        const { data: allData } = await statsQuery;
-
+      if (allData) {
         let totalNetR = 0;
         let wins = 0;
-        let total = allData?.length || 0;
-        let profitFactor = 0;
+        let total = allData.length;
         let totalWinR = 0;
         let totalLossR = 0;
 
-        allData?.forEach(s => {
+        const symbolMap: Record<string, any> = {};
+
+        allData.forEach(s => {
           const entry = Number(s.entry_price || 0);
           const sl = Number(s.sl || 0);
           const risk = Math.abs(entry - sl);
@@ -279,6 +247,29 @@ export default function PerformancePage() {
             totalLossR += 1;
           }
           totalNetR += rr;
+
+          const sym = s.symbol.toUpperCase();
+          if (!symbolMap[sym]) {
+            symbolMap[sym] = {
+              symbol: sym,
+              category: s.category || '',
+              total_trades: 0,
+              wins: 0,
+              totalWinR: 0,
+              totalLossR: 0,
+              net_r: 0
+            };
+          }
+
+          const statsObj = symbolMap[sym];
+          statsObj.total_trades++;
+          if (status === 'TP2' || status === 'WIN' || status === 'TP1' || status === 'TP1 + SL (BE)') {
+            statsObj.wins++;
+            statsObj.totalWinR += rr;
+          } else if (status === 'SL' || status === 'LOSS') {
+            statsObj.totalLossR++;
+          }
+          statsObj.net_r += rr;
         });
 
         const calculatedStats = {
@@ -289,12 +280,19 @@ export default function PerformancePage() {
           expectancy: total > 0 ? (totalNetR / total).toFixed(2) : "0.00"
         };
 
-        setHistory(data);
+        const performanceList = Object.values(symbolMap).map((s: any) => ({
+          ...s,
+          win_rate: s.total_trades > 0 ? parseFloat(((s.wins / s.total_trades) * 100).toFixed(1)) : 0.0,
+          profit_factor: s.totalLossR > 0 ? parseFloat((s.totalWinR / s.totalLossR).toFixed(2)) : parseFloat(s.totalWinR.toFixed(2)),
+          expectancy: s.total_trades > 0 ? parseFloat((s.net_r / s.total_trades).toFixed(2)) : 0.00
+        }));
+
         setStats(calculatedStats);
-        setTotalCount(count || 0);
-        
-        if (page === 1 && !searchTerm && assetClass === 'ALL' && tfAlignment === 'ALL' && selectedSymbols.length === 0) {
-          localStorage.setItem('perf_history_cache', JSON.stringify(data));
+        setSymbolPerformance(performanceList);
+        setTotalCount(total);
+
+        if (!searchTerm && assetClass === 'ALL' && tfAlignment === 'ALL' && selectedSymbols.length === 0) {
+          localStorage.setItem('perf_symbol_perf_cache', JSON.stringify(performanceList));
           localStorage.setItem('perf_stats_cache', JSON.stringify(calculatedStats));
         }
       }
@@ -303,7 +301,7 @@ export default function PerformancePage() {
     } finally {
       setLoading(false);
     }
-  }, [user, searchTerm, assetClass, dateFrom, dateTo, tfAlignment, selectedSymbols, sortConfig]);
+  }, [user, searchTerm, assetClass, dateFrom, dateTo, tfAlignment, selectedSymbols]);
 
   const handleDownloadCSV = async () => {
     let query = supabase.from('signals').select('*');
@@ -351,15 +349,37 @@ export default function PerformancePage() {
   };
 
   useEffect(() => {
-    const delay = setTimeout(() => fetchPerformance(currentPage), 400);
+    const delay = setTimeout(() => fetchPerformance(), 400);
     return () => clearTimeout(delay);
-  }, [fetchPerformance, currentPage, sortConfig]);
+  }, [fetchPerformance, sortConfig]);
 
   useEffect(() => { setCurrentPage(1); }, [searchTerm, dateFrom, dateTo, assetClass, tfAlignment, selectedSymbols]);
 
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+  const sortedPerformance = useMemo(() => {
+    const list = [...symbolPerformance];
+    const { key, direction } = sortConfig;
+    
+    const sortKey = key === 'created_at' ? 'net_r' : key;
+    
+    list.sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      
+      const numA = Number(aVal || 0);
+      const numB = Number(bVal || 0);
+      return direction === 'asc' ? numA - numB : numB - numA;
+    });
+    
+    return list;
+  }, [symbolPerformance, sortConfig]);
 
-  if (authLoading || (loading && history.length === 0)) {
+  const totalPages = 1;
+
+  if (authLoading || (loading && symbolPerformance.length === 0)) {
     return (
       <div className="min-h-screen flex items-center justify-center ">
         <div className="flex flex-col items-center justify-center py-20 animate-pulse">
@@ -461,7 +481,7 @@ export default function PerformancePage() {
             <StatCard label="Expectancy" value={`${stats.expectancy}R`} icon={<Activity size={18}/>} color="text-amber-400" />
           </div>
 
-          {/* Detailed Log Table */}
+          {/* Detailed Leaderboard Table */}
           <div className="glass-panel overflow-hidden flex-grow shadow-2xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[800px]">
@@ -469,66 +489,76 @@ export default function PerformancePage() {
                   <tr className="text-[10px] font-black text-zinc-600 dark:text-zinc-500 uppercase tracking-widest bg-[var(--glass-bg)] border-b border-[var(--glass-border)]">
                     <th className="px-6 md:px-8 py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('symbol')}>
                       <div className="flex items-center gap-1">
-                        Asset / Provider
+                        Symbol / Asset
                         {sortConfig.key === 'symbol' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                       </div>
                     </th>
-                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('side')}>
+                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('total_trades')}>
                       <div className="flex items-center gap-1">
-                        Side
-                        {sortConfig.key === 'side' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                        Total Trades
+                        {sortConfig.key === 'total_trades' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                       </div>
                     </th>
-                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('status')}>
+                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('win_rate')}>
                       <div className="flex items-center gap-1">
-                        Outcome
-                        {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                        Win Rate
+                        {sortConfig.key === 'win_rate' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                       </div>
                     </th>
-                    <th className="py-6">Realized R</th>
-                    <th className="py-6 hidden md:table-cell cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('created_at')}>
+                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('profit_factor')}>
                       <div className="flex items-center gap-1">
-                        Execution
-                        {sortConfig.key === 'created_at' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                        Profit Factor
+                        {sortConfig.key === 'profit_factor' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                       </div>
                     </th>
-                    <th className="px-6 md:px-8 py-6 text-center">View</th>
+                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('expectancy')}>
+                      <div className="flex items-center gap-1">
+                        Expectancy
+                        {sortConfig.key === 'expectancy' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
+                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('net_r')}>
+                      <div className="flex items-center gap-1">
+                        Net Realized R
+                        {sortConfig.key === 'net_r' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.05]">
                   <AnimatePresence mode="popLayout">
-                    {history.length > 0 ? (
-                      history.map((signal) => (
+                    {sortedPerformance.length > 0 ? (
+                      sortedPerformance.map((item, idx) => (
                         <motion.tr 
                           layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-                          key={signal.id} onClick={() => setSelectedSignal(signal)}
-                          className="group hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
+                          key={item.symbol}
+                          className="group hover:bg-[var(--glass-bg)] transition-colors"
                         >
                           <td className="px-6 md:px-8 py-6">
-                            <div className="flex flex-col">
-                                <span className="text-base font-black text-zinc-900 dark:text-white uppercase tracking-tighter italic drop-shadow-sm">{signal.symbol}</span>
-                                <span className="text-[9px] font-bold text-zinc-600 dark:text-zinc-500 uppercase tracking-widest mt-0.5">{getSymbolCategory(signal.symbol)}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-mono text-zinc-500 font-bold">#{idx + 1}</span>
+                              <div className="flex flex-col">
+                                <span className="text-base font-black text-zinc-900 dark:text-white uppercase tracking-tighter italic drop-shadow-sm">{item.symbol}</span>
+                                <span className="text-[9px] font-bold text-zinc-650 dark:text-zinc-500 uppercase tracking-widest mt-0.5">{getSymbolCategory(item.symbol)}</span>
+                              </div>
                             </div>
                           </td>
+                          <td className="py-6 font-mono font-bold text-zinc-800 dark:text-zinc-300">
+                            {item.total_trades}
+                          </td>
                           <td className="py-6">
-                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border tracking-widest ${signal.side?.toUpperCase() === 'BUY' || signal.side?.toUpperCase() === 'BULLISH' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' : 'text-red-400 border-red-500/20 bg-red-500/10'}`}>
-                              {signal.side}
+                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border tracking-widest ${item.win_rate >= 50 ? 'text-emerald-450 border-emerald-500/20 bg-emerald-500/10' : 'text-red-400 border-red-500/20 bg-red-500/10'}`}>
+                              {item.win_rate}%
                             </span>
                           </td>
-                          <td className="py-6"><ResultBadge status={signal.status} /></td>
-                          <td className={`py-6 text-[14px] font-mono font-black ${
-                            ['TP2', 'WIN'].includes(signal.status?.toUpperCase()) ? 'text-emerald-400' : 
-                            ['SL', 'LOSS'].includes(signal.status?.toUpperCase()) ? 'text-red-400' : 
-                            ['TP1', 'TP1 + SL (BE)'].includes(signal.status?.toUpperCase()) ? 'text-yellow-400' : 
-                            'text-indigo-400'
-                          }`}>
-                            {calculateRRFromRow(signal)}
+                          <td className="py-6 font-mono font-bold text-zinc-800 dark:text-zinc-300">
+                            {item.profit_factor}
                           </td>
-                          <td className="py-6 hidden md:table-cell text-xs font-mono text-zinc-600 dark:text-zinc-500">{new Date(signal.created_at).toLocaleDateString()}</td>
-                          <td className="px-6 md:px-8 py-6 text-center">
-                            <button className="p-2 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.08] hover:text-zinc-900 dark:text-white transition-all">
-                              <ChevronRight size={18} />
-                            </button>
+                          <td className={`py-6 font-mono font-bold ${item.expectancy >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                            {item.expectancy >= 0 ? '+' : ''}{item.expectancy}R
+                          </td>
+                          <td className={`py-6 text-[15px] font-mono font-black ${item.net_r >= 0 ? 'text-emerald-450' : 'text-red-500'}`}>
+                            {item.net_r >= 0 ? '+' : ''}{item.net_r.toFixed(1)}R
                           </td>
                         </motion.tr>
                       ))
@@ -537,7 +567,7 @@ export default function PerformancePage() {
                         <td colSpan={6} className="py-32 text-center">
                           <div className="flex flex-col items-center justify-center">
                             <AlertCircle size={40} className="text-zinc-700 mb-4" />
-                            <h3 className="text-xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white mb-2">No History Found</h3>
+                            <h3 className="text-xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white mb-2">No Performance Data Found</h3>
                           </div>
                         </td>
                       </tr>
@@ -547,17 +577,6 @@ export default function PerformancePage() {
               </table>
             </div>
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8 mb-4 flex justify-center items-center gap-4">
-              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-900 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"><ChevronLeft size={20} /></button>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase text-zinc-600 dark:text-zinc-500 tracking-widest">Page {currentPage} of {totalPages}</span>
-              </div>
-              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="p-3 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-zinc-600 dark:text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-900 dark:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"><ChevronRightIcon size={20} /></button>
-            </div>
-          )}
 
           {/* Modal */}
           <AnimatePresence>

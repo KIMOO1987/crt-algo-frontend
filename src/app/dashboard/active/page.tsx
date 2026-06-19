@@ -7,7 +7,7 @@ import AccessGuard from '@/components/AccessGuard'; // Switched to AccessGuard
 import CustomSelect from '@/components/CustomSelect';
 import {
   Clock, Activity, Zap, ArrowUpRight, TrendingUp,
-  TrendingDown, Layout, Target, Shield, AlertCircle, Calendar, ChevronDown
+  TrendingDown, Layout, Target, Shield, AlertCircle, Calendar, ChevronDown, Award, Star
 } from 'lucide-react';
 import SignalModal from '@/components/SignalModal';
 
@@ -384,6 +384,13 @@ export default function ActiveSignalsPage() {
                       <div className="my-2 border-t border-[var(--glass-border)]" />
 
                       <TradeDataRow
+                        icon={<Award size={12} className="text-blue-500 dark:text-blue-400" />}
+                        label="Grading"
+                        value={renderGradeStars(signal.grade)}
+                        valueClass="text-blue-500 dark:text-blue-400 font-extrabold uppercase animate-pulse"
+                      />
+
+                      <TradeDataRow
                         icon={<Layout size={12} className="text-zinc-500" />}
                         label="Confluences"
                         value={signal.confluences || 'Institutional Bias Confirmed'}
@@ -602,4 +609,38 @@ function calculateLiveRR(signal: any, livePrices: { [key: string]: number }) {
   const rr = reward / risk;
 
   return `${rr >= 0 ? '+' : ''}${rr.toFixed(2)}R`;
+}
+
+function renderGradeStars(grade: string | undefined) {
+  const g = (grade || 'A+').toUpperCase().trim();
+  let starsCount = 4; // Default for A+
+  let cleanLabel = 'A+';
+
+  if (g.includes('A++')) {
+    starsCount = 5;
+    cleanLabel = 'A++';
+  } else if (g.includes('A+')) {
+    starsCount = 4;
+    cleanLabel = 'A+';
+  } else if (g.includes('GOOD')) {
+    starsCount = 3;
+    cleanLabel = 'GOOD';
+  } else if (g.includes('NORMAL')) {
+    starsCount = 2;
+    cleanLabel = 'NORMAL';
+  } else {
+    cleanLabel = g;
+    starsCount = g.includes('A') ? 4 : 2;
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>{cleanLabel}</span>
+      <span className="inline-flex items-center gap-0.5 text-amber-500">
+        {Array.from({ length: starsCount }).map((_, i) => (
+          <Star key={i} size={11} fill="currentColor" className="stroke-none" />
+        ))}
+      </span>
+    </span>
+  );
 }
