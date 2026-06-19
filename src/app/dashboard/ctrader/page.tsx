@@ -1318,7 +1318,7 @@ export default function CTraderDashboard() {
                 ))}
               </ul>
               <a
-                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Pro.algo`}
+                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Pro.algo`}
                 download
                 className="w-full py-4 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-center block text-zinc-900 dark:text-white cursor-pointer"
               >
@@ -1354,7 +1354,7 @@ export default function CTraderDashboard() {
                 ))}
               </ul>
               <a
-                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Ultimate.algo`}
+                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Ultimate.algo`}
                 download
                 className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border border-cyan-500/20 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl text-center block cursor-pointer"
               >

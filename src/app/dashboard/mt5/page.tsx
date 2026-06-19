@@ -7,7 +7,8 @@ import {
   ShieldAlert, ShieldCheck, Activity, Wallet, Percent, 
   Target, Lock, Save, Settings2, BarChart3, TrendingUp, CheckCircle, 
   XCircle, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownRight, Flame,
-  PlayCircle, Compass, Award, GitBranch, ChevronDown, Trash2, Power, Terminal
+  PlayCircle, Compass, Award, GitBranch, ChevronDown, Trash2, Power, Terminal,
+  Apple, Laptop
 } from 'lucide-react';
 
 const MT5_SYMBOLS = [
@@ -1317,13 +1318,24 @@ export default function MT5Dashboard() {
                   </li>
                 ))}
               </ul>
-              <a
-                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Pro.ex5`}
-                download
-                className="w-full py-4 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-center block text-zinc-900 dark:text-white cursor-pointer"
-              >
-                Download Pro EA
-              </a>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                <a
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Pro.ex5`}
+                  download
+                  className="py-4 px-4 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-center flex items-center justify-center gap-2 text-zinc-900 dark:text-white cursor-pointer"
+                >
+                  <Laptop size={14} />
+                  Windows Pro
+                </a>
+                <a
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Pro_MAC.ex5`}
+                  download
+                  className="py-4 px-4 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-center flex items-center justify-center gap-2 text-zinc-900 dark:text-white cursor-pointer"
+                >
+                  <Apple size={14} />
+                  Mac Pro
+                </a>
+              </div>
             </div>
           </div>
 
@@ -1353,13 +1365,24 @@ export default function MT5Dashboard() {
                   </li>
                 ))}
               </ul>
-              <a
-                href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/KimooGuardian_Ultimate.ex5`}
-                download
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border border-blue-500/20 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl text-center block cursor-pointer"
-              >
-                Download Ultimate EA
-              </a>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                <a
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Ultimate.ex5`}
+                  download
+                  className="py-4 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border border-blue-500/20 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl text-center flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Laptop size={14} />
+                  Windows Ultimate
+                </a>
+                <a
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/bot-files/CRT_ALGO_Guardian_Ultimate_MAC.ex5`}
+                  download
+                  className="py-4 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border border-blue-500/20 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl text-center flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Apple size={14} />
+                  Mac Ultimate
+                </a>
+              </div>
             </div>
           </div>
         </div>
