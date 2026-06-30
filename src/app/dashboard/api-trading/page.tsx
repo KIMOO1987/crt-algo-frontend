@@ -8,7 +8,7 @@ import {
   ShieldAlert, ShieldCheck, Activity, Wallet, Percent, 
   Target, Lock, Save, Settings2, BarChart3, TrendingUp, CheckCircle, 
   XCircle, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownRight, Flame,
-  PlayCircle, Compass, Award, GitBranch, ChevronDown, Trash2
+  PlayCircle, Compass, Award, GitBranch, ChevronDown, Trash2, Download
 } from 'lucide-react';
 
 const MASTER_ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
@@ -447,13 +447,45 @@ export default function MultiExchangeDashboard() {
   // Stats / Metrics per Exchange
   const [metrics, setMetrics] = useState<Record<string, any>>({});
   const [statusLogs, setStatusLogs] = useState<string[]>([]);
-  const [terminalTab, setTerminalTab] = useState<'trade' | 'vault'>('trade');
+  const [terminalTab, setTerminalTab] = useState<'executions' | 'trade' | 'vault'>('executions');
   const [exchangeLogs, setExchangeLogs] = useState<any[]>([]);
   const [rawExecutions, setRawExecutions] = useState<any[]>([]);
 
   const addLog = useCallback((msg: string) => {
     setStatusLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 30));
   }, []);
+
+  const exportToCSV = () => {
+    const activeExecutions = rawExecutions.filter(e => e.exchange_name === activeTab);
+    if (activeExecutions.length === 0) return;
+    
+    const headers = ["Time", "Position ID", "Symbol", "Side", "TF", "Price", "Qty", "PnL", "Status"];
+    const rows = activeExecutions.map(e => [
+      new Date(e.executed_at).toLocaleString(),
+      e.position_id || '---',
+      e.symbol || '',
+      e.side || '',
+      e.tf_alignment || '---',
+      e.entry_price || '---',
+      e.quantity || '0',
+      e.pnl || '0',
+      e.status || ''
+    ]);
+    
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${activeTab}_trade_log_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const fetchExchangeLogs = useCallback(async (exId: string, uId: string) => {
     try {
@@ -1630,20 +1662,96 @@ export default function MultiExchangeDashboard() {
             </div>
           </div>
 
-          <div className="lg:col-span-7 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-3xl p-6 h-[460px] overflow-hidden flex flex-col relative font-mono text-xs">
-            <div className="flex justify-between items-center pb-4 border-b border-zinc-200 dark:border-zinc-850 mb-3 text-[10px] text-zinc-500 uppercase tracking-widest shrink-0">
-              <div className="flex gap-6">
+          <div className="lg:col-span-7 bg-zinc-550/5 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-3xl p-6 h-[460px] overflow-hidden flex flex-col relative font-mono text-[11px] leading-relaxed">
+            <div className="flex justify-between items-center pb-4 border-b border-zinc-200 dark:border-zinc-850 mb-3 text-[10px] text-zinc-500 uppercase tracking-widest shrink-0 flex-wrap gap-2">
+              <div className="flex gap-4 sm:gap-6 flex-wrap">
+                <button type="button" onClick={() => setTerminalTab('executions')} className={`font-black tracking-widest uppercase transition-all pb-1 ${terminalTab === 'executions' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`}>
+                  📊 Executions
+                </button>
                 <button type="button" onClick={() => setTerminalTab('trade')} className={`font-black tracking-widest uppercase transition-all pb-1 ${terminalTab === 'trade' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`}>
-                  📈 Trade Logs ({activeEx.name})
+                  📈 Trade Logs
                 </button>
                 <button type="button" onClick={() => setTerminalTab('vault')} className={`font-black tracking-widest uppercase transition-all pb-1 ${terminalTab === 'vault' ? 'text-orange-500 border-b-2 border-orange-500 font-bold' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`}>
-                  🔒 Vault Sync Logs
+                  🔒 Vault Logs
                 </button>
               </div>
-              <span className="text-orange-500 flex items-center gap-1.5"><Flame className="animate-pulse" size={12} /> Active</span>
+              <div className="flex items-center gap-3">
+                {terminalTab === 'executions' && rawExecutions.filter(e => e.exchange_name === activeTab).length > 0 && (
+                  <button
+                    onClick={exportToCSV}
+                    className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Download size={10} /> Export CSV
+                  </button>
+                )}
+                <span className="text-orange-500 flex items-center gap-1.5"><Flame className="animate-pulse" size={12} /> Active</span>
+              </div>
             </div>
-            <div className="overflow-y-auto flex-1 space-y-2.5 custom-scrollbar pr-2">
-              {terminalTab === 'trade' ? (
+            <div className="overflow-y-auto flex-1 space-y-2.5 custom-scrollbar pr-2 select-text">
+              {terminalTab === 'executions' ? (
+                (() => {
+                  const activeExecutions = rawExecutions.filter(e => e.exchange_name === activeTab);
+                  return (
+                    <div className="space-y-2.5 overflow-x-auto select-text">
+                      <table className="w-full text-left border-collapse select-text">
+                        <thead>
+                          <tr className="border-b border-zinc-200 dark:border-zinc-850 text-zinc-550 dark:text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                            <th className="pb-3 pr-4">Time</th>
+                            <th className="pb-3 pr-4">Position ID</th>
+                            <th className="pb-3 pr-4">Symbol</th>
+                            <th className="pb-3 pr-4">Side</th>
+                            <th className="pb-3 pr-4">TF</th>
+                            <th className="pb-3 pr-4">Price</th>
+                            <th className="pb-3 pr-4">Qty</th>
+                            <th className="pb-3 pr-4 text-right">PnL</th>
+                            <th className="pb-3 text-right">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-200 dark:divide-zinc-900/50">
+                          {activeExecutions.length === 0 ? (
+                            <tr>
+                              <td colSpan={9} className="py-6 text-center text-zinc-500 font-bold uppercase tracking-wider">
+                                No {activeEx.name} executions recorded yet.
+                              </td>
+                            </tr>
+                          ) : (
+                            [...activeExecutions].reverse().map(e => (
+                              <tr key={e.id} className="hover:bg-zinc-100/50 dark:hover:bg-zinc-900/10 transition-colors">
+                                <td className="py-3 pr-4 text-zinc-550 dark:text-zinc-500 whitespace-nowrap">{new Date(e.executed_at).toLocaleString()}</td>
+                                <td className="py-3 pr-4 text-zinc-650 dark:text-zinc-400 font-mono">{e.position_id || '---'}</td>
+                                <td className="py-3 pr-4 font-black text-zinc-900 dark:text-zinc-200">{e.symbol}</td>
+                                <td className="py-3 pr-4 whitespace-nowrap">
+                                  <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                                    e.side === 'BUY' ? 'bg-emerald-550/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                                  }`}>
+                                    {e.side}
+                                  </span>
+                                </td>
+                                <td className="py-3 pr-4 font-bold text-zinc-600 dark:text-zinc-400">{e.tf_alignment || '---'}</td>
+                                <td className="py-3 pr-4 font-mono font-bold text-zinc-800 dark:text-zinc-300">{e.entry_price ? `$${parseFloat(e.entry_price).toFixed(5)}` : '---'}</td>
+                                <td className="py-3 pr-4 font-mono text-zinc-800 dark:text-zinc-300">{e.quantity}</td>
+                                <td className={`py-3 pr-4 text-right font-bold font-mono ${e.pnl > 0 ? 'text-emerald-600 dark:text-emerald-400' : e.pnl < 0 ? 'text-red-650 dark:text-red-500' : 'text-zinc-500'}`}>
+                                  {e.pnl > 0 ? `+$${parseFloat(e.pnl).toFixed(2)}` : e.pnl < 0 ? `-$${Math.abs(parseFloat(e.pnl)).toFixed(2)}` : '$0.00'}
+                                </td>
+                                <td className="py-3 text-right whitespace-nowrap">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                    e.status === 'ENTRY' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700' :
+                                    ['TP2_HIT', 'WIN'].includes(e.status) ? 'bg-emerald-500/20 text-emerald-650 dark:text-emerald-400 border border-emerald-500/30' :
+                                    ['SL_HIT', 'LOSS'].includes(e.status) ? 'bg-red-500/20 text-red-655 dark:text-red-400 border border-red-500/30' :
+                                    'bg-zinc-100 dark:bg-zinc-900 text-zinc-500 border border-zinc-200 dark:border-zinc-800'
+                                  }`}>
+                                    {e.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()
+              ) : terminalTab === 'trade' ? (
                 (() => {
                   const tradeLogs = exchangeLogs.filter(log => log.symbol);
                   return tradeLogs.length === 0 ? (
