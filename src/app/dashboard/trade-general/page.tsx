@@ -35,6 +35,7 @@ interface JournalTrade {
   trade_no: number;
   account_id: string;
   strategy_id: string | null;
+  timeframe: string | null;
   asset: string;
   direction: 'BUY' | 'SELL';
   risk_amount: number;
@@ -92,6 +93,7 @@ export default function TradeGeneralPage() {
   const [tradeForm, setTradeForm] = useState({
     tradeNo: '',
     strategyId: '',
+    timeframe: '15m',
     asset: '',
     direction: 'BUY' as 'BUY' | 'SELL',
     riskAmount: '',
@@ -151,6 +153,7 @@ CREATE TABLE IF NOT EXISTS public.journal_trades (
     trade_no INTEGER NOT NULL,
     account_id UUID NOT NULL REFERENCES public.journal_accounts(id) ON DELETE CASCADE,
     strategy_id UUID REFERENCES public.journal_strategies(id) ON DELETE SET NULL,
+    timeframe TEXT,
     asset TEXT NOT NULL,
     direction TEXT NOT NULL CHECK (direction IN ('BUY', 'SELL')),
     risk_amount NUMERIC NOT NULL DEFAULT 0,
@@ -433,6 +436,7 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
         account_id: activeAccount.id,
         trade_no: parseInt(tradeForm.tradeNo),
         strategy_id: tradeForm.strategyId || null,
+        timeframe: tradeForm.timeframe || null,
         asset: tradeForm.asset.toUpperCase(),
         direction: tradeForm.direction,
         risk_amount: parseFloat(tradeForm.riskAmount),
@@ -456,6 +460,7 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
         setTradeForm({
           tradeNo: '',
           strategyId: '',
+          timeframe: '15m',
           asset: '',
           direction: 'BUY',
           riskAmount: '',
@@ -551,12 +556,13 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
     const acctTrades = trades.filter(t => t.account_id === activeAccount.id);
     if (acctTrades.length === 0) return;
 
-    const headers = ['Trade No', 'Strategy', 'Asset', 'Direction', 'Risk Amount', 'Realized R:R', 'Total PnL', 'Emotions', 'Status', 'Date Logged'];
+    const headers = ['Trade No', 'Strategy', 'Timeframe', 'Asset', 'Direction', 'Risk Amount', 'Realized R:R', 'Total PnL', 'Emotions', 'Status', 'Date Logged'];
     const rows = acctTrades.map(t => {
       const strat = strategies.find(s => s.id === t.strategy_id);
       return [
         t.trade_no,
         strat ? strat.name : 'Custom',
+        t.timeframe || '---',
         t.asset,
         t.direction,
         t.risk_amount,
@@ -590,12 +596,13 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
       return;
     }
 
-    const headers = ['Trade No', 'Strategy', 'Asset', 'Direction', 'Risk Amount', 'Realized R:R', 'Total PnL', 'Emotions', 'Status', 'Date Logged'];
+    const headers = ['Trade No', 'Strategy', 'Timeframe', 'Asset', 'Direction', 'Risk Amount', 'Realized R:R', 'Total PnL', 'Emotions', 'Status', 'Date Logged'];
     const rows = acctTrades.map(t => {
       const strat = strategies.find(s => s.id === t.strategy_id);
       return [
         t.trade_no,
         strat ? strat.name : 'Custom',
+        t.timeframe || '---',
         t.asset,
         t.direction,
         t.risk_amount,
@@ -969,6 +976,7 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                             <tr className="border-b border-zinc-200 dark:border-zinc-850 text-zinc-550 dark:text-zinc-500 text-[10px] font-black uppercase tracking-widest">
                               <th className="pb-3 pr-4">Trade No</th>
                               <th className="pb-3 pr-4">Strategy</th>
+                              <th className="pb-3 pr-4">TF</th>
                               <th className="pb-3 pr-4">Asset</th>
                               <th className="pb-3 pr-4">Direction</th>
                               <th className="pb-3 pr-4">Risk</th>
@@ -989,6 +997,7 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                                   <td className="py-3 pr-4 font-bold text-zinc-900 dark:text-white uppercase">
                                     {strat ? strat.name : 'Custom'}
                                   </td>
+                                  <td className="py-3 pr-4 text-zinc-600 dark:text-zinc-405 font-bold uppercase">{t.timeframe || '---'}</td>
                                   <td className="py-3 pr-4 font-black text-zinc-850 dark:text-zinc-300 uppercase">{t.asset}</td>
                                   <td className="py-3 pr-4 whitespace-nowrap">
                                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
@@ -1288,9 +1297,9 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                 </div>
 
                 <form onSubmit={handleCreateTrade} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[9px] font-bold text-zinc-550 uppercase tracking-wider ml-1">Trade Number / Index</label>
+                      <label className="text-[9px] font-bold text-zinc-550 uppercase tracking-wider ml-1">Trade Number</label>
                       <input
                         required
                         type="number"
@@ -1308,9 +1317,22 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                         onChange={e => setTradeForm(prev => ({ ...prev, strategyId: e.target.value }))}
                         className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
-                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="">Custom / Manual</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="">Custom</option>
                         {strategies.map(s => (
-                          <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" key={s.id} value={s.id}>{s.name} ({s.timeframe})</option>
+                          <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-bold text-zinc-550 uppercase tracking-wider ml-1">Timeframe</label>
+                      <select
+                        value={tradeForm.timeframe}
+                        onChange={e => setTradeForm(prev => ({ ...prev, timeframe: e.target.value }))}
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
+                      >
+                        {['1m', '3m', '5m', '15m', '30m', '1H', '4H', '1D', '1W'].map(tf => (
+                          <option key={tf} className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value={tf}>{tf}</option>
                         ))}
                       </select>
                     </div>
