@@ -583,6 +583,45 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
     document.body.removeChild(link);
   };
 
+  const handleExportAccountCSV = (acct: JournalAccount) => {
+    const acctTrades = trades.filter(t => t.account_id === acct.id);
+    if (acctTrades.length === 0) {
+      alert("No trades logged for this account yet!");
+      return;
+    }
+
+    const headers = ['Trade No', 'Strategy', 'Asset', 'Direction', 'Risk Amount', 'Realized R:R', 'Total PnL', 'Emotions', 'Status', 'Date Logged'];
+    const rows = acctTrades.map(t => {
+      const strat = strategies.find(s => s.id === t.strategy_id);
+      return [
+        t.trade_no,
+        strat ? strat.name : 'Custom',
+        t.asset,
+        t.direction,
+        t.risk_amount,
+        t.realized_rr,
+        t.total_pnl,
+        t.emotions || '---',
+        t.status,
+        new Date(t.created_at).toLocaleDateString()
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${acct.exchange}_${acct.account_id_input}_journal_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Filtered lists based on current workspace
   const exchangeAccounts = accounts.filter(a => a.exchange === activeExchange);
   const activeStats = activeAccount ? getAccountStats(activeAccount.id) : null;
@@ -601,7 +640,7 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
 
   return (
     <AccessGuard requiredTier={1} tierName="PRO">
-      <div className="space-y-8 p-6 md:p-8 max-w-[1600px] mx-auto select-none min-h-screen text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+      <div className="space-y-8 w-full mx-auto select-none flex-grow text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
         
         {/* Header Block */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-zinc-200 dark:border-zinc-850 pb-6">
@@ -661,7 +700,7 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* Left Column: Account Listing and Stats */}
-            <div className="lg:col-span-4 space-y-8">
+            <div className="lg:col-span-3 space-y-8 flex flex-col h-full">
               
               {/* Account List Header */}
               <div className="glass-panel p-6 md:p-8 space-y-6">
@@ -726,6 +765,16 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                               }`}>
                                 {acct.type}
                               </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExportAccountCSV(acct);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-emerald-500 transition-colors cursor-pointer"
+                                title="Export Account CSV"
+                              >
+                                <Download size={12} />
+                              </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -819,7 +868,7 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
             </div>
 
             {/* Right Column: Workstation containing Trades, Strategies, Daily Journal tabs */}
-            <div className="lg:col-span-8 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-3xl p-6 min-h-[580px] flex flex-col overflow-hidden relative">
+            <div className="lg:col-span-9 bg-white dark:bg-gradient-to-br dark:from-zinc-900 dark:to-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-8 min-h-[620px] flex flex-col overflow-hidden relative shadow-xl">
               
               {/* Tab Header */}
               <div className="flex justify-between items-center pb-4 border-b border-zinc-200 dark:border-zinc-850 mb-6 text-[10px] text-zinc-550 uppercase tracking-widest shrink-0 flex-wrap gap-2">
@@ -1164,11 +1213,11 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                       <select
                         value={accountForm.type}
                         onChange={e => setAccountForm(prev => ({ ...prev, type: e.target.value as any }))}
-                        className="input-modern w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs text-zinc-800 dark:text-zinc-300 px-3 py-3 outline-none cursor-pointer"
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
-                        <option value="Evaluation">Evaluation</option>
-                        <option value="Funded">Funded</option>
-                        <option value="Personal">Personal</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Evaluation">Evaluation</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Funded">Funded</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Personal">Personal</option>
                       </select>
                     </div>
 
@@ -1177,12 +1226,12 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                       <select
                         value={accountForm.status}
                         onChange={e => setAccountForm(prev => ({ ...prev, status: e.target.value as any }))}
-                        className="input-modern w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs text-zinc-800 dark:text-zinc-300 px-3 py-3 outline-none cursor-pointer"
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
-                        <option value="Active">Active</option>
-                        <option value="Passed">Passed</option>
-                        <option value="Failed">Failed</option>
-                        <option value="Payout Eligible">Payout Eligible</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Active">Active</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Passed">Passed</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Failed">Failed</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Payout Eligible">Payout Eligible</option>
                       </select>
                     </div>
                   </div>
@@ -1257,11 +1306,11 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                       <select
                         value={tradeForm.strategyId}
                         onChange={e => setTradeForm(prev => ({ ...prev, strategyId: e.target.value }))}
-                        className="input-modern w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs text-zinc-800 dark:text-zinc-300 px-3 py-3 outline-none cursor-pointer"
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
-                        <option value="">Custom / Manual</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="">Custom / Manual</option>
                         {strategies.map(s => (
-                          <option key={s.id} value={s.id}>{s.name} ({s.timeframe})</option>
+                          <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" key={s.id} value={s.id}>{s.name} ({s.timeframe})</option>
                         ))}
                       </select>
                     </div>
@@ -1285,10 +1334,10 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                       <select
                         value={tradeForm.direction}
                         onChange={e => setTradeForm(prev => ({ ...prev, direction: e.target.value as any }))}
-                        className="input-modern w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs text-zinc-800 dark:text-zinc-300 px-3 py-3 outline-none cursor-pointer"
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
-                        <option value="BUY">BUY</option>
-                        <option value="SELL">SELL</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="BUY">BUY</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="SELL">SELL</option>
                       </select>
                     </div>
 
@@ -1297,12 +1346,12 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                       <select
                         value={tradeForm.status}
                         onChange={e => setTradeForm(prev => ({ ...prev, status: e.target.value as any }))}
-                        className="input-modern w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs text-zinc-800 dark:text-zinc-300 px-3 py-3 outline-none cursor-pointer"
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
-                        <option value="Active">Active</option>
-                        <option value="Win">Win</option>
-                        <option value="Loss">Loss</option>
-                        <option value="Break-Even">Break-Even</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Active">Active</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Win">Win</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Loss">Loss</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Break-Even">Break-Even</option>
                       </select>
                     </div>
                   </div>
@@ -1462,11 +1511,11 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                       <select
                         value={dailyForm.htfBias}
                         onChange={e => setDailyForm(prev => ({ ...prev, htfBias: e.target.value }))}
-                        className="input-modern w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs text-zinc-800 dark:text-zinc-300 px-3 py-3 outline-none cursor-pointer"
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
-                        <option value="Bullish">Bullish</option>
-                        <option value="Bearish">Bearish</option>
-                        <option value="Range">Range</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Bullish">Bullish</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Bearish">Bearish</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Range">Range</option>
                       </select>
                     </div>
                   </div>
@@ -1477,12 +1526,12 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                       <select
                         value={dailyForm.mentalState}
                         onChange={e => setDailyForm(prev => ({ ...prev, mentalState: e.target.value }))}
-                        className="input-modern w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs text-zinc-800 dark:text-zinc-300 px-3 py-3 outline-none cursor-pointer"
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
-                        <option value="Focused">Focused / Calibrated</option>
-                        <option value="Anxious">Anxious / Alert</option>
-                        <option value="FOMO">FOMO / Impatient</option>
-                        <option value="Fatigued">Fatigued / Unfocused</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Focused">Focused / Calibrated</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Anxious">Anxious / Alert</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="FOMO">FOMO / Impatient</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Fatigued">Fatigued / Unfocused</option>
                       </select>
                     </div>
 
@@ -1491,11 +1540,11 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                       <select
                         value={dailyForm.rulesFollowed}
                         onChange={e => setDailyForm(prev => ({ ...prev, rulesFollowed: e.target.value }))}
-                        className="input-modern w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-xs text-zinc-800 dark:text-zinc-300 px-3 py-3 outline-none cursor-pointer"
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
-                        <option value="Yes">Yes (100% compliant)</option>
-                        <option value="Partially">Partially (Minor slippage)</option>
-                        <option value="No">No (Discipline breach)</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Yes">Yes (100% compliant)</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="Partially">Partially (Minor slippage)</option>
+                        <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="No">No (Discipline breach)</option>
                       </select>
                     </div>
                   </div>
