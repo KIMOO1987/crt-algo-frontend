@@ -6,7 +6,7 @@ import {
   LayoutGrid, Clock, History, Zap, Compass, BarChart3,
   CheckSquare, LineChart, User, CreditCard,
   LogOut, Lock, X, Menu, ShieldCheck,
-  Terminal, Activity, Cpu, Settings, UserPlus, Mail
+  Terminal, Activity, Cpu, Settings, UserPlus, Mail, BookOpen
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -20,6 +20,7 @@ const menuGroups = [
       { name: 'Dashboard', icon: LayoutGrid, path: '/dashboard', minTier: 0 },
       { name: 'Active Trades', icon: Clock, path: '/dashboard/active', minTier: 1 },
       { name: 'Trade History', icon: History, path: '/dashboard/history', minTier: 1 },
+      { name: 'Trade General', icon: BookOpen, path: '/dashboard/trade-general', minTier: 1 },
     ]
   },
   {
