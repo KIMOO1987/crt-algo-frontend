@@ -8,7 +8,7 @@ import {
   Target, Lock, Save, Settings2, BarChart3, TrendingUp, CheckCircle, 
   XCircle, ToggleLeft, ToggleRight, ArrowUpRight, ArrowDownRight, Flame,
   PlayCircle, Compass, Award, GitBranch, ChevronDown, Trash2, Power, Terminal,
-  Apple, Laptop
+  Apple, Laptop, Download
 } from 'lucide-react';
 
 const MT5_SYMBOLS = [
@@ -622,6 +622,37 @@ export default function MT5Dashboard() {
     }
   };
 
+  const exportToCSV = () => {
+    if (rawExecutions.length === 0) return;
+    
+    const headers = ["Time", "Ticket", "Symbol", "Side", "TF", "Price", "Qty", "PnL", "Status"];
+    const rows = rawExecutions.map(e => [
+      new Date(e.executed_at).toLocaleString(),
+      e.position_id || '---',
+      e.symbol || '',
+      e.side || '',
+      e.tf_alignment || '---',
+      e.entry_price || '---',
+      e.quantity || '0',
+      e.pnl || '0',
+      e.status || ''
+    ]);
+    
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `mt5_trade_log_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const metalsList = MT5_SYMBOLS.filter(s => s.category === 'METALS').map(s => s.symbol);
   const indicesList = MT5_SYMBOLS.filter(s => s.category === 'INDICES').map(s => s.symbol);
   const forexList = MT5_SYMBOLS.filter(s => s.category === 'FOREX').map(s => s.symbol);
@@ -1181,27 +1212,37 @@ export default function MT5Dashboard() {
 
         {/* Live log Terminal */}
         <div className="glass-panel overflow-hidden">
-          <div className="flex border-b border-zinc-200 dark:border-zinc-850 bg-zinc-50/50 dark:bg-zinc-950/60 p-2 gap-1 flex-wrap">
-            <button
-              onClick={() => setTerminalTab('trade')}
-              className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                terminalTab === 'trade' 
-                  ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
-                  : 'text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white border border-transparent'
-              }`}
-            >
-              Trade executions Log
-            </button>
-            <button
-              onClick={() => setTerminalTab('bridge')}
-              className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                terminalTab === 'bridge' 
-                  ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
-                  : 'text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white border border-transparent'
-              }`}
-            >
-              Bridge Log Terminal
-            </button>
+          <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-850 bg-zinc-50/50 dark:bg-zinc-950/60 p-2 gap-1 flex-wrap">
+            <div className="flex gap-1 flex-wrap">
+              <button
+                onClick={() => setTerminalTab('trade')}
+                className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  terminalTab === 'trade' 
+                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
+                    : 'text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white border border-transparent'
+                }`}
+              >
+                Trade executions Log
+              </button>
+              <button
+                onClick={() => setTerminalTab('bridge')}
+                className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  terminalTab === 'bridge' 
+                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
+                    : 'text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white border border-transparent'
+                }`}
+              >
+                Bridge Log Terminal
+              </button>
+            </div>
+            {terminalTab === 'trade' && rawExecutions.length > 0 && (
+              <button
+                onClick={exportToCSV}
+                className="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-2 mr-2 cursor-pointer"
+              >
+                <Download size={12} /> Export CSV
+              </button>
+            )}
           </div>
 
           <div className="p-6 bg-white/80 dark:bg-zinc-950/80 font-mono text-[11px] leading-relaxed text-zinc-800 dark:text-zinc-350">
