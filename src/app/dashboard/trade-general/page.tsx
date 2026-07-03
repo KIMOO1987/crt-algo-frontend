@@ -9,7 +9,8 @@ import {
   Plus, Trash2, AlertTriangle, TrendingUp, TrendingDown,
   BookOpen, Award, Activity, CheckSquare, Wallet,
   Percent, Save, FileText, AlertCircle, Copy, Check,
-  Target, Download, Calendar, Smile, RefreshCw, History as HistoryIcon
+  Target, Download, Calendar, Smile, RefreshCw, History as HistoryIcon,
+  Pencil
 } from 'lucide-react';
 
 interface JournalAccount {
@@ -102,6 +103,8 @@ export default function TradeGeneralPage() {
     emotions: '',
     status: 'Active' as 'Win' | 'Loss' | 'Break-Even' | 'Active'
   });
+
+  const [editingTradeId, setEditingTradeId] = useState<string | null>(null);
 
   const [strategyForm, setStrategyForm] = useState({
     name: '',
@@ -425,8 +428,62 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
     }
   };
 
-  // Handle Trade Form Submit
-  const handleCreateTrade = async (e: React.FormEvent) => {
+  // Close Trade Modal and reset state
+  const closeTradeModal = () => {
+    setShowTradeModal(false);
+    setEditingTradeId(null);
+    setTradeForm({
+      tradeNo: '',
+      strategyId: '',
+      timeframe: '15m',
+      asset: '',
+      direction: 'BUY',
+      riskAmount: '',
+      realizedRr: '',
+      totalPnl: '',
+      emotions: '',
+      status: 'Active'
+    });
+  };
+
+  // Populate trade form to edit existing trade
+  const handleEditTrade = (trade: JournalTrade) => {
+    setEditingTradeId(trade.id);
+    setTradeForm({
+      tradeNo: trade.trade_no.toString(),
+      strategyId: trade.strategy_id || '',
+      timeframe: trade.timeframe || '15m',
+      asset: trade.asset,
+      direction: trade.direction,
+      riskAmount: trade.risk_amount.toString(),
+      realizedRr: trade.realized_rr.toString(),
+      totalPnl: trade.total_pnl.toString(),
+      emotions: trade.emotions || '',
+      status: trade.status
+    });
+    setShowTradeModal(true);
+  };
+
+  // Open trade modal to log a new trade
+  const openNewTradeModal = () => {
+    setEditingTradeId(null);
+    setTradeForm({
+      tradeNo: '',
+      strategyId: '',
+      timeframe: '15m',
+      asset: '',
+      direction: 'BUY',
+      riskAmount: '',
+      realizedRr: '',
+      totalPnl: '',
+      emotions: '',
+      status: 'Active'
+    });
+    setShowTradeModal(true);
+  };
+
+  // Handle Trade Form Submit (Insert or Update)
+  const handleSubmitTrade = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !activeAccount || !tradeForm.tradeNo || !tradeForm.asset || !tradeForm.riskAmount) return;
 
@@ -446,32 +503,36 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
         status: tradeForm.status
       };
 
-      const { data, error } = await supabase
-        .from('journal_trades')
-        .insert([payload])
-        .select()
-        .single();
+      if (editingTradeId) {
+        const { data, error } = await supabase
+          .from('journal_trades')
+          .update(payload)
+          .eq('id', editingTradeId)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (data) {
-        setTrades(prev => [data, ...prev]);
-        setShowTradeModal(false);
-        setTradeForm({
-          tradeNo: '',
-          strategyId: '',
-          timeframe: '15m',
-          asset: '',
-          direction: 'BUY',
-          riskAmount: '',
-          realizedRr: '',
-          totalPnl: '',
-          emotions: '',
-          status: 'Active'
-        });
+        if (data) {
+          setTrades(prev => prev.map(t => t.id === editingTradeId ? data : t));
+          closeTradeModal();
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('journal_trades')
+          .insert([payload])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setTrades(prev => [data, ...prev]);
+          closeTradeModal();
+        }
       }
     } catch (err) {
-      alert('Error logging trade: ' + (err as any).message);
+      alert(`Error ${editingTradeId ? 'updating' : 'logging'} trade: ` + (err as any).message);
     }
   };
 
@@ -920,7 +981,7 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                   {/* Add Buttons based on active tab */}
                   {journalTab === 'trades' && activeAccount && (
                     <button
-                      onClick={() => setShowTradeModal(true)}
+                      onClick={openNewTradeModal}
                       className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border border-orange-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <Plus size={11} /> Log Trade
@@ -1039,10 +1100,18 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                                       {t.status}
                                     </span>
                                   </td>
-                                  <td className="py-3 text-right">
+                                  <td className="py-3 text-right whitespace-nowrap">
+                                    <button
+                                      onClick={() => handleEditTrade(t)}
+                                      className="p-1.5 hover:bg-zinc-150 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 mr-1"
+                                      title="Edit Trade"
+                                    >
+                                      <Pencil size={12} />
+                                    </button>
                                     <button
                                       onClick={() => handleDeleteTrade(t.id)}
                                       className="p-1.5 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-colors cursor-pointer text-zinc-400"
+                                      title="Delete Trade"
                                     >
                                       <Trash2 size={12} />
                                     </button>
@@ -1287,16 +1356,21 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
           {/* 2. Trade Logging Modal */}
           {showTradeModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowTradeModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeTradeModal} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
               <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 p-8 rounded-3xl max-w-lg w-full shadow-2xl z-10 space-y-6">
                 <div>
                   <h3 className="text-xl font-black uppercase italic tracking-tighter text-zinc-900 dark:text-white flex items-center gap-2">
-                    <Plus className="text-orange-500" size={20} /> Log Executed Trade
+                    {editingTradeId ? (
+                      <Pencil className="text-orange-500" size={20} />
+                    ) : (
+                      <Plus className="text-orange-500" size={20} />
+                    )}
+                    {editingTradeId ? 'Edit Executed Trade' : 'Log Executed Trade'}
                   </h3>
                   <p className="text-[8px] uppercase tracking-widest text-zinc-550 font-bold mt-1">Account: {activeAccount?.name}</p>
                 </div>
 
-                <form onSubmit={handleCreateTrade} className="space-y-4">
+                <form onSubmit={handleSubmitTrade} className="space-y-4">
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-bold text-zinc-550 uppercase tracking-wider ml-1">Trade Number</label>
@@ -1356,7 +1430,7 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                       <select
                         value={tradeForm.direction}
                         onChange={e => setTradeForm(prev => ({ ...prev, direction: e.target.value as any }))}
-                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-800 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
+                        className="input-modern w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 text-xs text-zinc-850 dark:text-zinc-100 px-3 py-3 outline-none cursor-pointer"
                       >
                         <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="BUY">BUY</option>
                         <option className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100" value="SELL">SELL</option>
@@ -1429,11 +1503,11 @@ CREATE POLICY "Users can manage their own daily journals" ON public.journal_dail
                   </div>
 
                   <div className="pt-4 flex gap-3">
-                    <button type="button" onClick={() => setShowTradeModal(false)} className="btn-modern bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-850 px-6 py-3 text-[10px] font-black uppercase tracking-widest flex-1 cursor-pointer">
+                    <button type="button" onClick={closeTradeModal} className="btn-modern bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-850 px-6 py-3 text-[10px] font-black uppercase tracking-widest flex-1 cursor-pointer">
                       Cancel
                     </button>
                     <button type="submit" className="btn-modern bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 text-[10px] font-black uppercase tracking-widest flex-1 cursor-pointer">
-                      Log Trade
+                      {editingTradeId ? 'Update Trade' : 'Log Trade'}
                     </button>
                   </div>
                 </form>
