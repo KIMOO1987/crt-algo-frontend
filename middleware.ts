@@ -6,6 +6,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Enforce HTTPS redirect if request is forwarded over insecure HTTP
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  if (forwardedProto === 'http') {
+    const url = request.nextUrl.clone();
+    url.protocol = 'https:';
+    url.port = '';
+    return NextResponse.redirect(url, 301);
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
