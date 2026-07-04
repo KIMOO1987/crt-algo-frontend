@@ -20,6 +20,8 @@ export default function SignalModal({ signal, onClose }: { signal: any, onClose:
   if (!signal) return null;
   const isBuy = signal.side?.toUpperCase() === 'BUY' || signal.side?.toUpperCase() === 'BULLISH';
 
+  const isSfp = signal.strategy?.includes('SFP') || signal.strategy?.includes('sfp') || ('tp3' in signal) || ('tp4' in signal);
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -36,7 +38,7 @@ export default function SignalModal({ signal, onClose }: { signal: any, onClose:
           <div className="flex justify-between items-start mb-6">
             <div className="relative z-10">
               <h2 className="text-2xl font-extrabold tracking-tight uppercase text-foreground drop-shadow-sm">{signal.symbol}</h2>
-              <p className="text-[10px] text-orange-500 font-bold tracking-widest mt-1">CRT NEURAL SETUP</p>
+              <p className="text-[10px] text-orange-500 font-bold tracking-widest mt-1">{isSfp ? 'SFP ALGO SETUP' : 'CRT NEURAL SETUP'}</p>
             </div>
             <button onClick={onClose} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-all cursor-pointer"><X size={18} className="text-zinc-500" /></button>
           </div>
@@ -47,8 +49,19 @@ export default function SignalModal({ signal, onClose }: { signal: any, onClose:
           <div className="space-y-1 border-t border-[var(--glass-border)] pt-4">
             <PriceRow label="ENTRY ZONE" value={signal.entry_price} color="text-orange-500" />
             <PriceRow label="STOP LOSS" value={signal.sl} color="text-red-500" />
-            <PriceRow label="TP 1 (EQ)" value={signal.tp} color="text-emerald-500" />
-            <PriceRow label="TP 2 (TARGET)" value={signal.tp_secondary} color="text-emerald-500" />
+            {isSfp ? (
+              <>
+                <PriceRow label="TP 1 (2RR)" value={signal.tp} color="text-emerald-500" />
+                <PriceRow label="TP 2 (2.5RR)" value={signal.tp2} color="text-emerald-500" />
+                <PriceRow label="TP 3 (4RR)" value={signal.tp3} color="text-emerald-500" />
+                <PriceRow label="TP 4 (4.5RR)" value={signal.tp4} color="text-emerald-500" />
+              </>
+            ) : (
+              <>
+                <PriceRow label="TP 1 (EQ)" value={signal.tp} color="text-emerald-500" />
+                <PriceRow label="TP 2 (TARGET)" value={signal.tp_secondary} color="text-emerald-500" />
+              </>
+            )}
           </div>
         </div>
         <div className="lg:w-[65%] bg-[var(--bg)] relative flex flex-col min-h-[450px]">
