@@ -111,8 +111,10 @@ const SignalCard = ({ signal, onClick }: { signal: any, onClick: () => void }) =
           <TradeDataRow icon={<Zap size={12} className="text-amber-500"/>} label="Entry Region" value={Number(signal.entry_price || 0).toFixed(5)} />
           <TradeDataRow icon={<Shield size={12} className="text-red-400"/>} label="Invalidation" value={Number(signal.sl || 0).toFixed(5)} valueClass="text-red-400" />
           <div className="my-2 border-t border-[var(--glass-border)]" />
-          <TradeDataRow icon={<Target size={12} className="text-emerald-500"/>} label="TP-1 (EQ)" value={`${Number(signal.tp || 0).toFixed(5)} (${calculateTargetRR(signal.tp, signal.entry_price, signal.sl)})`} valueClass="text-emerald-500" />
-          <TradeDataRow icon={<Zap size={12} className="text-amber-500"/>} label="TP-2 (TARGET)" value={signal.tp2 ? `${Number(signal.tp2).toFixed(5)} (${calculateTargetRR(signal.tp2, signal.entry_price, signal.sl)})` : '---'} valueClass="text-amber-500" />
+          <TradeDataRow icon={<Target size={12} className="text-emerald-500"/>} label="TP-1 (2RR)" value={`${Number(signal.tp || 0).toFixed(5)} (${calculateTargetRR(signal.tp, signal.entry_price, signal.sl)})`} valueClass="text-emerald-500" />
+          <TradeDataRow icon={<Zap size={12} className="text-amber-500"/>} label="TP-2 (2.5RR)" value={signal.tp2 ? `${Number(signal.tp2).toFixed(5)} (${calculateTargetRR(signal.tp2, signal.entry_price, signal.sl)})` : '---'} valueClass="text-amber-500" />
+          <TradeDataRow icon={<Target size={12} className="text-blue-500"/>} label="TP-3 (4RR)" value={signal.tp3 ? `${Number(signal.tp3).toFixed(5)} (${calculateTargetRR(signal.tp3, signal.entry_price, signal.sl)})` : '---'} valueClass="text-blue-500" />
+          <TradeDataRow icon={<Zap size={12} className="text-indigo-500"/>} label="TP-4 (4.5RR)" value={signal.tp4 ? `${Number(signal.tp4).toFixed(5)} (${calculateTargetRR(signal.tp4, signal.entry_price, signal.sl)})` : '---'} valueClass="text-indigo-500" />
           <div className="my-2 border-t border-[var(--glass-border)]" />
           <TradeDataRow icon={<Award size={12} className="text-blue-500 dark:text-blue-400"/>} label="Grading" value={renderGradeStars(signal.grade)} valueClass="text-blue-500 dark:text-blue-400 font-extrabold uppercase animate-pulse" />
           <TradeDataRow icon={<Layout size={12} className="text-zinc-500"/>} label="Confluences" value={signal.confluences || 'Institutional Bias Confirmed'} valueClass="text-zinc-650 dark:text-zinc-400 text-[11px] italic" />

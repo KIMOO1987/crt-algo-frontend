@@ -369,16 +369,30 @@ export default function ActiveSignalsPage() {
 
                       <TradeDataRow
                         icon={<Target size={12} className="text-emerald-500" />}
-                        label="TP-1 (EQ)"
+                        label="TP-1 (2RR)"
                         value={`${Number(signal.tp || 0).toFixed(5)} (${calculateTargetRR(signal.tp, signal.entry_price, signal.sl)})`}
                         valueClass="text-emerald-500"
                       />
 
                       <TradeDataRow
                         icon={<Zap size={12} className="text-amber-500" />}
-                        label="TP-2 (TARGET)"
+                        label="TP-2 (2.5RR)"
                         value={signal.tp2 ? `${Number(signal.tp2).toFixed(5)} (${calculateTargetRR(signal.tp2, signal.entry_price, signal.sl)})` : '---'}
                         valueClass="text-amber-500"
+                      />
+
+                      <TradeDataRow
+                        icon={<Target size={12} className="text-blue-500" />}
+                        label="TP-3 (4RR)"
+                        value={signal.tp3 ? `${Number(signal.tp3).toFixed(5)} (${calculateTargetRR(signal.tp3, signal.entry_price, signal.sl)})` : '---'}
+                        valueClass="text-blue-500"
+                      />
+
+                      <TradeDataRow
+                        icon={<Zap size={12} className="text-indigo-500" />}
+                        label="TP-4 (4.5RR)"
+                        value={signal.tp4 ? `${Number(signal.tp4).toFixed(5)} (${calculateTargetRR(signal.tp4, signal.entry_price, signal.sl)})` : '---'}
+                        valueClass="text-indigo-500"
                       />
 
                       <div className="my-2 border-t border-[var(--glass-border)]" />
