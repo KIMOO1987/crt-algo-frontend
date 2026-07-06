@@ -267,6 +267,12 @@ export default function PerformancePage() {
               category: s.category || '',
               total_trades: 0,
               wins: 0,
+              losses: 0,
+              be: 0,
+              tp1: 0,
+              tp2: 0,
+              tp3: 0,
+              full_tp: 0,
               totalWinR: 0,
               totalLossR: 0,
               net_r: 0
@@ -275,13 +281,30 @@ export default function PerformancePage() {
 
           const statsObj = symbolMap[sym];
           statsObj.total_trades++;
-          if (status === 'TP2' || status === 'WIN' || status === 'TP1' || status === 'TP1 + SL (BE)') {
+          
+          if (rr > 0) {
             statsObj.wins++;
             statsObj.totalWinR += rr;
-          } else if (status === 'SL' || status === 'LOSS') {
+          } else if (rr < 0) {
             statsObj.totalLossR++;
           }
           statsObj.net_r += rr;
+
+          if (status === 'TP4' || status === 'WIN') {
+            statsObj.full_tp++;
+          } else if (status === 'TP3') {
+            statsObj.full_tp++;
+          } else if (status === 'TP3 + BE' || status === 'TP3+BE') {
+            statsObj.tp3++;
+          } else if (status === 'TP2 + BE' || status === 'TP2+BE') {
+            statsObj.tp2++;
+          } else if (status === 'TP1 + BE' || status === 'TP1+BE') {
+            statsObj.tp1++;
+          } else if (status === 'SL' || status === 'LOSS') {
+            statsObj.losses++;
+          } else {
+            statsObj.be++;
+          }
         });
 
         const calculatedStats = {
@@ -523,6 +546,30 @@ export default function PerformancePage() {
                         {sortConfig.key === 'win_rate' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                       </div>
                     </th>
+                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('tp1')}>
+                      <div className="flex items-center gap-1">
+                        TP1
+                        {sortConfig.key === 'tp1' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
+                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('tp2')}>
+                      <div className="flex items-center gap-1">
+                        TP2
+                        {sortConfig.key === 'tp2' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
+                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('tp3')}>
+                      <div className="flex items-center gap-1">
+                        TP3
+                        {sortConfig.key === 'tp3' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
+                    <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('full_tp')}>
+                      <div className="flex items-center gap-1">
+                        Full TP
+                        {sortConfig.key === 'full_tp' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
                     <th className="py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('profit_factor')}>
                       <div className="flex items-center gap-1">
                         Profit Factor
@@ -568,6 +615,18 @@ export default function PerformancePage() {
                             <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border tracking-widest ${item.win_rate >= 50 ? 'text-emerald-450 border-emerald-500/20 bg-emerald-500/10' : 'text-red-400 border-red-500/20 bg-red-500/10'}`}>
                               {item.win_rate}%
                             </span>
+                          </td>
+                          <td className="py-6 font-mono font-bold text-emerald-450">
+                            {item.tp1}
+                          </td>
+                          <td className="py-6 font-mono font-bold text-amber-400">
+                            {item.tp2}
+                          </td>
+                          <td className="py-6 font-mono font-bold text-indigo-400">
+                            {item.tp3}
+                          </td>
+                          <td className="py-6 font-mono font-bold text-blue-400">
+                            {item.full_tp}
                           </td>
                           <td className="py-6 font-mono font-bold text-zinc-800 dark:text-zinc-300">
                             {item.profit_factor}

@@ -152,6 +152,10 @@ export default function SymbolAudit() {
           wins: 0,
           losses: 0,
           be: 0,
+          tp1: 0,
+          tp2: 0,
+          tp3: 0,
+          full_tp: 0,
           total_rr: 0,
           gradeCounts: {
             'A++': 0,
@@ -175,27 +179,31 @@ export default function SymbolAudit() {
       let rr = 0;
       if (status === 'TP4' || status === 'WIN') {
         rr = 2.825;
+        statsObj.full_tp++;
       } else if (status === 'TP3') {
         rr = 2.825;
+        statsObj.full_tp++;
       } else if (status === 'TP3 + BE' || status === 'TP3+BE') {
         rr = 2.625;
+        statsObj.tp3++;
       } else if (status === 'TP2 + BE' || status === 'TP2+BE') {
         rr = 2.075;
+        statsObj.tp2++;
       } else if (status === 'TP1 + BE' || status === 'TP1+BE') {
         rr = 1.00;
+        statsObj.tp1++;
       } else if (status === 'SL' || status === 'LOSS') {
         rr = -1.0;
+        statsObj.losses++;
+      } else {
+        rr = 0.0;
+        statsObj.be++;
       }
       
       if (rr > 0) {
         statsObj.wins++;
-        statsObj.total_rr += rr;
-      } else if (rr < 0) {
-        statsObj.losses++;
-        statsObj.total_rr += rr;
-      } else {
-        statsObj.be++;
       }
+      statsObj.total_rr += rr;
     });
 
     return Object.values(symbolMap).map((item: any) => {
@@ -207,6 +215,10 @@ export default function SymbolAudit() {
         wins: item.wins,
         losses: item.losses,
         be: item.be,
+        tp1: item.tp1,
+        tp2: item.tp2,
+        tp3: item.tp3,
+        full_tp: item.full_tp,
         winRate: item.total_trades > 0 ? Number(((item.wins / item.total_trades) * 100).toFixed(1)) : 0,
         gradeCounts: gCounts,
         gradeWeight: gradeWeight,
@@ -423,10 +435,28 @@ export default function SymbolAudit() {
                         {sortConfig.key === 'trades' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                       </div>
                     </th>
-                    <th className="px-4 py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('wins')}>
+                    <th className="px-4 py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('tp1')}>
                       <div className="flex items-center gap-1">
-                        Wins
-                        {sortConfig.key === 'wins' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                        TP1
+                        {sortConfig.key === 'tp1' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
+                    <th className="px-4 py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('tp2')}>
+                      <div className="flex items-center gap-1">
+                        TP2
+                        {sortConfig.key === 'tp2' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
+                    <th className="px-4 py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('tp3')}>
+                      <div className="flex items-center gap-1">
+                        TP3
+                        {sortConfig.key === 'tp3' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
+                      </div>
+                    </th>
+                    <th className="px-4 py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('full_tp')}>
+                      <div className="flex items-center gap-1">
+                        Full TP
+                        {sortConfig.key === 'full_tp' && (sortConfig.direction === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                       </div>
                     </th>
                     <th className="px-4 py-6 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => handleSort('losses')}>
@@ -469,7 +499,10 @@ export default function SymbolAudit() {
                           <span className="text-base font-black text-zinc-900 dark:text-white uppercase tracking-tighter italic drop-shadow-sm">{item.symbol}</span>
                         </td>
                         <td className="px-4 py-6 text-[13px] font-mono font-bold text-zinc-700 dark:text-zinc-400">{item.trades}</td>
-                        <td className="px-4 py-6 text-[13px] font-mono font-black text-emerald-400/80">{item.wins}</td>
+                        <td className="px-4 py-6 text-[13px] font-mono font-black text-emerald-450">{item.tp1}</td>
+                        <td className="px-4 py-6 text-[13px] font-mono font-black text-amber-400">{item.tp2}</td>
+                        <td className="px-4 py-6 text-[13px] font-mono font-black text-indigo-400">{item.tp3}</td>
+                        <td className="px-4 py-6 text-[13px] font-mono font-black text-blue-400">{item.full_tp}</td>
                         <td className="px-4 py-6 text-[13px] font-mono font-black text-red-400/80">{item.losses}</td>
                         <td className="px-4 py-6 text-[13px] font-mono font-bold text-zinc-600 dark:text-zinc-500">{item.be}</td>
                         <td className="px-4 py-6 text-[13px] font-mono font-black text-blue-400">{item.winRate}%</td>
