@@ -96,7 +96,7 @@ const SignalCard = ({ signal, onClick }: { signal: any, onClick: () => void }) =
         <div className="flex justify-between items-start mb-6 border-b border-[var(--glass-border)] pb-4.5">
           <div>
             <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight uppercase">{signal.symbol}</h3>
-            <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-1.5 flex items-center gap-1.5">{signal.strategy || 'SFP_ALGO_PRO'} • {signal.tf_alignment || '5M'}</p>
+            <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-1.5 flex items-center gap-1.5">{signal.strategy || 'SFP_ALGO_PRO'} • {signal.tf || '15m'}</p>
           </div>
           <div className={`px-3 py-1 rounded-lg border text-[9px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${isBuy ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-555' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
             {isBuy ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {isBuy ? 'BULLISH' : 'BEARISH'}
@@ -186,7 +186,7 @@ export default function SignalsPage() {
     }
 
     if (tfAlignment !== 'ALL') {
-      query = query.eq('tf_alignment', tfAlignment);
+      query = query.eq('tf', tfAlignment);
     }
 
     if (selectedSymbols.length > 0) {
@@ -233,7 +233,7 @@ export default function SignalsPage() {
     
     if (searchTerm) query = query.ilike('symbol', `%${searchTerm}%`);
     if (assetClass !== 'ALL') query = query.eq('category', assetClass);
-    if (tfAlignment !== 'ALL') query = query.eq('tf_alignment', tfAlignment);
+    if (tfAlignment !== 'ALL') query = query.eq('tf', tfAlignment);
     if (selectedSymbols.length > 0) query = query.in('symbol', selectedSymbols);
     
     if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
@@ -265,7 +265,7 @@ export default function SignalsPage() {
         { key: 'sl', label: 'Stop Loss' },
         { key: 'tp', label: 'Take Profit 1' },
         { key: 'tp2', label: 'Take Profit 2' },
-        { key: 'tf_alignment', label: 'Timeframe Alignment' },
+        { key: 'tf', label: 'Timeframe' },
         { key: 'category', label: 'Asset Class' },
         { key: 'confluences', label: 'Confluences' },
         { key: 'created_at', label: 'Date Executed' }
@@ -331,11 +331,17 @@ export default function SignalsPage() {
             value={tfAlignment}
             onChange={setTfAlignment}
             options={[
-              { value: 'ALL', label: 'ALL ALIGNMENTS' },
-              { value: 'M5/H1', label: '5M - 1H Alignment' },
-              { value: 'M15/H4', label: '15M - 4H Alignment' },
-              { value: 'M30/H6', label: '30M - 6H Alignment' },
-              { value: 'H1/D1', label: '1H - 1D Alignment' }
+              { value: 'ALL', label: 'All Timeframes' },
+              { value: '1m', label: '1m' },
+              { value: '3m', label: '3m' },
+              { value: '5m', label: '5m' },
+              { value: '15m', label: '15m' },
+              { value: '30m', label: '30m' },
+              { value: '1H', label: '1H' },
+              { value: '4H', label: '4H' },
+              { value: '6H', label: '6H' },
+              { value: '1D', label: '1D' },
+              { value: '1W', label: '1W' }
             ]}
           />
 

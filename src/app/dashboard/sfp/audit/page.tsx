@@ -95,11 +95,11 @@ export default function SymbolAudit() {
       try {
         let query = supabase
           .from('sfp_signals')
-          .select('symbol, status, entry_price, sl, tp, tp2, grade')
+          .select('symbol, status, entry_price, sl, tp, tp2, tp3, tp4, grade')
           .eq('is_active', false);
 
         if (tfAlignment !== 'ALL') {
-          query = query.eq('tf_alignment', tfAlignment);
+          query = query.eq('tf', tfAlignment);
         }
 
         if (dateFrom) {
@@ -172,16 +172,22 @@ export default function SymbolAudit() {
       if (!risk) return;
 
       const status = s.status?.toUpperCase();
-      if (status === 'TP2' || status === 'WIN') {
+      if (status === 'TP4') {
         statsObj.wins++;
-        statsObj.total_rr += Math.abs(Number(s.tp2 || s.tp || 0) - entry) / risk;
-      } else if (status === 'TP1' || status === 'TP1 + SL (BE)') {
+        statsObj.total_rr += 4.5;
+      } else if (status === 'TP3') {
         statsObj.wins++;
-        statsObj.total_rr += Math.abs(Number(s.tp || 0) - entry) / risk;
+        statsObj.total_rr += 4.0;
+      } else if (status === 'TP2') {
+        statsObj.wins++;
+        statsObj.total_rr += 2.5;
+      } else if (status === 'TP1') {
+        statsObj.wins++;
+        statsObj.total_rr += 2.0;
       } else if (status === 'SL' || status === 'LOSS') {
         statsObj.losses++;
         statsObj.total_rr -= 1;
-      } else {
+      } else if (status.includes('BE') || status === 'CLOSED') {
         statsObj.be++;
       }
     });
@@ -325,11 +331,17 @@ export default function SymbolAudit() {
               value={tfAlignment}
               onChange={setTfAlignment}
               options={[
-                { value: 'ALL', label: 'ALL ALIGNMENTS' },
-                { value: 'M5/H1', label: '5M - 1H Alignment' },
-                { value: 'M15/H4', label: '15M - 4H Alignment' },
-                { value: 'M30/H6', label: '30M - 6H Alignment' },
-                { value: 'H1/D1', label: '1H - 1D Alignment' }
+                { value: 'ALL', label: 'All Timeframes' },
+                { value: '1m', label: '1m' },
+                { value: '3m', label: '3m' },
+                { value: '5m', label: '5m' },
+                { value: '15m', label: '15m' },
+                { value: '30m', label: '30m' },
+                { value: '1H', label: '1H' },
+                { value: '4H', label: '4H' },
+                { value: '6H', label: '6H' },
+                { value: '1D', label: '1D' },
+                { value: '1W', label: '1W' }
               ]}
             />
 

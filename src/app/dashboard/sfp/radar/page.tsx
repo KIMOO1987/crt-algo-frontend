@@ -68,7 +68,7 @@ export default function RadarPage() {
     fetchRadarData(liveSignals.length > 0);
 
     const channel = supabase.channel('radar_updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'signals' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sfp_signals' }, () => {
         fetchRadarData(true);
       }).subscribe();
 
@@ -191,8 +191,11 @@ export default function RadarPage() {
           const cleanSym = normalizeSymbol(signal.symbol);
 
           if (status === 'SL') return -1.0;
-          if (status === 'TP2' && tp2) return risk ? Math.abs(tp2 - entry) / risk : 0;
-          if ((status === 'TP1' || status === 'TP1 + SL (BE)') && tp1) return risk ? Math.abs(tp1 - entry) / risk : 0;
+          if (status === 'TP4') return 4.5;
+          if (status === 'TP3') return 4.0;
+          if (status === 'TP2') return 2.5;
+          if (status === 'TP1') return 2.0;
+          if (status.includes('BE') || status === 'CLOSED') return 0.0;
           
           const current = livePrices[cleanSym] ?? Number(signal.current_price || entry);
           const reward = isBuy ? (current - entry) : (entry - current);
@@ -332,10 +335,16 @@ export default function RadarPage() {
                         let rr = 0;
                         if (status === 'SL') {
                           rr = -1.0;
-                        } else if (status === 'TP2' && tp2) {
-                          rr = risk ? Math.abs(tp2 - entry) / risk : 0;
-                        } else if ((status === 'TP1' || status === 'TP1 + SL (BE)') && tp1) {
-                          rr = risk ? Math.abs(tp1 - entry) / risk : 0;
+                        } else if (status === 'TP4') {
+                          rr = 4.5;
+                        } else if (status === 'TP3') {
+                          rr = 4.0;
+                        } else if (status === 'TP2') {
+                          rr = 2.5;
+                        } else if (status === 'TP1') {
+                          rr = 2.0;
+                        } else if (status.includes('BE') || status === 'CLOSED') {
+                          rr = 0.0;
                         } else {
                           // Live Calculation
                           const current = livePrices[cleanSym] ?? Number(signal.current_price || entry);

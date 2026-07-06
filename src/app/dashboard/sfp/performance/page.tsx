@@ -107,8 +107,10 @@ const SignalModal = ({ signal, onClose }: { signal: any, onClose: () => void }) 
           <div className="space-y-3">
             <PriceRow label="ENTRY" value={signal.entry_price} color="text-blue-400" />
             <PriceRow label="STOP LOSS" value={signal.sl} color="text-red-400" />
-            <PriceRow label="TP 1" value={signal.tp} color="text-green-400" />
-            <PriceRow label="TP 2" value={signal.tp2} color="text-green-400" />
+            <PriceRow label="TP 1 (2RR)" value={signal.tp} color="text-green-400" />
+            <PriceRow label="TP 2 (2.5RR)" value={signal.tp2} color="text-green-400" />
+            <PriceRow label="TP 3 (4RR)" value={signal.tp3} color="text-green-400" />
+            <PriceRow label="TP 4 (4.5RR)" value={signal.tp4} color="text-green-400" />
           </div>
         </div>
         <div className="lg:w-[65%] bg-[var(--input-bg)] relative flex flex-col min-h-[450px]">
@@ -201,12 +203,12 @@ export default function PerformancePage() {
       // Fetch ALL signals matching filter criteria to calculate AGGREGATE stats and symbol performance
       let statsQuery = supabase
         .from('sfp_signals')
-        .select('status, entry_price, sl, tp, tp2, symbol, category')
+        .select('status, entry_price, sl, tp, tp2, tp3, tp4, symbol, category, created_at')
         .eq('is_active', false);
 
       if (searchTerm) statsQuery = statsQuery.ilike('symbol', `%${searchTerm}%`);
       if (assetClass !== 'ALL') statsQuery = statsQuery.eq('category', assetClass);
-      if (tfAlignment !== 'ALL') statsQuery = statsQuery.eq('tf_alignment', tfAlignment);
+      if (tfAlignment !== 'ALL') statsQuery = statsQuery.eq('tf', tfAlignment);
       if (selectedSymbols.length > 0) statsQuery = statsQuery.in('symbol', selectedSymbols);
       if (dateFrom) statsQuery = statsQuery.gte('created_at', new Date(dateFrom).toISOString());
       if (dateTo) {
@@ -234,17 +236,27 @@ export default function PerformancePage() {
 
           const status = s.status?.toUpperCase();
           let rr = 0;
-          if (status === 'TP2' || status === 'WIN') {
-            rr = Math.abs(Number(s.tp2 || s.tp || 0) - entry) / risk;
+          if (status === 'TP4') {
+            rr = 4.5;
             wins++;
             totalWinR += rr;
-          } else if (status === 'TP1' || status === 'TP1 + SL (BE)') {
-            rr = Math.abs(Number(s.tp || 0) - entry) / risk;
+          } else if (status === 'TP3') {
+            rr = 4.0;
+            wins++;
+            totalWinR += rr;
+          } else if (status === 'TP2') {
+            rr = 2.5;
+            wins++;
+            totalWinR += rr;
+          } else if (status === 'TP1') {
+            rr = 2.0;
             wins++;
             totalWinR += rr;
           } else if (status === 'SL' || status === 'LOSS') {
             rr = -1;
             totalLossR += 1;
+          } else if (status.includes('BE') || status === 'CLOSED') {
+            rr = 0;
           }
           totalNetR += rr;
 
@@ -309,7 +321,7 @@ export default function PerformancePage() {
     
     if (searchTerm) query = query.ilike('symbol', `%${searchTerm}%`);
     if (assetClass !== 'ALL') query = query.eq('category', assetClass);
-    if (tfAlignment !== 'ALL') query = query.eq('tf_alignment', tfAlignment);
+    if (tfAlignment !== 'ALL') query = query.eq('tf', tfAlignment);
     if (selectedSymbols.length > 0) query = query.in('symbol', selectedSymbols);
     
     if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
@@ -442,11 +454,17 @@ export default function PerformancePage() {
               value={tfAlignment}
               onChange={setTfAlignment}
               options={[
-                { value: 'ALL', label: 'ALL ALIGNMENTS' },
-                { value: 'M5/H1', label: '5M - 1H Alignment' },
-                { value: 'M15/H4', label: '15M - 4H Alignment' },
-                { value: 'M30/H6', label: '30M - 6H Alignment' },
-                { value: 'H1/D1', label: '1H - 1D Alignment' }
+                { value: 'ALL', label: 'All Timeframes' },
+                { value: '1m', label: '1m' },
+                { value: '3m', label: '3m' },
+                { value: '5m', label: '5m' },
+                { value: '15m', label: '15m' },
+                { value: '30m', label: '30m' },
+                { value: '1H', label: '1H' },
+                { value: '4H', label: '4H' },
+                { value: '6H', label: '6H' },
+                { value: '1D', label: '1D' },
+                { value: '1W', label: '1W' }
               ]}
             />
 
@@ -589,22 +607,12 @@ export default function PerformancePage() {
 
 // --- 4. LOGIC HELPERS ---
 function calculateRRFromRow(signal: any) {
-  const entry = Number(signal.entry_price || 0); 
-  const sl = Number(signal.sl || 0); 
-  const status = signal.status?.toUpperCase();
-  const risk = Math.abs(entry - sl);
-  
-  if (!risk) return "0.0R";
-  
-  if (status === 'TP2' || status === 'WIN') {
-    return `+${(Math.abs(Number(signal.tp2 || signal.tp || 0) - entry) / risk).toFixed(1)}R`;
-  }
-  if (status === 'TP1 + SL (BE)' || status === 'TP1') {
-    return `+${(Math.abs(Number(signal.tp || 0) - entry) / risk).toFixed(1)}R`;
-  }
-  if (status === 'SL' || status === 'LOSS') {
-    return "-1.0R";
-  }
+  const status = signal.status?.toUpperCase() || 'ENTRY';
+  if (status === 'TP4') return "+4.5R";
+  if (status === 'TP3') return "+4.0R";
+  if (status === 'TP2') return "+2.5R";
+  if (status === 'TP1') return "+2.0R";
+  if (status === 'SL' || status === 'LOSS') return "-1.0R";
   return "0.0R";
 }
 

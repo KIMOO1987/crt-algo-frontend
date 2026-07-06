@@ -34,7 +34,7 @@ export default function ActiveSignalsPage() {
 
   const filteredSignals = useMemo(() => {
     return activeSignals.filter(signal => {
-      if (tfAlignment !== 'ALL' && signal.tf_alignment !== tfAlignment) {
+      if (tfAlignment !== 'ALL' && signal.tf !== tfAlignment) {
         return false;
       }
       if (dateFrom) {
@@ -276,15 +276,21 @@ export default function ActiveSignalsPage() {
         {/* Filters Bar */}
         <div className="glass-panel p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-center">
           <CustomSelect
-            label="Timeframe Alignment"
+            label="Timeframe"
             value={tfAlignment}
             onChange={setTfAlignment}
             options={[
-              { value: 'ALL', label: 'All Alignments' },
-              { value: 'M5/H1', label: '5M - 1H Alignment' },
-              { value: 'M15/H4', label: '15M - 4H Alignment' },
-              { value: 'M30/H6', label: '30M - 6H Alignment' },
-              { value: 'H1/D1', label: '1H - 1D Alignment' }
+              { value: 'ALL', label: 'All Timeframes' },
+              { value: '1m', label: '1m' },
+              { value: '3m', label: '3m' },
+              { value: '5m', label: '5m' },
+              { value: '15m', label: '15m' },
+              { value: '30m', label: '30m' },
+              { value: '1H', label: '1H' },
+              { value: '4H', label: '4H' },
+              { value: '6H', label: '6H' },
+              { value: '1D', label: '1D' },
+              { value: '1W', label: '1W' }
             ]}
           />
           <div className="flex flex-col">
@@ -335,7 +341,7 @@ export default function ActiveSignalsPage() {
                       <div>
                         <h3 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight uppercase">{signal.symbol}</h3>
                         <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-1.5 flex items-center gap-1.5">
-                          {signal.strategy || 'SFP_ALGO'} • {signal.tf_alignment || '5M'}
+                          {signal.strategy || 'SFP_ALGO'} • {signal.tf || '15m'}
                         </p>
                       </div>
 

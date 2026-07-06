@@ -337,14 +337,19 @@ export default function SfpDashboardClient({ tier, expiryDate, userProfile }: Da
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 border-t border-[var(--glass-border)] pt-6">
               <SelectBox label="Result Scope" value={timeframe} onChange={setTimeframe} options={[{v:'all', l:'All Time'}, {v:'daily', l:'Daily'}, {v:'weekly', l:'Weekly'}, {v:'monthly', l:'Monthly'}]} />
-              <SelectBox label="Asset Class" value={assetClass} onChange={setAssetClass} options={[{v:'ALL', l:'All Assets'}]} />
+              <SelectBox label="Asset Class" value={assetClass} onChange={setAssetClass} options={[{v:'ALL', l:'All Assets'}, {v:'CRYPTO', l:'Crypto'}, {v:'FOREX', l:'Forex'}, {v:'INDICES', l:'Indices'}, {v:'METALS', l:'Metals'}]} />
               <SelectBox label="Timeframe" value={tfAlignment} onChange={setTfAlignment} options={[
                  { v: 'ALL', l: 'All Timeframes' },
-                 { v: '5', l: '5 Minutes' },
-                 { v: '15', l: '15 Minutes' },
-                 { v: '30', l: '30 Minutes' },
-                 { v: '60', l: '1 Hour' },
-                 { v: '240', l: '4 Hours' }
+                 { v: '1m', l: '1m' },
+                 { v: '3m', l: '3m' },
+                 { v: '5m', l: '5m' },
+                 { v: '15m', l: '15m' },
+                 { v: '30m', l: '30m' },
+                 { v: '1H', l: '1H' },
+                 { v: '4H', l: '4H' },
+                 { v: '6H', l: '6H' },
+                 { v: '1D', l: '1D' },
+                 { v: '1W', l: '1W' }
               ]} />
               <div className="grid grid-cols-2 gap-3">
                  <DateInput label="From Date" value={dateFrom} onChange={setDateFrom} icon={<Calendar size={13} className="text-orange-500" />} />
