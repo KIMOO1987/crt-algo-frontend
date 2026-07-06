@@ -236,27 +236,27 @@ export default function PerformancePage() {
 
           const status = s.status?.toUpperCase();
           let rr = 0;
-          if (status === 'TP4') {
-            rr = 4.5;
-            wins++;
-            totalWinR += rr;
+          if (status === 'TP4' || status === 'WIN') {
+            rr = 2.825;
           } else if (status === 'TP3') {
-            rr = 4.0;
-            wins++;
-            totalWinR += rr;
-          } else if (status === 'TP2') {
-            rr = 2.5;
-            wins++;
-            totalWinR += rr;
-          } else if (status === 'TP1') {
-            rr = 2.0;
-            wins++;
-            totalWinR += rr;
+            rr = 2.825;
+          } else if (status === 'TP3 + BE' || status === 'TP3+BE') {
+            rr = 2.625;
+          } else if (status === 'TP2 + BE' || status === 'TP2+BE') {
+            rr = 2.075;
+          } else if (status === 'TP1 + BE' || status === 'TP1+BE') {
+            rr = 1.00;
           } else if (status === 'SL' || status === 'LOSS') {
-            rr = -1;
+            rr = -1.0;
+          } else if (status === 'BE' || status.includes('BE') || status === 'CLOSED') {
+            rr = 0.0;
+          }
+          
+          if (rr > 0) {
+            wins++;
+            totalWinR += rr;
+          } else if (rr < 0) {
             totalLossR += 1;
-          } else if (status.includes('BE') || status === 'CLOSED') {
-            rr = 0;
           }
           totalNetR += rr;
 
@@ -608,12 +608,13 @@ export default function PerformancePage() {
 // --- 4. LOGIC HELPERS ---
 function calculateRRFromRow(signal: any) {
   const status = signal.status?.toUpperCase() || 'ENTRY';
-  if (status === 'TP4') return "+4.5R";
-  if (status === 'TP3') return "+4.0R";
-  if (status === 'TP2') return "+2.5R";
-  if (status === 'TP1') return "+2.0R";
-  if (status === 'SL' || status === 'LOSS') return "-1.0R";
-  return "0.0R";
+  if (status === 'TP4' || status === 'WIN') return "+2.83R";
+  if (status === 'TP3') return "+2.83R";
+  if (status === 'TP3 + BE' || status === 'TP3+BE') return "+2.63R";
+  if (status === 'TP2 + BE' || status === 'TP2+BE') return "+2.08R";
+  if (status === 'TP1 + BE' || status === 'TP1+BE') return "+1.00R";
+  if (status === 'SL' || status === 'LOSS') return "-1.00R";
+  return "0.00R";
 }
 
 function StatCard({ label, value, icon, color }: any) {

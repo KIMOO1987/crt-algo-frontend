@@ -172,22 +172,28 @@ export default function SymbolAudit() {
       if (!risk) return;
 
       const status = s.status?.toUpperCase();
-      if (status === 'TP4') {
-        statsObj.wins++;
-        statsObj.total_rr += 4.5;
+      let rr = 0;
+      if (status === 'TP4' || status === 'WIN') {
+        rr = 2.825;
       } else if (status === 'TP3') {
-        statsObj.wins++;
-        statsObj.total_rr += 4.0;
-      } else if (status === 'TP2') {
-        statsObj.wins++;
-        statsObj.total_rr += 2.5;
-      } else if (status === 'TP1') {
-        statsObj.wins++;
-        statsObj.total_rr += 2.0;
+        rr = 2.825;
+      } else if (status === 'TP3 + BE' || status === 'TP3+BE') {
+        rr = 2.625;
+      } else if (status === 'TP2 + BE' || status === 'TP2+BE') {
+        rr = 2.075;
+      } else if (status === 'TP1 + BE' || status === 'TP1+BE') {
+        rr = 1.00;
       } else if (status === 'SL' || status === 'LOSS') {
+        rr = -1.0;
+      }
+      
+      if (rr > 0) {
+        statsObj.wins++;
+        statsObj.total_rr += rr;
+      } else if (rr < 0) {
         statsObj.losses++;
-        statsObj.total_rr -= 1;
-      } else if (status.includes('BE') || status === 'CLOSED') {
+        statsObj.total_rr += rr;
+      } else {
         statsObj.be++;
       }
     });

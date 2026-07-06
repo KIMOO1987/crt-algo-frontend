@@ -614,21 +614,34 @@ function calculateLiveRR(signal: any, livePrices: { [key: string]: number }) {
 
   if (!entry || !sl || risk === 0) return '0.00R';
 
-  // Sealing logic for final states
+  // Sealing logic for closed states
   if (status === 'SL') return '-1.00R';
-  if (status === 'TP2' && tp2) return `+${(Math.abs(tp2 - entry) / risk).toFixed(2)}R`;
-  if ((status === 'TP1' || status === 'TP1 + SL (BE)') && tp1) return `+${(Math.abs(tp1 - entry) / risk).toFixed(2)}R`;
+  if (status === 'TP4' || status === 'WIN') return '+2.83R';
+  if (status === 'TP3 + BE' || status === 'TP3+BE') return '+2.63R';
+  if (status === 'TP2 + BE' || status === 'TP2+BE') return '+2.08R';
+  if (status === 'TP1 + BE' || status === 'TP1+BE') return '+1.00R';
 
-  // Backup Logic: Always live calculation for Metals, Indices, Forex
+  // Live Calculation based on partial positions
   const cleanSymbol = normalizeSymbol(signal.symbol);
   const current = livePrices[cleanSymbol] ?? Number(signal.current_price || entry);
   const side = signal.side?.toUpperCase();
-
   const isBuy = side === 'BUY' || side === 'BULLISH';
   const reward = isBuy ? (current - entry) : (entry - current);
-  const rr = reward / risk;
+  const live_rr = reward / risk;
 
-  return `${rr >= 0 ? '+' : ''}${rr.toFixed(2)}R`;
+  let final_rr = live_rr;
+  if (status === 'TP1') {
+    // Locked in: 50% * 2.0R = 1.0R. Floating: 50% of current R:R
+    final_rr = 1.00 + (0.50 * live_rr);
+  } else if (status === 'TP2') {
+    // Locked in: 50% * 2.0R + 15% * 2.5R = 1.375R. Floating: 35% of current R:R
+    final_rr = 1.375 + (0.35 * live_rr);
+  } else if (status === 'TP3') {
+    // Locked in: 50% * 2.0R + 15% * 2.5R + 25% * 4.0R = 2.375R. Floating: 10% of current R:R
+    final_rr = 2.375 + (0.10 * live_rr);
+  }
+
+  return `${final_rr >= 0 ? '+' : ''}${final_rr.toFixed(2)}R`;
 }
 
 function renderGradeStars(grade: string | undefined) {

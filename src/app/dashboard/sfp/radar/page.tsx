@@ -195,6 +195,8 @@ export default function RadarPage() {
           if (status === 'TP3') return 4.0;
           if (status === 'TP2') return 2.5;
           if (status === 'TP1') return 2.0;
+          if (status === 'TP3 + BE' || status === 'TP3+BE') return 2.5;
+          if (status === 'TP2 + BE' || status === 'TP2+BE') return 2.0;
           if (status.includes('BE') || status === 'CLOSED') return 0.0;
           
           const current = livePrices[cleanSym] ?? Number(signal.current_price || entry);
@@ -342,6 +344,10 @@ export default function RadarPage() {
                         } else if (status === 'TP2') {
                           rr = 2.5;
                         } else if (status === 'TP1') {
+                          rr = 2.0;
+                        } else if (status === 'TP3 + BE' || status === 'TP3+BE') {
+                          rr = 2.5;
+                        } else if (status === 'TP2 + BE' || status === 'TP2+BE') {
                           rr = 2.0;
                         } else if (status.includes('BE') || status === 'CLOSED') {
                           rr = 0.0;

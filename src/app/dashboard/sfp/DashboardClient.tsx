@@ -110,12 +110,11 @@ export default function SfpDashboardClient({ tier, expiryDate, userProfile }: Da
       }
 
       const inactive = filtered.filter(s => !s.is_active);
-
       const total = inactive.length;
-      const wins = inactive.filter(s => ['TP1', 'TP2', 'TP3', 'TP4', 'WIN'].includes(s.status.toUpperCase())).length;
-      const losses = inactive.filter(s => ['SL', 'LOSS'].includes(s.status.toUpperCase())).length;
-      const be = inactive.filter(s => s.status.toUpperCase().includes('BE') || s.status.toUpperCase() === 'CLOSED').length;
 
+      let wins = 0;
+      let losses = 0;
+      let be = 0;
       let totalRR = 0;
       let winningRR = 0;
       let losingRR = 0;
@@ -127,40 +126,64 @@ export default function SfpDashboardClient({ tier, expiryDate, userProfile }: Da
       let currentWinStreak = 0;
       let currentLossStreak = 0;
 
+      let tp1Hits = 0;
+      let tp2Hits = 0;
+      let tp3Hits = 0;
+      let tp4Hits = 0;
+
       const symbolStats: { [key: string]: { wins: number, total: number, rr: number } } = {};
 
       inactive.forEach(s => {
         let tradeRR = 0;
         const status = s.status?.toUpperCase() || 'ENTRY';
-        if (status === 'TP4') {
-          tradeRR = 4.5;
+        if (status === 'TP4' || status === 'WIN') {
+          tradeRR = 2.825;
         } else if (status === 'TP3') {
-          tradeRR = 4.0;
-        } else if (status === 'TP2') {
-          tradeRR = 2.5;
-        } else if (status === 'TP1') {
-          tradeRR = 2.0;
+          tradeRR = 2.825;
+        } else if (status === 'TP3 + BE' || status === 'TP3+BE') {
+          tradeRR = 2.625;
+        } else if (status === 'TP2 + BE' || status === 'TP2+BE') {
+          tradeRR = 2.075;
+        } else if (status === 'TP1 + BE' || status === 'TP1+BE') {
+          tradeRR = 1.00;
         } else if (status === 'SL') {
           tradeRR = -1.0;
-        } else if (status.includes('BE') || status === 'CLOSED') {
+        } else if (status === 'BE' || status.includes('BE') || status === 'CLOSED') {
           tradeRR = 0.0;
         }
+
+        // Count hits cumulatively based on progress levels
+        if (['TP1', 'TP1 + BE', 'TP1+BE', 'TP2', 'TP2 + BE', 'TP2+BE', 'TP3', 'TP3 + BE', 'TP3+BE', 'TP4', 'WIN'].some(x => status.includes(x))) {
+          tp1Hits++;
+        }
+        if (['TP2', 'TP2 + BE', 'TP2+BE', 'TP3', 'TP3 + BE', 'TP3+BE', 'TP4', 'WIN'].some(x => status.includes(x))) {
+          tp2Hits++;
+        }
+        if (['TP3', 'TP3 + BE', 'TP3+BE', 'TP4', 'WIN'].some(x => status.includes(x))) {
+          tp3Hits++;
+        }
+        if (['TP4', 'WIN'].some(x => status.includes(x))) {
+          tp4Hits++;
+        }
         
-        totalRR += tradeRR;
         if (tradeRR > 0) {
+          wins++;
           winningRR += tradeRR;
           currentWinStreak++;
           winStreak = Math.max(winStreak, currentWinStreak);
           currentLossStreak = 0;
         } else if (tradeRR < 0) {
+          losses++;
           losingRR += Math.abs(tradeRR);
           currentLossStreak++;
           lossStreak = Math.max(lossStreak, currentLossStreak);
           currentWinStreak = 0;
         } else {
+          be++;
           currentWinStreak = 0;
           currentLossStreak = 0;
         }
+        totalRR += tradeRR;
 
         currentCumulative += tradeRR;
         chartPoints.push({
@@ -202,8 +225,14 @@ export default function SfpDashboardClient({ tier, expiryDate, userProfile }: Da
 
       const buyTrades = inactive.filter(s => ['BUY', 'BULL'].includes(s.side?.toUpperCase()));
       const sellTrades = inactive.filter(s => ['SELL', 'BEAR'].includes(s.side?.toUpperCase()));
-      const buyWins = buyTrades.filter(s => ['TP1', 'TP2', 'TP3', 'TP4', 'WIN'].includes(s.status.toUpperCase())).length;
-      const sellWins = sellTrades.filter(s => ['TP1', 'TP2', 'TP3', 'TP4', 'WIN'].includes(s.status.toUpperCase())).length;
+      const buyWins = buyTrades.filter(s => {
+        const st = s.status.toUpperCase();
+        return ['TP1', 'TP2', 'TP3', 'TP4', 'WIN'].includes(st) || st.includes('TP2 + BE') || st.includes('TP2+BE') || st.includes('TP3 + BE') || st.includes('TP3+BE');
+      }).length;
+      const sellWins = sellTrades.filter(s => {
+        const st = s.status.toUpperCase();
+        return ['TP1', 'TP2', 'TP3', 'TP4', 'WIN'].includes(st) || st.includes('TP2 + BE') || st.includes('TP2+BE') || st.includes('TP3 + BE') || st.includes('TP3+BE');
+      }).length;
 
       const longWR = buyTrades.length > 0 ? `${((buyWins / buyTrades.length) * 100).toFixed(1)}%` : '0%';
       const shortWR = sellTrades.length > 0 ? `${((sellWins / sellTrades.length) * 100).toFixed(1)}%` : '0%';
@@ -212,6 +241,11 @@ export default function SfpDashboardClient({ tier, expiryDate, userProfile }: Da
       const profitUSD = `$${(totalRR * accountSize * riskValue / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       const expectancy = total > 0 ? `${(totalRR / total).toFixed(2)}R` : '0.00R';
       const profitFactor = losingRR > 0 ? (winningRR / losingRR).toFixed(2) : winningRR > 0 ? '99.99' : '0.00';
+
+      const tp1HitRate = total > 0 ? `${((tp1Hits / total) * 100).toFixed(1)}%` : '0.0%';
+      const tp2HitRate = total > 0 ? `${((tp2Hits / total) * 100).toFixed(1)}%` : '0.0%';
+      const tp3HitRate = total > 0 ? `${((tp3Hits / total) * 100).toFixed(1)}%` : '0.0%';
+      const tp4HitRate = total > 0 ? `${((tp4Hits / total) * 100).toFixed(1)}%` : '0.0%';
 
       setRealStats({
         total,
@@ -230,7 +264,11 @@ export default function SfpDashboardClient({ tier, expiryDate, userProfile }: Da
         winStreak,
         lossStreak,
         longWR,
-        shortWR
+        shortWR,
+        tp1HitRate,
+        tp2HitRate,
+        tp3HitRate,
+        tp4HitRate
       });
 
       setChartData(chartPoints);
@@ -387,6 +425,19 @@ export default function SfpDashboardClient({ tier, expiryDate, userProfile }: Da
              <StatCard label="Win Streak" value={realStats.winStreak} icon={<TrendingUp size={16}/>} color="text-emerald-500" />
              <StatCard label="Loss Streak" value={realStats.lossStreak} icon={<TrendingDown size={16}/>} color="text-red-500" />
              <StatCard label="Integrity" value="100%" sub="SFP Verified" />
+          </div>
+
+          {/* SFP TARGET HIT RATES */}
+          <div className="border-t border-[var(--glass-border)] pt-6">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-4 ml-1 flex items-center gap-2">
+              <Target size={14} className="text-orange-500" /> SFP Target Progression Hit Rates
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+               <StatCard label="TP1 Hit Rate" value={realStats.tp1HitRate} icon={<Target size={16}/>} sub="Closed 50% @ 2RR" color="text-emerald-500" />
+               <StatCard label="TP2 Hit Rate" value={realStats.tp2HitRate} icon={<Target size={16}/>} sub="Closed 15% @ 2.5RR" color="text-amber-500" />
+               <StatCard label="TP3 Hit Rate" value={realStats.tp3HitRate} icon={<Target size={16}/>} sub="Closed 25% @ 4RR" color="text-indigo-500" />
+               <StatCard label="TP4 Hit Rate" value={realStats.tp4HitRate} icon={<Target size={16}/>} sub="Closed 10% @ 4.5RR" color="text-blue-500" />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
