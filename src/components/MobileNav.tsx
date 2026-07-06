@@ -13,41 +13,57 @@ import { usePathname } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { ThemeToggle } from './ThemeToggle';
 
-const menuGroups = [
-  {
-    label: 'TERMINAL',
-    items: [
-      { name: 'Dashboard', icon: LayoutGrid, path: '/dashboard', minTier: 0 },
-      { name: 'Active Trades', icon: Clock, path: '/dashboard/active', minTier: 1 },
-      { name: 'Trade History', icon: History, path: '/dashboard/history', minTier: 1 },
-      { name: 'Trade General', icon: BookOpen, path: '/dashboard/trade-general', minTier: 1 },
-    ]
-  },
-  {
-    label: 'RADAR & ANALYSIS',
-    items: [
+interface MenuItem {
+  name: string;
+  icon: any;
+  path: string;
+  minTier: number;
+}
 
-      { name: 'Alpha Radar', icon: Compass, path: '/dashboard/radar', minTier: 1 },
-      { name: 'Symbol Audit', icon: BarChart3, path: '/dashboard/audit', minTier: 1 },
-    ]
-  },
-  {
-    label: 'STRATEGY LAB',
-    items: [
+interface MenuGroup {
+  key: string;
+  label: string;
+  items: MenuItem[];
+}
 
-      { name: 'Performance', icon: LineChart, path: '/dashboard/performance', minTier: 1 },
-      { name: 'Resources', icon: Zap, path: '/dashboard/resources', minTier: 0 },
+const baseGroups: MenuGroup[] = [
+  {
+    key: 'crt',
+    label: 'CRT SECTION',
+    items: [
+      { name: 'Dashboard', icon: LayoutGrid, path: '/dashboard/crt', minTier: 0 },
+      { name: 'Active Trades', icon: Clock, path: '/dashboard/crt/active', minTier: 1 },
+      { name: 'Trade History', icon: History, path: '/dashboard/crt/history', minTier: 1 },
+      { name: 'Alpha Radar', icon: Compass, path: '/dashboard/crt/radar', minTier: 1 },
+      { name: 'Symbol Audit', icon: BarChart3, path: '/dashboard/crt/audit', minTier: 1 },
+      { name: 'Performance', icon: LineChart, path: '/dashboard/crt/performance', minTier: 1 },
     ]
   },
   {
+    key: 'sfp',
+    label: 'SFP SECTION',
+    items: [
+      { name: 'Dashboard', icon: LayoutGrid, path: '/dashboard/sfp', minTier: 0 },
+      { name: 'Active Trades', icon: Clock, path: '/dashboard/sfp/active', minTier: 1 },
+      { name: 'Trade History', icon: History, path: '/dashboard/sfp/history', minTier: 1 },
+      { name: 'Alpha Radar', icon: Compass, path: '/dashboard/sfp/radar', minTier: 1 },
+      { name: 'Symbol Audit', icon: BarChart3, path: '/dashboard/sfp/audit', minTier: 1 },
+      { name: 'Performance', icon: LineChart, path: '/dashboard/sfp/performance', minTier: 1 },
+    ]
+  },
+  {
+    key: 'settings',
     label: 'ACCOUNT & SETTINGS',
     items: [
       { name: 'Profile', icon: User, path: '/dashboard/profile', minTier: 0 },
       { name: 'Payments', icon: CreditCard, path: '/dashboard/payments', minTier: 0 },
+      { name: 'Trade General', icon: BookOpen, path: '/dashboard/trade-general', minTier: 1 },
+      { name: 'Resources', icon: Zap, path: '/dashboard/resources', minTier: 0 },
     ]
   },
   {
-    label: 'CFD Bots',
+    key: 'cfd_bots',
+    label: 'CFD BOTS',
     items: [
       { name: 'CFD Bot', icon: Cpu, path: '/dashboard/bot/cfd', minTier: 2 },
       { name: 'MT5', icon: (props: { size?: number }) => <img src="/mt5.png" alt="MT5" width={props.size || 18} height={props.size || 18} className="object-contain" />, path: '/dashboard/mt5', minTier: 2 },
@@ -55,22 +71,65 @@ const menuGroups = [
     ]
   },
   {
-    label: 'Crypto Bots',
+    key: 'crypto_bots',
+    label: 'CRYPTO BOTS',
     items: [
       { name: 'API Trading (Multi)', icon: Cpu, path: '/dashboard/api-trading', minTier: 2 },
     ]
   }
 ];
 
+const TriangleIcon = ({ isOpen }: { isOpen: boolean }) => (
+  <svg
+    width="8"
+    height="8"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={`transition-transform duration-250 ${isOpen ? 'rotate-180 text-orange-500' : 'rotate-90 text-zinc-500 opacity-60'}`}
+  >
+    <path d="M24 22h-24l12-20z" />
+  </svg>
+);
+
 export default function MobileNav({ tier, role }: { tier: number; role?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isButtonVisible, setIsButtonVisible] = useState(true);
+  const [collapsedGroups, setCollapsedGroups] = useState<{ [key: string]: boolean }>({
+    crt: false,
+    sfp: false,
+    settings: false,
+    cfd_bots: false,
+    crypto_bots: false,
+    system_control: false,
+    user_management: false,
+    financial: false
+  });
   const pathname = usePathname();
   const isStaff = role === 'admin' || role === 'moderator';
   const isAdmin = role === 'admin';
 
+  // Load collapsible state when menu opens
+  useEffect(() => {
+    if (isOpen) {
+      const saved = localStorage.getItem('sidebar_collapsed_groups');
+      if (saved) {
+        try {
+          setCollapsedGroups(JSON.parse(saved));
+        } catch (e) {}
+      }
+    }
+  }, [isOpen]);
+
+  const toggleGroup = (key: string) => {
+    setCollapsedGroups(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      localStorage.setItem('sidebar_collapsed_groups', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Construct dynamic menu groups based on role
-  const dynamicMenuGroups = [...menuGroups];
+  const dynamicMenuGroups = [...baseGroups];
 
   if (isStaff) {
     const systemControlItems = [
@@ -91,17 +150,20 @@ export default function MobileNav({ tier, role }: { tier: number; role?: string 
     ];
 
     dynamicMenuGroups.push({
+      key: 'system_control',
       label: 'SYSTEM CONTROL',
       items: systemControlItems
     });
 
     dynamicMenuGroups.push({
+      key: 'user_management',
       label: 'USER MANAGEMENT',
       items: userManagementItems
     });
 
     if (isAdmin) {
       dynamicMenuGroups.push({
+        key: 'financial',
         label: 'FINANCIAL',
         items: [
           { name: 'Payment Terminal', path: '/admin/payments', icon: CreditCard, minTier: 0 }
@@ -116,7 +178,6 @@ export default function MobileNav({ tier, role }: { tier: number; role?: string 
   );
 
   useEffect(() => {
-
     document.body.style.overflow = isOpen ? 'hidden' : 'unset';
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
@@ -129,11 +190,8 @@ export default function MobileNav({ tier, role }: { tier: number; role?: string 
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const mainContainer = document.getElementById('main-scroll-container');
-
-          // Check both window scroll and internal container scroll
           const currentScrollY = window.scrollY > 0 ? window.scrollY : (mainContainer?.scrollTop || 0);
 
-          // Hide button if scrolling down and past 50px, show if scrolling up
           if (currentScrollY > lastScrollY && currentScrollY > 50) {
             setIsButtonVisible(false);
           } else {
@@ -147,8 +205,6 @@ export default function MobileNav({ tier, role }: { tier: number; role?: string 
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Also listen to internal container just in case it's handling the overflow
     const mainContainer = document.getElementById('main-scroll-container');
     if (mainContainer) {
       mainContainer.addEventListener('scroll', handleScroll, { passive: true });
@@ -207,39 +263,56 @@ export default function MobileNav({ tier, role }: { tier: number; role?: string 
                   {isStaff && (
                     <div className="flex items-center gap-1.5 mt-3 px-2.5 py-1 bg-orange-500/10 border border-orange-500/20 rounded-lg w-fit shadow-sm">
                       <ShieldCheck size={10} className="text-orange-500" />
-                      <span className="text-[8px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest">{role} Mode</span>
+                      <span className="text-[8px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest">{role} Access Mode</span>
                     </div>
                   )}
                 </div>
                 <button onClick={() => setIsOpen(false)} className="p-2 opacity-50 hover:opacity-100 transition-colors"><X size={24} /></button>
               </div>
-              <nav className="flex-1 overflow-y-auto space-y-8 no-scrollbar pb-20 relative z-10">
-                {dynamicMenuGroups.map((group) => (
-                  <div key={group.label}>
-                    <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 tracking-[0.2em] mb-4 px-3 uppercase">{group.label}</p>
-                    <div className="space-y-1">
-                      {group.items.map((item) => {
-                        const isActive = pathname === item.path;
-                        const isLocked = !isStaff && tier < item.minTier;
+              
+              <nav className="flex-1 overflow-y-auto space-y-6 no-scrollbar pb-20 relative z-10 pr-1">
+                {dynamicMenuGroups.map((group) => {
+                  const isExpanded = !collapsedGroups[group.key];
 
-                        return (
-                          <Link key={item.name} href={isLocked ? "#" : item.path} onClick={() => !isLocked && setIsOpen(false)}>
-                            <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-200 border text-foreground ${isActive 
-                              ? 'bg-orange-500/10 text-orange-500 dark:text-orange-400 border-orange-500/20 shadow-sm' 
-                              : 'opacity-70 border-transparent hover:opacity-100 bg-[var(--input-bg)] border-[var(--glass-border)]'
-                              } ${isLocked ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}>
-                              <div className="flex items-center gap-4">
-                                <item.icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-                                <span className="font-semibold text-sm tracking-tight">{item.name}</span>
+                  return (
+                    <div key={group.key} className="mb-4">
+                      <button 
+                        onClick={() => toggleGroup(group.key)}
+                        className="w-full flex items-center justify-between px-3 py-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 tracking-[0.2em] mb-3 uppercase text-left hover:text-orange-500 transition-colors"
+                      >
+                        <span>{group.label}</span>
+                        <TriangleIcon isOpen={isExpanded} />
+                      </button>
+
+                      <motion.div
+                        initial={false}
+                        animate={{ height: isExpanded ? 'auto' : 0, opacity: isExpanded ? 1 : 0 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="overflow-hidden space-y-1 pl-1"
+                      >
+                        {group.items.map((item) => {
+                          const isActive = pathname === item.path || pathname?.startsWith(item.path + '/');
+                          const isLocked = !isStaff && tier < item.minTier;
+
+                          return (
+                            <Link key={item.name} href={isLocked ? "#" : item.path} onClick={() => !isLocked && setIsOpen(false)}>
+                              <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-200 border text-foreground ${isActive 
+                                ? 'bg-orange-500/10 text-orange-500 dark:text-orange-400 border-orange-500/20 shadow-sm' 
+                                : 'opacity-70 border-transparent hover:opacity-100 hover:bg-[var(--input-bg)] hover:border-[var(--glass-border)]'
+                                } ${isLocked ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}>
+                                <div className="flex items-center gap-4">
+                                  <item.icon size={16} />
+                                  <span className="font-semibold text-sm tracking-tight">{item.name}</span>
+                                </div>
+                                {isLocked ? <Lock size={12} className="opacity-50" /> : isActive && <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.8)]" />}
                               </div>
-                              {isLocked ? <Lock size={12} className="opacity-50" /> : isActive && <div className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.8)]" />}
-                            </div>
-                          </Link>
-                        );
-                      })}
+                            </Link>
+                          );
+                        })}
+                      </motion.div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </nav>
 
               <div className="mt-auto pt-6 border-t border-[var(--glass-border)] shrink-0 flex items-center gap-3 relative z-10">

@@ -154,6 +154,9 @@ export default function Sidebar({ tier, role }: { tier: number; role?: string })
       { name: 'Signals Manager', path: '/admin/signals', icon: Activity, minTier: 0 },
       { name: 'Plans Editor', path: '/admin/plans', icon: Settings, minTier: 0 },
     ];
+    if (isAdmin) {
+      systemControlItems.push({ name: 'Staff Manager', path: '/admin/staff', icon: UserPlus, minTier: 0 });
+    }
     const userManagementItems = [
       { name: 'New User', path: '/admin/new-user', icon: UserPlus, minTier: 0 },
       { name: 'Premium Members', path: '/admin/premium', icon: UserPlus, minTier: 0 },
