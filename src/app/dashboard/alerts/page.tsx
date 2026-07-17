@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import AlertsClient from './AlertsClient';
+import AccessGuard from '@/components/AccessGuard';
 
 export default function AlertsPage() {
   const router = useRouter();
@@ -34,9 +35,11 @@ export default function AlertsPage() {
   }
 
   return (
-    <AlertsClient 
-      userId={session.user.id} 
-      userEmail={session.user.email}
-    />
+    <AccessGuard requiredTier={2} tierName="PRO">
+      <AlertsClient 
+        userId={session.user.id} 
+        userEmail={session.user.email}
+      />
+    </AccessGuard>
   );
 }
