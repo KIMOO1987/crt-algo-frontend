@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, Send, Trash2, Edit, Plus, X, CheckCircle2, 
-  AlertCircle, Loader2, Sparkles, HelpCircle, ToggleLeft, ToggleRight
+  AlertCircle, Loader2, Sparkles, HelpCircle, ToggleLeft, ToggleRight,
+  Flame, BarChart3, Compass, Award, Check
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { apiFetch } from '@/lib/api-utils';
@@ -23,6 +24,36 @@ interface AlertProfile {
   is_active: boolean;
 }
 
+const MT5_SYMBOLS = [
+  // Major Symbols (Metals, Indices, Forex)
+  { symbol: 'XAUUSD', name: 'Gold vs US Dollar', category: 'METALS' },
+  { symbol: 'XAGUSD', name: 'Silver vs US Dollar', category: 'METALS' },
+  { symbol: 'NAS100', name: 'Nasdaq 100 Index', category: 'INDICES' },
+  { symbol: 'SPX500', name: 'S&P 500 Index', category: 'INDICES' },
+  { symbol: 'US30', name: 'Dow Jones Index', category: 'INDICES' },
+  { symbol: 'EURUSD', name: 'Euro vs US Dollar', category: 'FOREX' },
+  { symbol: 'GBPUSD', name: 'Pound vs US Dollar', category: 'FOREX' },
+  { symbol: 'USDJPY', name: 'US Dollar vs Yen', category: 'FOREX' },
+  { symbol: 'GBPJPY', name: 'Pound vs Yen', category: 'FOREX' },
+  { symbol: 'AUDUSD', name: 'Australian Dollar vs USD', category: 'FOREX' },
+  { symbol: 'EURJPY', name: 'Euro vs Yen', category: 'FOREX' },
+  { symbol: 'NZDUSD', name: 'NZ Dollar vs USD', category: 'FOREX' },
+  { symbol: 'CHFJPY', name: 'Swiss Franc vs Yen', category: 'FOREX' },
+
+  // Alt Symbols (Crypto - Major Only)
+  { symbol: 'BTCUSD', name: 'Bitcoin vs USD', category: 'CRYPTO' },
+  { symbol: 'ETHUSD', name: 'Ethereum vs USD', category: 'CRYPTO' },
+  { symbol: 'XRPUSD', name: 'Ripple vs USD', category: 'CRYPTO' },
+  { symbol: 'ADAUSD', name: 'Cardano vs USD', category: 'CRYPTO' },
+  { symbol: 'SOLUSD', name: 'Solana vs USD', category: 'CRYPTO' },
+  { symbol: 'LTCUSD', name: 'Litecoin vs USD', category: 'CRYPTO' },
+  { symbol: 'LINKUSD', name: 'Chainlink vs USD', category: 'CRYPTO' },
+  { symbol: 'BNBUSD', name: 'Binance Coin vs USD', category: 'CRYPTO' },
+  { symbol: 'AVAXUSD', name: 'Avalanche vs USD', category: 'CRYPTO' },
+  { symbol: 'DOTUSD', name: 'Polkadot vs USD', category: 'CRYPTO' },
+  { symbol: 'TRXUSD', name: 'Tron vs USD', category: 'CRYPTO' }
+];
+
 export default function AlertsClient({ userId, userEmail }: { userId: string; userEmail: string }) {
   const [telegramAuth, setTelegramAuth] = useState<any>(null);
   const [profiles, setProfiles] = useState<AlertProfile[]>([]);
@@ -37,14 +68,14 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
   // Form states
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [tickersText, setTickersText] = useState('');
-  const [brokersText, setBrokersText] = useState('');
+  const [selectedTickers, setSelectedTickers] = useState<string[]>([]);
   const [selectedTfs, setSelectedTfs] = useState<string[]>([]);
   const [bias, setBias] = useState('All');
   const [setups, setSetups] = useState('All');
   const [direction, setDirection] = useState('All');
 
-  const availableTimeframes = ['M5/H1', 'M15/H4', 'M30/H6', 'H1/D1'];
+  const crtTfs = ['M5/H1', 'M15/H4', 'M30/H6', 'H1/D1'];
+  const sfpTfs = ['1m', '3m', '5m', '15m', '30m', '1H', '4H', '6H', '1D', '1W'];
   
   // Load data
   useEffect(() => {
@@ -214,8 +245,7 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
     setEditingProfile(null);
     setName('');
     setDescription('');
-    setTickersText('');
-    setBrokersText('');
+    setSelectedTickers([]);
     setSelectedTfs([]);
     setBias('All');
     setSetups('All');
@@ -227,9 +257,9 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
     setEditingProfile(profile);
     setName(profile.name);
     setDescription(profile.description);
-    setTickersText(profile.tickers.join(', '));
-    setBrokersText(profile.brokers.join(', '));
-    setSelectedTfs(profile.timeframes);
+    const rawTickers = profile.tickers || [];
+    setSelectedTickers(rawTickers.includes('All') ? [] : rawTickers);
+    setSelectedTfs(profile.timeframes || []);
     setBias(profile.bias);
     setSetups(profile.setups);
     setDirection(profile.direction);
@@ -244,22 +274,14 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
       return;
     }
 
-    const tickers = tickersText
-      .split(',')
-      .map(t => t.trim().toUpperCase())
-      .filter(t => t !== '');
-    
-    const brokers = brokersText
-      .split(',')
-      .map(b => b.trim().toUpperCase())
-      .filter(b => b !== '');
+    const tickers = selectedTickers.length > 0 ? selectedTickers : ['All'];
 
     const profileData: AlertProfile = {
       user_id: userId,
       name: name.trim(),
       description: description.trim(),
-      tickers: tickers.length > 0 ? tickers : ['All'],
-      brokers: brokers.length > 0 ? brokers : ['All'],
+      tickers: tickers,
+      brokers: ['All'],
       timeframes: selectedTfs.length > 0 ? selectedTfs : ['All'],
       bias,
       setups,
@@ -293,6 +315,17 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
       setIsModalOpen(false);
     } catch (err: any) {
       showToast('error', err.message || 'Failed to preserve Alert Profile settings.');
+    }
+  };
+
+  const handleSetupsChange = (val: string) => {
+    setSetups(val);
+    if (val === 'CRT Pro+') {
+      // Keep only aligned timeframes
+      setSelectedTfs(prev => prev.filter(t => crtTfs.includes(t)));
+    } else if (val === 'SFP Algo') {
+      // Keep only SFP timeframes
+      setSelectedTfs(prev => prev.filter(t => sfpTfs.includes(t)));
     }
   };
 
@@ -488,12 +521,6 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
                     </span>
                   </div>
                   <div>
-                    <span className="font-bold text-zinc-500 dark:text-zinc-600 block uppercase tracking-widest text-[8px] mb-1">Brokers</span>
-                    <span className="font-black text-zinc-800 dark:text-zinc-300 font-mono tracking-tighter truncate max-w-full block">
-                      {profile.brokers.join(', ')}
-                    </span>
-                  </div>
-                  <div>
                     <span className="font-bold text-zinc-500 dark:text-zinc-600 block uppercase tracking-widest text-[8px] mb-1">Timeframes</span>
                     <span className="font-black text-zinc-800 dark:text-zinc-300 font-mono tracking-tighter block">
                       {profile.timeframes.join(', ')}
@@ -511,7 +538,7 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
                       {profile.bias}
                     </span>
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <span className="font-bold text-zinc-500 dark:text-zinc-600 block uppercase tracking-widest text-[8px] mb-1">Setups</span>
                     <span className="font-black text-zinc-800 dark:text-zinc-300 block">
                       {profile.setups}
@@ -599,59 +626,308 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-                      Tickers 
-                      <span title="Comma separated lists, e.g. BTCUSDT, EURUSD. Leave blank for ALL."><HelpCircle size={10} className="text-zinc-600" /></span>
+                {/* Grouped Symbols Checklist */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-[var(--glass-border)] pb-2">
+                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                      Select Assets / Tickers
+                      <span title="Click to select specific assets. If none are selected, all assets in that category will be alerted."><HelpCircle size={10} className="text-zinc-550" /></span>
                     </label>
-                    <input 
-                      className="input-modern w-full font-bold font-mono text-xs"
-                      placeholder="e.g. US500, US100 (or blank)"
-                      value={tickersText}
-                      onChange={e => setTickersText(e.target.value)}
-                    />
+                    {selectedTickers.length > 0 && (
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedTickers([])}
+                        className="text-[9px] font-black uppercase text-red-500 hover:text-red-400 transition-colors"
+                      >
+                        Clear Selection (All Assets)
+                      </button>
+                    )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-                      Brokers
-                      <span title="Comma separated lists, e.g. PEPPERSTONE, BINANCE. Leave blank for ALL."><HelpCircle size={10} className="text-zinc-600" /></span>
-                    </label>
-                    <input 
-                      className="input-modern w-full font-bold font-mono text-xs"
-                      placeholder="e.g. OANDA, BINANCE (or blank)"
-                      value={brokersText}
-                      onChange={e => setBrokersText(e.target.value)}
-                    />
+                  <div className="space-y-5 max-h-[30vh] overflow-y-auto pr-2 custom-scrollbar">
+                    {/* Metals Group */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-zinc-500 border-b border-white/5 pb-1">
+                        <span className="flex items-center gap-1.5"><Flame size={10} className="text-blue-400" /> Metals</span>
+                        <div className="flex gap-3">
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const metals = MT5_SYMBOLS.filter(s => s.category === 'METALS').map(s => s.symbol);
+                              setSelectedTickers(prev => [...new Set([...prev, ...metals])]);
+                            }}
+                            className="hover:text-blue-400 transition-colors"
+                          >
+                            All
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const metals = MT5_SYMBOLS.filter(s => s.category === 'METALS').map(s => s.symbol);
+                              setSelectedTickers(prev => prev.filter(t => !metals.includes(t)));
+                            }}
+                            className="hover:text-red-450 transition-colors"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {MT5_SYMBOLS.filter(s => s.category === 'METALS').map(s => {
+                          const isSelected = selectedTickers.includes(s.symbol);
+                          return (
+                            <button
+                              key={s.symbol}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTickers(prev => 
+                                  prev.includes(s.symbol) ? prev.filter(t => t !== s.symbol) : [...prev, s.symbol]
+                                );
+                              }}
+                              className={`px-3 py-1.5 rounded-lg border text-[9px] font-mono font-bold uppercase transition-all ${
+                                isSelected 
+                                  ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-black shadow-sm' 
+                                  : 'bg-white/[0.02] border-[var(--glass-border)] text-zinc-400 dark:text-zinc-500 hover:border-white/10'
+                              }`}
+                            >
+                              {s.symbol}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Indices Group */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-zinc-500 border-b border-white/5 pb-1">
+                        <span className="flex items-center gap-1.5"><BarChart3 size={10} className="text-blue-400" /> Indices</span>
+                        <div className="flex gap-3">
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const indices = MT5_SYMBOLS.filter(s => s.category === 'INDICES').map(s => s.symbol);
+                              setSelectedTickers(prev => [...new Set([...prev, ...indices])]);
+                            }}
+                            className="hover:text-blue-400 transition-colors"
+                          >
+                            All
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const indices = MT5_SYMBOLS.filter(s => s.category === 'INDICES').map(s => s.symbol);
+                              setSelectedTickers(prev => prev.filter(t => !indices.includes(t)));
+                            }}
+                            className="hover:text-red-455 transition-colors"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {MT5_SYMBOLS.filter(s => s.category === 'INDICES').map(s => {
+                          const isSelected = selectedTickers.includes(s.symbol);
+                          return (
+                            <button
+                              key={s.symbol}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTickers(prev => 
+                                  prev.includes(s.symbol) ? prev.filter(t => t !== s.symbol) : [...prev, s.symbol]
+                                );
+                              }}
+                              className={`px-3 py-1.5 rounded-lg border text-[9px] font-mono font-bold uppercase transition-all ${
+                                isSelected 
+                                  ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-black shadow-sm' 
+                                  : 'bg-white/[0.02] border-[var(--glass-border)] text-zinc-400 dark:text-zinc-500 hover:border-white/10'
+                              }`}
+                            >
+                              {s.symbol}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Forex Group */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-zinc-500 border-b border-white/5 pb-1">
+                        <span className="flex items-center gap-1.5"><Compass size={10} className="text-blue-400" /> Forex</span>
+                        <div className="flex gap-3">
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const forex = MT5_SYMBOLS.filter(s => s.category === 'FOREX').map(s => s.symbol);
+                              setSelectedTickers(prev => [...new Set([...prev, ...forex])]);
+                            }}
+                            className="hover:text-blue-400 transition-colors"
+                          >
+                            All
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const forex = MT5_SYMBOLS.filter(s => s.category === 'FOREX').map(s => s.symbol);
+                              setSelectedTickers(prev => prev.filter(t => !forex.includes(t)));
+                            }}
+                            className="hover:text-red-460 transition-colors"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {MT5_SYMBOLS.filter(s => s.category === 'FOREX').map(s => {
+                          const isSelected = selectedTickers.includes(s.symbol);
+                          return (
+                            <button
+                              key={s.symbol}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTickers(prev => 
+                                  prev.includes(s.symbol) ? prev.filter(t => t !== s.symbol) : [...prev, s.symbol]
+                                );
+                              }}
+                              className={`px-3 py-1.5 rounded-lg border text-[9px] font-mono font-bold uppercase transition-all ${
+                                isSelected 
+                                  ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-black shadow-sm' 
+                                  : 'bg-white/[0.02] border-[var(--glass-border)] text-zinc-400 dark:text-zinc-500 hover:border-white/10'
+                              }`}
+                            >
+                              {s.symbol}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Crypto Group */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-zinc-500 border-b border-white/5 pb-1">
+                        <span className="flex items-center gap-1.5"><Award size={10} className="text-blue-400" /> Crypto</span>
+                        <div className="flex gap-3">
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const crypto = MT5_SYMBOLS.filter(s => s.category === 'CRYPTO').map(s => s.symbol);
+                              setSelectedTickers(prev => [...new Set([...prev, ...crypto])]);
+                            }}
+                            className="hover:text-blue-400 transition-colors"
+                          >
+                            All
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const crypto = MT5_SYMBOLS.filter(s => s.category === 'CRYPTO').map(s => s.symbol);
+                              setSelectedTickers(prev => prev.filter(t => !crypto.includes(t)));
+                            }}
+                            className="hover:text-red-465 transition-colors"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {MT5_SYMBOLS.filter(s => s.category === 'CRYPTO').map(s => {
+                          const isSelected = selectedTickers.includes(s.symbol);
+                          return (
+                            <button
+                              key={s.symbol}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTickers(prev => 
+                                  prev.includes(s.symbol) ? prev.filter(t => t !== s.symbol) : [...prev, s.symbol]
+                                );
+                              }}
+                              className={`px-3 py-1.5 rounded-lg border text-[9px] font-mono font-bold uppercase transition-all ${
+                                isSelected 
+                                  ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-black shadow-sm' 
+                                  : 'bg-white/[0.02] border-[var(--glass-border)] text-zinc-400 dark:text-zinc-500 hover:border-white/10'
+                              }`}
+                            >
+                              {s.symbol}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Timeframe Alignments (Select all that apply)</label>
-                  <div className="flex flex-wrap gap-3">
-                    {availableTimeframes.map(tf => {
-                      const isSelected = selectedTfs.includes(tf);
-                      return (
-                        <button
-                          key={tf}
-                          type="button"
-                          onClick={() => {
-                            setSelectedTfs(prev => 
-                              prev.includes(tf) ? prev.filter(t => t !== tf) : [...prev, tf]
-                            );
-                          }}
-                          className={`px-4 py-2.5 rounded-lg border text-[10px] font-black uppercase transition-all duration-200 ${
-                            isSelected 
-                              ? 'bg-blue-500/10 border-blue-500/40 text-blue-400 shadow-md shadow-blue-500/5' 
-                              : 'bg-white/[0.02] border-[var(--glass-border)] text-zinc-500 hover:border-zinc-500/40'
-                          }`}
-                        >
-                          {tf}
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Timeframe Section */}
+                <div className="space-y-4">
+                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block">
+                    Timeframe Alignments (Select all that apply)
+                  </label>
+                  
+                  {/* CRT Timeframes (Visible if setups is 'All' or 'CRT Pro+') */}
+                  {(setups === 'All' || setups === 'CRT Pro+') && (
+                    <div className="space-y-2">
+                      {setups === 'All' && (
+                        <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest block mb-1">
+                          CRT Aligned Timeframes
+                        </span>
+                      )}
+                      <div className="flex flex-wrap gap-2.5">
+                        {crtTfs.map(tf => {
+                          const isSelected = selectedTfs.includes(tf);
+                          return (
+                            <button
+                              key={tf}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTfs(prev => 
+                                  prev.includes(tf) ? prev.filter(t => t !== tf) : [...prev, tf]
+                                );
+                              }}
+                              className={`px-3 py-2 rounded-lg border text-[9px] font-black uppercase transition-all duration-200 ${
+                                isSelected 
+                                  ? 'bg-blue-500/10 border-blue-500/40 text-blue-400 shadow-md shadow-blue-500/5' 
+                                  : 'bg-white/[0.02] border-[var(--glass-border)] text-zinc-500 hover:border-zinc-500/40'
+                              }`}
+                            >
+                              {tf}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SFP Timeframes (Visible if setups is 'All' or 'SFP Algo') */}
+                  {(setups === 'All' || setups === 'SFP Algo') && (
+                    <div className="space-y-2">
+                      {setups === 'All' && (
+                        <span className="text-[8px] font-black text-orange-400 uppercase tracking-widest block mb-1">
+                          SFP Standard Timeframes
+                        </span>
+                      )}
+                      <div className="flex flex-wrap gap-2.5">
+                        {sfpTfs.map(tf => {
+                          const isSelected = selectedTfs.includes(tf);
+                          return (
+                            <button
+                              key={tf}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTfs(prev => 
+                                  prev.includes(tf) ? prev.filter(t => t !== tf) : [...prev, tf]
+                                );
+                              }}
+                              className={`px-3 py-2 rounded-lg border text-[9px] font-black uppercase transition-all duration-200 ${
+                                isSelected 
+                                  ? 'bg-orange-500/10 border-orange-500/40 text-orange-400 shadow-md shadow-orange-500/5' 
+                                  : 'bg-white/[0.02] border-[var(--glass-border)] text-zinc-500 hover:border-zinc-500/40'
+                              }`}
+                            >
+                              {tf}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -686,7 +962,7 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
                     <select 
                       className="input-modern w-full font-bold"
                       value={setups}
-                      onChange={e => setSetups(e.target.value)}
+                      onChange={e => handleSetupsChange(e.target.value)}
                     >
                       <option value="All">All Setups</option>
                       <option value="CRT Pro+">CRT Pro+ Only</option>
