@@ -603,7 +603,7 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
                   <div className="space-y-2">
                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1">
                       Tickers 
-                      <HelpCircle size={10} className="text-zinc-600" title="Comma separated lists, e.g. BTCUSDT, EURUSD. Leave blank for ALL." />
+                      <span title="Comma separated lists, e.g. BTCUSDT, EURUSD. Leave blank for ALL."><HelpCircle size={10} className="text-zinc-600" /></span>
                     </label>
                     <input 
                       className="input-modern w-full font-bold font-mono text-xs"
@@ -616,7 +616,7 @@ export default function AlertsClient({ userId, userEmail }: { userId: string; us
                   <div className="space-y-2">
                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1">
                       Brokers
-                      <HelpCircle size={10} className="text-zinc-600" title="Comma separated lists, e.g. PEPPERSTONE, BINANCE. Leave blank for ALL." />
+                      <span title="Comma separated lists, e.g. PEPPERSTONE, BINANCE. Leave blank for ALL."><HelpCircle size={10} className="text-zinc-600" /></span>
                     </label>
                     <input 
                       className="input-modern w-full font-bold font-mono text-xs"
