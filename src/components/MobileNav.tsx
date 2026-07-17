@@ -56,7 +56,7 @@ const baseGroups: MenuGroup[] = [
     label: 'ACCOUNT & SETTINGS',
     items: [
       { name: 'Profile', icon: User, path: '/dashboard/profile', minTier: 0 },
-      { name: 'Telegram Alerts', icon: Bell, path: '/dashboard/alerts', minTier: 0 },
+      { name: 'Telegram Alerts', icon: Bell, path: '/dashboard/alerts', minTier: 2 },
       { name: 'Payments', icon: CreditCard, path: '/dashboard/payments', minTier: 0 },
       { name: 'Trade General', icon: BookOpen, path: '/dashboard/trade-general', minTier: 1 },
       { name: 'Resources', icon: Zap, path: '/dashboard/resources', minTier: 0 },
