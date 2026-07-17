@@ -6,7 +6,7 @@ import {
   LayoutGrid, Clock, History, Zap, Compass, BarChart3,
   CheckSquare, LineChart, User, CreditCard,
   LogOut, Lock, X, Menu, ShieldCheck,
-  Terminal, Activity, Cpu, Settings, UserPlus, Mail, BookOpen
+  Terminal, Activity, Cpu, Settings, UserPlus, Mail, BookOpen, Bell
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -56,6 +56,7 @@ const baseGroups: MenuGroup[] = [
     label: 'ACCOUNT & SETTINGS',
     items: [
       { name: 'Profile', icon: User, path: '/dashboard/profile', minTier: 0 },
+      { name: 'Telegram Alerts', icon: Bell, path: '/dashboard/alerts', minTier: 0 },
       { name: 'Payments', icon: CreditCard, path: '/dashboard/payments', minTier: 0 },
       { name: 'Trade General', icon: BookOpen, path: '/dashboard/trade-general', minTier: 1 },
       { name: 'Resources', icon: Zap, path: '/dashboard/resources', minTier: 0 },
