@@ -22,18 +22,33 @@ export async function fetchMarketQuote(symbol: string) {
     if (category === 'FOREX') {
       // Primary: FCS API
       price = await fetchFCSQuote(symbol);
-      // Backup: Alpha Vantage
+      // Backup 1: Alpha Vantage
       if (price === null) price = await fetchAlphaVantageQuote(symbol);
+      // Backup 2: Yahoo Finance (Reliable, no API key needed)
+      if (price === null) {
+        const { fetchYahooQuote } = await import('./yahoo-finance');
+        price = await fetchYahooQuote(symbol);
+      }
     } else if (category === 'METALS') {
       // Primary: GoldAPI
       price = await fetchGoldAPIQuote(symbol);
-      // Backup: Alpha Vantage
+      // Backup 1: Alpha Vantage
       if (price === null) price = await fetchAlphaVantageQuote(symbol);
+      // Backup 2: Yahoo Finance (Reliable, no API key needed)
+      if (price === null) {
+        const { fetchYahooQuote } = await import('./yahoo-finance');
+        price = await fetchYahooQuote(symbol);
+      }
     } else if (category === 'INDICES') {
       // Primary: EODHD
       price = await fetchEODHDQuote(symbol);
-      // Backup: Yahoo Finance (Alpha Vantage Fallback)
+      // Backup 1: Alpha Vantage
       if (price === null) price = await fetchAlphaVantageQuote(symbol);
+      // Backup 2: Yahoo Finance (Reliable, no API key needed)
+      if (price === null) {
+        const { fetchYahooQuote } = await import('./yahoo-finance');
+        price = await fetchYahooQuote(symbol);
+      }
     } else {
       // General Backup (Crypto/Other)
       // Primary for Crypto: Binance
@@ -61,30 +76,44 @@ export async function fetchMarketQuote(symbol: string) {
 }
 
 /**
- * Unified interface for fetching candles with fallback.
+ * Unified interface for fetching candles with deep historical fallback.
  */
-export async function fetchMarketCandles(symbol: string, interval: string = '5', limit: number = 500) {
+export async function fetchMarketCandles(
+  symbol: string,
+  interval: string = '5',
+  opts?: { from?: number; to?: number; limit?: number }
+) {
   const category = getSymbolCategory(symbol);
   let candles: any[] = [];
 
   try {
-    // 1. Try Primary Source based on Category
-    if (category === 'INDICES') {
-      candles = await fetchEODHDCandles(symbol, interval, limit);
+    // 1. Forex, Metals, and Indices -> Yahoo Finance with deep historical candles
+    if (category === 'FOREX' || category === 'METALS' || category === 'INDICES') {
+      const { fetchYahooCandles } = await import('./yahoo-finance');
+      candles = await fetchYahooCandles(symbol, interval, opts);
+      if (candles.length > 0) return candles;
     }
 
-    // 2. Fallback to Yahoo Finance (via specialized scraper or public API if available)
+    // 2. Fallback to EODHD for indices if configured
+    if (category === 'INDICES') {
+      candles = await fetchEODHDCandles(symbol, interval, opts?.limit || 500);
+      if (candles.length > 0) return candles;
+    }
+
+    // 3. Fallback to Yahoo Finance for any other asset
     if (candles.length === 0) {
       try {
         const { fetchYahooCandles } = await import('./yahoo-finance');
-        candles = await fetchYahooCandles(symbol, interval === '5' ? '5m' : '1d', '5d');
+        candles = await fetchYahooCandles(symbol, interval, opts);
+        if (candles.length > 0) return candles;
       } catch (err) {}
     }
 
-    // 3. Fallback to Binance (Highly reliable for Crypto)
-    if (candles.length === 0) {
+    // 4. Fallback to Binance (ONLY for Crypto - NEVER for Forex/Metals/Indices)
+    if (candles.length === 0 && category === 'CRYPTO') {
       const clean = normalizeSymbol(symbol);
       const binanceTicker = SYMBOL_MAP[clean]?.binance || (clean.endsWith('USD') ? clean + 'T' : clean + 'USDT');
+      const limit = opts?.limit || 1000;
       const endpoints = [
         `https://api.binance.com/api/v3/klines?symbol=${binanceTicker}&interval=5m&limit=${limit}`,
         `https://fapi.binance.com/fapi/v1/klines?symbol=${binanceTicker}&interval=5m&limit=${limit}`
