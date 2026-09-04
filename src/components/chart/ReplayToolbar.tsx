@@ -1,7 +1,5 @@
-﻿'use client';
-
 import React from 'react';
-import { Play, Pause, StepForward, RotateCcw, X, FastForward, Clock } from 'lucide-react';
+import { Play, Pause, StepForward, RotateCcw, X, Clock, Scissors } from 'lucide-react';
 import type { OHLCV } from '@/lib/chart/providers/MultiAssetProvider';
 
 export interface ReplayToolbarProps {
@@ -14,6 +12,8 @@ export interface ReplayToolbarProps {
   onStep: () => void;
   onReset: () => void;
   onScrub: (index: number) => void;
+  onTrim: () => void;
+  onQuickTrim: (barsBack: number) => void;
   onSpeedChange: (speed: number) => void;
   onExit: () => void;
 }
@@ -28,6 +28,8 @@ export default function ReplayToolbar({
   onStep,
   onReset,
   onScrub,
+  onTrim,
+  onQuickTrim,
   onSpeedChange,
   onExit,
 }: ReplayToolbarProps) {
@@ -40,37 +42,61 @@ export default function ReplayToolbar({
       })
     : '---';
 
-  const progressPercent = totalBars > 1 ? (currentIndex / (totalBars - 1)) * 100 : 0;
+  const hiddenFutureBars = Math.max(0, totalBars - 1 - currentIndex);
 
   return (
     <div className="w-full flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-zinc-900/95 border border-orange-500/30 rounded-xl shadow-xl backdrop-blur-md text-white animate-in fade-in slide-in-from-top-2 duration-300">
       {/* Left: Replay Status & Timestamp */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-500/20 border border-orange-500/40 rounded-lg text-orange-400 text-[10px] font-black uppercase tracking-wider">
           <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-          BAR REPLAY MODE
+          BAR REPLAY
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-zinc-300">
+        <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-300">
           <Clock size={14} className="text-zinc-500" />
           <span>{formattedDate}</span>
         </div>
 
-        {currentBar && (
-          <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-zinc-400">
-            <span>C: <strong className="text-zinc-100">{Number(currentBar.close).toFixed(2)}</strong></span>
-          </div>
+        {hiddenFutureBars > 0 && (
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-red-500/15 border border-red-500/30 text-red-400 flex items-center gap-1">
+            <Scissors size={11} /> {hiddenFutureBars} Hidden
+          </span>
         )}
       </div>
 
-      {/* Center: Controls (Rewind, Play/Pause, Step) */}
-      <div className="flex items-center gap-2">
+      {/* Center: Controls (Trim Tool, Rewind, Play/Pause, Step) */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* CANDLE TRIM BUTTON (Scissors Tool) */}
+        <button
+          onClick={onTrim}
+          title="Cut / Trim future candles starting from this bar"
+          className="px-2.5 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-white border border-red-500/40 rounded-lg text-xs font-black uppercase tracking-wide flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+        >
+          <Scissors size={14} className="text-red-400" />
+          <span>TRIM CANDLE</span>
+        </button>
+
+        {/* Quick Trim Presets */}
+        <div className="hidden sm:flex items-center gap-1 bg-black/40 border border-white/10 rounded-lg p-0.5">
+          {[50, 100, 200].map((b) => (
+            <button
+              key={b}
+              onClick={() => onQuickTrim(b)}
+              title={`Trim chart to -${b} bars ago`}
+              className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-zinc-400 hover:text-white hover:bg-white/10 rounded transition-all cursor-pointer"
+            >
+              -{b}b
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={onReset}
-          title="Reset to Cut Point"
+          title="Reset to Initial Cut Point"
           className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors cursor-pointer"
         >
-          <RotateCcw size={16} />
+          <RotateCcw size={15} />
         </button>
 
         <button
@@ -97,7 +123,7 @@ export default function ReplayToolbar({
         </button>
 
         {/* Speed Selector */}
-        <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-0.5 ml-1">
+        <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-0.5">
           {[
             { label: '0.5s', val: 500 },
             { label: '1s', val: 1000 },
