@@ -553,40 +553,67 @@ function getTimeAgo(timestamp: string) {
   return `${hrs}H ${diff % 60}M AGO`;
 }
 
-function getDisplayStatus(status: string, livePrice?: number, signal?: any) {
-  const category = signal ? getSymbolCategory(signal.symbol) : 'CRYPTO';
+// Global session latch to prevent status flapping on retracements after target hits
+const liveTargetLatch: Record<string, 'TP1' | 'TP2' | 'BE' | 'SL'> = {};
 
-  // ORGANIC PROTECTION: Now for ALL assets if price is available
+function getDisplayStatus(status: string, livePrice?: number, signal?: any) {
+  const statusUpper = status?.toUpperCase() || '';
+
+  // Seed latch from DB status if already confirmed
+  if (signal?.id) {
+    if (statusUpper.includes('TP2') || statusUpper === 'WIN') {
+      liveTargetLatch[signal.id] = 'TP2';
+    } else if (statusUpper.includes('TP1') && liveTargetLatch[signal.id] !== 'TP2') {
+      liveTargetLatch[signal.id] = 'TP1';
+    }
+  }
+
+  // ORGANIC REAL-TIME DETECTION: For ALL asset classes
   if (livePrice && signal) {
     const entry = Number(signal.entry_price);
     const sl = Number(signal.sl);
     const tp1 = Number(signal.tp);
-    const tp2 = Number(signal.tp2);
+    const tp2 = Number(signal.tp2 || signal.tp_secondary);
     const side = signal.side?.toUpperCase();
     const isBuy = side === 'BUY' || side === 'BULLISH';
-    const tolerance = 0.00005; // 0.005% alignment with backend worker
+    const tolerance = 0.00005; // 0.005% threshold
 
-    // 1. Live Target Detection (Immediate feedback before DB update)
+    const latched = signal.id ? liveTargetLatch[signal.id] : undefined;
+
+    // 1. Target 2 Detection
     if (tp2 && ((isBuy && livePrice >= (tp2 * (1 - tolerance))) || (!isBuy && livePrice <= (tp2 * (1 + tolerance))))) {
+      if (signal.id) liveTargetLatch[signal.id] = 'TP2';
       return 'TP2 REACHED (LIVE)';
     }
 
+    // 2. Target 1 Detection
     if (tp1 && ((isBuy && livePrice >= (tp1 * (1 - tolerance))) || (!isBuy && livePrice <= (tp1 * (1 + tolerance))))) {
-      if (status !== 'TP1' && status !== 'TP2') return 'TP1 REACHED (LIVE)';
+      if (signal.id && latched !== 'TP2') liveTargetLatch[signal.id] = 'TP1';
+      return 'TP1 REACHED (LIVE)';
     }
 
+    // 3. Post-TP1 Latching (Holding Breakeven protection during pullbacks)
+    if (latched === 'TP2') {
+      return 'TP2 REACHED (LIVE)';
+    }
+
+    if (latched === 'TP1') {
+      // Check if price retraced back to Breakeven (entry)
+      if (entry && ((isBuy && livePrice <= (entry * (1 + tolerance))) || (!isBuy && livePrice >= (entry * (1 - tolerance))))) {
+        return 'BE REACHED (LIVE)';
+      }
+      // Still in profit with SL at Breakeven
+      return 'TP1 REACHED (LIVE)';
+    }
+
+    // 4. Invalidation Stop Loss (only if TP1 wasn't hit)
     if (sl && ((isBuy && livePrice <= (sl * (1 + tolerance))) || (!isBuy && livePrice >= (sl * (1 - tolerance))))) {
       return 'SL HIT (LIVE)';
     }
-
-    // 2. Break Even Detection (TP1 -> BE)
-    if (status === 'TP1' && entry && ((isBuy && livePrice <= (entry * (1 + tolerance))) || (!isBuy && livePrice >= (entry * (1 - tolerance))))) {
-      return 'BE REACHED (LIVE)';
-    }
   }
 
-  // Backup Logic for METALS, INDICES, FOREX or Fallback
-  switch (status?.toUpperCase()) {
+  // Backup Logic for METALS, INDICES, FOREX or DB States
+  switch (statusUpper) {
     case 'PENDING': return 'In Progress';
     case 'ENTRY': return 'Active';
     case 'TP1': return 'TP1 Hit';
@@ -617,7 +644,7 @@ function calculateTargetRR(target: any, entry: any, sl: any) {
 function getDynamicRR(signal: any) {
   const entry = Number(signal.entry_price || 0);
   const sl = Number(signal.sl || 0);
-  const tp2 = Number(signal.tp2 || 0);
+  const tp2 = Number(signal.tp2 || signal.tp_secondary || 0);
   const tp1 = Number(signal.tp || 0);
 
   if (!entry || !sl || entry === sl) return '0.0R';
@@ -641,13 +668,13 @@ function getDynamicRR(signal: any) {
  * Calculates Realtime R:R based on current price vs entry and risk
  */
 function calculateLiveRR(signal: any, livePrices: { [key: string]: number }) {
-  const status = signal.status?.toUpperCase();
+  const status = signal.status?.toUpperCase() || '';
+  const latched = signal.id ? liveTargetLatch[signal.id] : undefined;
   const entry = Number(signal.entry_price || 0);
   const sl = Number(signal.sl || 0);
   const tp1 = Number(signal.tp || 0);
-  const tp2 = Number(signal.tp2 || 0);
+  const tp2 = Number(signal.tp2 || signal.tp_secondary || 0);
   const risk = Math.abs(entry - sl);
-  const category = getSymbolCategory(signal.symbol);
 
   if (!entry || !sl || risk === 0) return '0.00R';
 
@@ -667,14 +694,13 @@ function calculateLiveRR(signal: any, livePrices: { [key: string]: number }) {
   const live_rr = reward / risk;
 
   let final_rr = live_rr;
-  if (status === 'TP1') {
-    // Locked in: 50% * 2.0R = 1.0R. Floating: 50% of current R:R
-    final_rr = 1.00 + (0.50 * live_rr);
-  } else if (status === 'TP2') {
+  if (status.includes('TP2') || latched === 'TP2') {
     // Locked in: 50% * 2.0R + 15% * 2.5R = 1.375R. Floating: 35% of current R:R
     final_rr = 1.375 + (0.35 * live_rr);
-  } else if (status === 'TP3') {
-    // Locked in: 50% * 2.0R + 15% * 2.5R + 25% * 4.0R = 2.375R. Floating: 10% of current R:R
+  } else if (status.includes('TP1') || latched === 'TP1') {
+    // Locked in: 50% * 2.0R = 1.0R. Floating: 50% of current R:R
+    final_rr = 1.00 + (0.50 * live_rr);
+  } else if (status.includes('TP3')) {
     final_rr = 2.375 + (0.10 * live_rr);
   }
 
