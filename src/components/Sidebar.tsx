@@ -32,7 +32,6 @@ const baseGroups: MenuGroup[] = [
     label: 'CRT SECTION',
     items: [
       { name: 'Dashboard', icon: LayoutGrid, path: '/dashboard/crt', minTier: 0 },
-      { name: 'Pro Terminal', icon: LineChart, path: '/dashboard/chart', minTier: 0 },
       { name: 'Active Trades', icon: Clock, path: '/dashboard/crt/active', minTier: 1 },
       { name: 'Trade History', icon: History, path: '/dashboard/crt/history', minTier: 1 },
       { name: 'Alpha Radar', icon: Compass, path: '/dashboard/crt/radar', minTier: 1 },
@@ -217,6 +216,34 @@ export default function Sidebar({ tier, role }: { tier: number; role?: string })
           </div>
 
           <nav className="flex-1 overflow-y-auto pr-2 no-scrollbar">
+            {/* Individual Item: Pro Terminal */}
+            <div className="mb-6">
+              <Link href="/dashboard/chart" onClick={() => setIsOpen(false)}>
+                <div className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 border ${
+                  pathname === '/dashboard/chart' || pathname?.startsWith('/dashboard/chart/')
+                    ? 'bg-orange-500/15 text-orange-500 dark:text-orange-400 border-orange-500/30 shadow-sm'
+                    : 'border-[var(--glass-border)] bg-[var(--input-bg)]/40 hover:bg-[var(--input-bg)] hover:border-orange-500/20 text-foreground opacity-85 hover:opacity-100'
+                } cursor-pointer group`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`p-1.5 rounded-lg transition-colors ${
+                      pathname === '/dashboard/chart' || pathname?.startsWith('/dashboard/chart/')
+                        ? 'bg-orange-500 text-white shadow-sm'
+                        : 'bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white'
+                    }`}>
+                      <LineChart size={15} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-bold tracking-tight">Pro Terminal</span>
+                      <span className="text-[9px] text-zinc-400 font-medium">Interactive Charting</span>
+                    </div>
+                  </div>
+                  <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wider bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                    LIVE
+                  </span>
+                </div>
+              </Link>
+            </div>
+
             {dynamicMenuGroups.map((group) => {
               const isExpanded = !collapsedGroups[group.key];
 

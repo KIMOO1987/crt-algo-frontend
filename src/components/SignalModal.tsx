@@ -133,9 +133,14 @@ export default function SignalModal({ signal, onClose }: { signal: any, onClose:
           </div>
         </div>
         <div className="lg:w-[65%] bg-[var(--bg)] relative flex flex-col min-h-[450px]">
-          <div className="absolute top-6 left-6 z-10 flex gap-2">
+          <div className="absolute top-6 left-6 z-10 flex gap-2 flex-wrap items-center">
             <span className={`px-3 py-1 rounded-lg text-[9px] font-extrabold tracking-wider shadow-sm border ${isBuy ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>{isBuy ? 'LONG' : 'SHORT'}</span>
             <span className="px-3 py-1 rounded-lg text-[9px] font-extrabold tracking-wider bg-orange-500/10 text-orange-500 border border-orange-500/30 flex items-center gap-1.5 shadow-sm"><Activity size={11} /> LIVE INTELLIGENCE</span>
+            {(signal.tf_alignment || signal.tf) && (
+              <span className="px-2.5 py-1 rounded-lg text-[9px] font-extrabold tracking-wider bg-zinc-800/80 text-orange-400 border border-orange-500/20 shadow-sm">
+                TF: {signal.tf_alignment || signal.tf}
+              </span>
+            )}
             {statusText && (
               <span className="px-3 py-1 rounded-lg text-[9px] font-extrabold tracking-wider bg-black/40 backdrop-blur-md text-zinc-300 border border-[var(--glass-border)] hidden sm:flex items-center gap-1.5 shadow-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />

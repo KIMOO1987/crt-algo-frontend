@@ -8,11 +8,14 @@ import { OkxProvider } from '@/lib/chart/providers/OkxProvider';
 import { MultiAssetProvider } from '@/lib/chart/providers/MultiAssetProvider';
 
 import { getSymbolCategory, normalizeSymbol } from '@/lib/symbol-mapper';
+import { mapTfToVela } from '@/components/SignalChart';
+import { replayProviderInstance } from '@/lib/chart/providers/ReplayProvider';
 
 export interface VelaChartProps {
   symbol?: string;
   timeframe?: string;
   layout?: string | false;
+  replayMode?: boolean;
   signal?: {
     symbol?: string;
     entry_price?: number | string;
@@ -25,6 +28,12 @@ export interface VelaChartProps {
     status?: string;
     side?: string;
     created_at?: string;
+    tf?: string;
+    tf_alignment?: string;
+    timeframe?: string;
+    time_frame?: string;
+    interval?: string;
+    [key: string]: any;
   };
   showToolbar?: boolean;
   className?: string;
@@ -89,6 +98,7 @@ export default function VelaWorkspaceClient({
   symbol = 'BTCUSDT',
   timeframe = '5',
   layout = false,
+  replayMode = false,
   signal,
   showToolbar = true,
   className = 'w-full h-full min-h-[450px]',
@@ -106,13 +116,19 @@ export default function VelaWorkspaceClient({
     const targetSymbol = resolveVelaSymbol(symbol);
 
     try {
+      // Resolve execution timeframe (e.g. M30/H6 -> 30) if signal is present
+      const signalTf = signal?.tf_alignment || signal?.tf || signal?.timeframe || signal?.time_frame || signal?.interval;
+      const targetTimeframe = (timeframe && timeframe !== '5')
+        ? timeframe
+        : (signalTf ? mapTfToVela(signalTf) : (timeframe || '5'));
+
       // Initialize Vela Trading Terminal with deep historical bars
       const ws = new VelaWorkspace(containerRef.current, {
         layout: layout ?? false,
         symbol: targetSymbol,
-        timeframe: timeframe || '5',
+        timeframe: targetTimeframe,
         bars: 1500, // Deep initial history
-        live: true,
+        live: !replayMode,
         theme: activeTheme as any,
         drawingToolbar: showToolbar,
         persist: false, // Don't cache state in temporary modals/views
@@ -120,6 +136,7 @@ export default function VelaWorkspaceClient({
           binance: () => new BinanceProvider(),
           okx: () => new OkxProvider() as any,
           multiasset: () => new MultiAssetProvider() as any,
+          replay: () => replayProviderInstance as any,
         },
       });
 
@@ -266,7 +283,7 @@ export default function VelaWorkspaceClient({
         workspaceRef.current = null;
       }
     };
-  }, [symbol, timeframe, layout, theme]);
+  }, [symbol, timeframe, signal?.tf, signal?.tf_alignment, layout, theme, replayMode]);
 
   return (
     <div className={`relative ${className}`}>
