@@ -3,6 +3,8 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   output: process.env.NEXT_EXPORT === 'true' ? 'export' : undefined,
+  productionBrowserSourceMaps: false,
+  compress: true,
   images: {
     unoptimized: true,
   },
