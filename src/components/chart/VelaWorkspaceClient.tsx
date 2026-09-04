@@ -10,6 +10,8 @@ import { MultiAssetProvider } from '@/lib/chart/providers/MultiAssetProvider';
 import { getSymbolCategory, normalizeSymbol } from '@/lib/symbol-mapper';
 import { mapTfToVela } from '@/components/SignalChart';
 import { replayProviderInstance } from '@/lib/chart/providers/ReplayProvider';
+import FibSettingsModal, { FibSettingsData } from './FibSettingsModal';
+import { SlidersHorizontal } from 'lucide-react';
 
 export interface VelaChartProps {
   symbol?: string;
@@ -111,7 +113,30 @@ export default function VelaWorkspaceClient({
   const containerRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<VelaWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedDrawing, setSelectedDrawing] = useState<{
+    id: string;
+    type: string;
+    text?: {
+      value: string;
+      hAlign?: 'left' | 'center' | 'right';
+      vAlign?: 'top' | 'center' | 'bottom';
+      color?: string;
+      size?: string;
+      bold?: boolean;
+      italic?: boolean;
+    };
+    anchors?: { time: number; price: number }[];
+    props?: Record<string, any>;
+    levels?: any[];
+    style?: Record<string, any>;
+  } | null>(null);
+  const [isFibModalOpen, setIsFibModalOpen] = useState(false);
+  const selectedDrawingRef = useRef<string | null>(null);
   const { theme } = useTheme();
+
+  useEffect(() => {
+    selectedDrawingRef.current = selectedDrawing?.id || null;
+  }, [selectedDrawing]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -304,15 +329,55 @@ export default function VelaWorkspaceClient({
         }
       };
 
+      const updateSelectedFromChart = (id: string | null) => {
+        if (!id || !ws.chart?.drawings) {
+          setSelectedDrawing(null);
+          return;
+        }
+        try {
+          const all = ws.chart.drawings.all ? ws.chart.drawings.all() : [];
+          const d = all.find((x: any) => x.id === id);
+          if (d) {
+            setSelectedDrawing({
+              id: d.id,
+              type: d.type || 'drawing',
+              text: d.text ? { ...d.text } : { value: '', hAlign: 'center', vAlign: 'center' },
+              anchors: (d as any).anchors ? (d as any).anchors.map((p: any) => ({ time: p.time, price: p.price })) : [],
+              props: typeof (d as any).writeProps === 'function' ? (d as any).writeProps() : (d as any).props || {},
+              levels: (d as any).levels || [],
+              style: (d as any).style || {},
+            });
+          } else {
+            setSelectedDrawing(null);
+          }
+        } catch (_) {
+          setSelectedDrawing(null);
+        }
+      };
+
       const unsubs: (() => void)[] = [];
       const offState = ws.on('state:changed', saveDrawings);
       if (typeof offState === 'function') unsubs.push(offState);
       const offCreated = ws.chart.on('drawing:created', saveDrawings);
       if (typeof offCreated === 'function') unsubs.push(offCreated);
-      const offEdited = ws.chart.on('drawing:edited', saveDrawings);
+      const offEdited = ws.chart.on('drawing:edited', ({ id }: { id?: string } = {}) => {
+        saveDrawings();
+        if (id && selectedDrawingRef.current === id) {
+          updateSelectedFromChart(id);
+        }
+      });
       if (typeof offEdited === 'function') unsubs.push(offEdited);
-      const offRemoved = ws.chart.on('drawing:removed', saveDrawings);
+      const offRemoved = ws.chart.on('drawing:removed', ({ id }: { id?: string } = {}) => {
+        saveDrawings();
+        if (id && selectedDrawingRef.current === id) {
+          setSelectedDrawing(null);
+        }
+      });
       if (typeof offRemoved === 'function') unsubs.push(offRemoved);
+      const offSelected = ws.chart.on('drawing:selected', ({ id }: { id?: string | null } = {}) => {
+        updateSelectedFromChart(id || null);
+      });
+      if (typeof offSelected === 'function') unsubs.push(offSelected);
 
       const handleBeforeUnload = () => {
         saveDrawings();
@@ -322,6 +387,7 @@ export default function VelaWorkspaceClient({
       return () => {
         window.removeEventListener('beforeunload', handleBeforeUnload);
         saveDrawings();
+        setSelectedDrawing(null);
         unsubs.forEach((fn) => {
           try {
             fn();
@@ -342,6 +408,98 @@ export default function VelaWorkspaceClient({
     }
   }, [symbol, timeframe, signal?.tf, signal?.tf_alignment, layout, theme, replayMode, persist]);
 
+  const handleUpdateAlignment = (
+    hAlign?: 'left' | 'center' | 'right',
+    vAlign?: 'top' | 'center' | 'bottom'
+  ) => {
+    if (!selectedDrawing || !workspaceRef.current?.chart?.drawings) return;
+    const ws = workspaceRef.current;
+    const currentText = selectedDrawing.text || { value: '', hAlign: 'center', vAlign: 'center' };
+    const newH = (hAlign ?? currentText.hAlign ?? 'center') as 'left' | 'center' | 'right';
+    const newV = (vAlign ?? currentText.vAlign ?? 'center') as 'top' | 'center' | 'bottom';
+
+    const updatedText = {
+      ...currentText,
+      value: currentText.value || '',
+      hAlign: newH,
+      vAlign: newV,
+    };
+
+    try {
+      ws.chart.drawings.update(selectedDrawing.id, {
+        text: updatedText as any,
+      });
+      setSelectedDrawing((prev) => (prev ? { ...prev, text: updatedText } : null));
+
+      const cleanSymbol = (symbol.includes(':') ? symbol.split(':').pop()! : symbol).toLowerCase();
+      const doc = ws.chart.drawings.toJSON();
+      if (doc) localStorage.setItem(`crt_drawings_${cleanSymbol}`, JSON.stringify(doc));
+    } catch (e) {
+      console.warn('[VelaChart] Failed to update drawing alignment:', e);
+    }
+  };
+
+  const handleUpdateTextValue = (val: string) => {
+    if (!selectedDrawing || !workspaceRef.current?.chart?.drawings) return;
+    const ws = workspaceRef.current;
+    const currentText = selectedDrawing.text || { value: '', hAlign: 'center', vAlign: 'center' };
+    const updatedText = {
+      ...currentText,
+      value: val,
+    };
+
+    try {
+      ws.chart.drawings.update(selectedDrawing.id, {
+        text: updatedText as any,
+      });
+      setSelectedDrawing((prev) => (prev ? { ...prev, text: updatedText } : null));
+
+      const cleanSymbol = (symbol.includes(':') ? symbol.split(':').pop()! : symbol).toLowerCase();
+      const doc = ws.chart.drawings.toJSON();
+      if (doc) localStorage.setItem(`crt_drawings_${cleanSymbol}`, JSON.stringify(doc));
+    } catch (e) {
+      console.warn('[VelaChart] Failed to update drawing text:', e);
+    }
+  };
+
+  const handleApplyFibSettings = (
+    id: string,
+    updatedProps: FibSettingsData,
+    updatedAnchors?: { time: number; price: number }[]
+  ) => {
+    if (!workspaceRef.current?.chart?.drawings) return;
+    const ws = workspaceRef.current;
+    try {
+      const patch: any = { ...updatedProps };
+      if (updatedAnchors && updatedAnchors.length >= 2) {
+        patch.anchors = updatedAnchors;
+      }
+      ws.chart.drawings.update(id, patch);
+
+      // Refresh selected drawing state
+      const all = ws.chart.drawings.all ? ws.chart.drawings.all() : [];
+      const d = all.find((x: any) => x.id === id);
+      if (d) {
+        setSelectedDrawing({
+          id: d.id,
+          type: d.type || 'drawing',
+          text: d.text ? { ...d.text } : { value: '', hAlign: 'center', vAlign: 'center' },
+          anchors: (d as any).anchors ? (d as any).anchors.map((p: any) => ({ time: p.time, price: p.price })) : [],
+          props: typeof (d as any).writeProps === 'function' ? (d as any).writeProps() : (d as any).props || {},
+          levels: (d as any).levels || [],
+          style: (d as any).style || {},
+        });
+      }
+
+      // Persist to localStorage
+      const cleanSymbol = (symbol.includes(':') ? symbol.split(':').pop()! : symbol).toLowerCase();
+      const doc = ws.chart.drawings.toJSON();
+      if (doc) localStorage.setItem(`crt_drawings_${cleanSymbol}`, JSON.stringify(doc));
+    } catch (e) {
+      console.warn('[VelaChart] Failed to apply Fib settings:', e);
+    }
+  };
+
   return (
     <div className={`relative ${className} [&_.vela-attribution]:!hidden`}>
       {loading && (
@@ -349,6 +507,145 @@ export default function VelaWorkspaceClient({
           <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-2" />
           <span className="text-xs text-zinc-400 font-mono font-medium tracking-wide">Initializing Vela Engine...</span>
         </div>
+      )}
+
+      {/* Floating Drawing Text Alignment & Customization Bar */}
+      {selectedDrawing && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center gap-2 px-3 py-1.5 bg-zinc-900/90 dark:bg-black/90 backdrop-blur-md border border-zinc-700/80 dark:border-zinc-800 rounded-xl shadow-2xl text-xs text-zinc-200">
+          <div className="flex items-center gap-1.5 pr-2 border-r border-zinc-700/60 font-mono text-[10px] uppercase font-bold text-orange-400 select-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+            {selectedDrawing.type}
+          </div>
+
+          {/* Quick Label Input */}
+          <div className="flex items-center">
+            <input
+              type="text"
+              placeholder="Drawing label..."
+              value={selectedDrawing.text?.value || ''}
+              onChange={(e) => handleUpdateTextValue(e.target.value)}
+              className="bg-zinc-800/80 dark:bg-zinc-900 border border-zinc-700/60 rounded px-2 py-0.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 w-28 md:w-36"
+            />
+          </div>
+
+          {/* Horizontal Alignment (Left, Center, Right) */}
+          <div className="flex items-center gap-0.5 bg-zinc-800/80 dark:bg-zinc-900/90 p-0.5 rounded-lg border border-zinc-700/50">
+            <span className="text-[10px] font-semibold text-zinc-400 px-1 select-none">H:</span>
+            <button
+              type="button"
+              title="Align Left"
+              onClick={() => handleUpdateAlignment('left', undefined)}
+              className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition-all ${
+                selectedDrawing.text?.hAlign === 'left'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
+              }`}
+            >
+              Left
+            </button>
+            <button
+              type="button"
+              title="Align Center"
+              onClick={() => handleUpdateAlignment('center', undefined)}
+              className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition-all ${
+                (selectedDrawing.text?.hAlign === 'center' || !selectedDrawing.text?.hAlign)
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
+              }`}
+            >
+              Center
+            </button>
+            <button
+              type="button"
+              title="Align Right"
+              onClick={() => handleUpdateAlignment('right', undefined)}
+              className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition-all ${
+                selectedDrawing.text?.hAlign === 'right'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
+              }`}
+            >
+              Right
+            </button>
+          </div>
+
+          {/* Vertical Alignment (Top, Center, Bottom) */}
+          <div className="flex items-center gap-0.5 bg-zinc-800/80 dark:bg-zinc-900/90 p-0.5 rounded-lg border border-zinc-700/50">
+            <span className="text-[10px] font-semibold text-zinc-400 px-1 select-none">V:</span>
+            <button
+              type="button"
+              title="Align Top"
+              onClick={() => handleUpdateAlignment(undefined, 'top')}
+              className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition-all ${
+                selectedDrawing.text?.vAlign === 'top'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
+              }`}
+            >
+              Top
+            </button>
+            <button
+              type="button"
+              title="Align Middle"
+              onClick={() => handleUpdateAlignment(undefined, 'center')}
+              className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition-all ${
+                (selectedDrawing.text?.vAlign === 'center' || !selectedDrawing.text?.vAlign)
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
+              }`}
+            >
+              Middle
+            </button>
+            <button
+              type="button"
+              title="Align Bottom"
+              onClick={() => handleUpdateAlignment(undefined, 'bottom')}
+              className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition-all ${
+                selectedDrawing.text?.vAlign === 'bottom'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
+              }`}
+            >
+              Bottom
+            </button>
+          </div>
+
+          {/* Fibonacci Settings Dialog Button */}
+          {selectedDrawing.type.toLowerCase().includes('fib') && (
+            <button
+              type="button"
+              title="Open Fibonacci Settings"
+              onClick={() => setIsFibModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-md transition-all ml-1 cursor-pointer"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Fib Settings</span>
+            </button>
+          )}
+
+          {/* Close / Dismiss Bar */}
+          <button
+            type="button"
+            title="Deselect"
+            onClick={() => {
+              setSelectedDrawing(null);
+              workspaceRef.current?.chart?.drawings?.select?.(null);
+            }}
+            className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors ml-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* TradingView-grade Fibonacci Settings Modal */}
+      {isFibModalOpen && selectedDrawing && (
+        <FibSettingsModal
+          isOpen={isFibModalOpen}
+          onClose={() => setIsFibModalOpen(false)}
+          drawing={selectedDrawing}
+          onApply={handleApplyFibSettings}
+        />
       )}
 
       {/* Official CRT-ALGO PRO Logo on Chart (matching sidebar top) */}
