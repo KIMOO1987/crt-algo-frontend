@@ -129,10 +129,13 @@ export default function VelaWorkspaceClient({
           const tp2 = Number(signal.tp_secondary || signal.tp2);
           const tp3 = Number(signal.tp3);
           const tp4 = Number(signal.tp4);
-          let sl = Number(signal.sl);
-
-          const isTp1Hit = signal.status?.includes('TP1') || signal.status === 'WIN';
-          if (isTp1Hit && entry) sl = entry;
+          const origSl = Number(signal.sl);
+          const statusUpper = (signal.status || '').toUpperCase();
+          const isTp1Hit =
+            statusUpper.includes('TP') ||
+            statusUpper.includes('WIN') ||
+            statusUpper.includes('BE') ||
+            statusUpper.includes('PROFIT');
 
           // Get visible range to anchor the labels visibly on screen
           const vr = ws.chart.getVisibleRange();
@@ -175,17 +178,36 @@ export default function VelaWorkspaceClient({
                 text: { value: `TP4: ${tp4}`, color: '#a855f7', size: 'small', bold: true, hAlign: 'left', vAlign: 'top' },
               });
             }
-            if (sl && !isNaN(sl)) {
+
+            // Stop Loss drawing: Breakeven if TP1 reached, else regular Stop Loss
+            if (isTp1Hit && entry && !isNaN(entry)) {
+              // Breakeven line at Entry
               ws.chart.drawings?.add('hline', {
-                anchors: [{ time: labelTime, price: sl }],
+                anchors: [{ time: labelTime, price: entry }],
+                style: { lineColor: '#10b981', lineWidth: 2, lineStyle: 'solid' as any },
+                text: { value: `SL (BE): ${entry}`, color: '#10b981', size: 'small', bold: true, hAlign: 'left', vAlign: 'bottom' },
+              });
+              // Original SL dotted reference line
+              if (origSl && !isNaN(origSl) && origSl !== entry) {
+                ws.chart.drawings?.add('hline', {
+                  anchors: [{ time: labelTime, price: origSl }],
+                  style: { lineColor: '#ef4444', lineWidth: 1, lineStyle: 'dotted' as any },
+                  text: { value: `ORIGINAL SL: ${origSl}`, color: '#ef4444', size: 'small', bold: false, hAlign: 'left', vAlign: 'top' },
+                });
+              }
+            } else if (origSl && !isNaN(origSl)) {
+              ws.chart.drawings?.add('hline', {
+                anchors: [{ time: labelTime, price: origSl }],
                 style: { lineColor: '#ef4444', lineWidth: 2, lineStyle: 'solid' as any },
-                text: { value: isTp1Hit ? `SL (BE): ${sl}` : `SL: ${sl}`, color: '#ef4444', size: 'small', bold: true, hAlign: 'left', vAlign: 'top' },
+                text: { value: `SL: ${origSl}`, color: '#ef4444', size: 'small', bold: true, hAlign: 'left', vAlign: 'top' },
               });
             }
 
             // 2. ADD BUY/SELL POSITION TOOL (Long/Short Risk-Reward Box)
-            const mainTarget = tp1 || tp2;
-            if (entry && sl && mainTarget && !isNaN(entry) && !isNaN(sl) && !isNaN(mainTarget)) {
+            // Pick TP2 (e.g. 2.5RR target) if present, otherwise TP1
+            const mainTarget = tp2 || tp1;
+            const posSl = origSl;
+            if (entry && posSl && mainTarget && !isNaN(entry) && !isNaN(posSl) && !isNaN(mainTarget)) {
               const signalTime = signal.created_at ? new Date(signal.created_at).getTime() : NaN;
               const hasValidSignalTime = !isNaN(signalTime) && vr && signalTime >= vr.from && signalTime <= vr.to;
 
@@ -198,7 +220,7 @@ export default function VelaWorkspaceClient({
               ws.chart.drawings?.add('position', {
                 anchors: [
                   { time: posStart, price: entry },
-                  { time: posEnd, price: sl },
+                  { time: posEnd, price: posSl },
                   { time: posEnd, price: mainTarget },
                 ],
                 props: {
