@@ -32,6 +32,7 @@ const baseGroups: MenuGroup[] = [
     label: 'CRT SECTION',
     items: [
       { name: 'Dashboard', icon: LayoutGrid, path: '/dashboard/crt', minTier: 0 },
+      { name: 'Pro Terminal', icon: LineChart, path: '/dashboard/chart', minTier: 0 },
       { name: 'Active Trades', icon: Clock, path: '/dashboard/crt/active', minTier: 1 },
       { name: 'Trade History', icon: History, path: '/dashboard/crt/history', minTier: 1 },
       { name: 'Alpha Radar', icon: Compass, path: '/dashboard/crt/radar', minTier: 1 },
