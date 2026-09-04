@@ -7,6 +7,8 @@ import { BinanceProvider } from '@luxalgo/vela/providers/binance';
 import { OkxProvider } from '@/lib/chart/providers/OkxProvider';
 import { MultiAssetProvider } from '@/lib/chart/providers/MultiAssetProvider';
 
+import { getSymbolCategory, normalizeSymbol } from '@/lib/symbol-mapper';
+
 export interface VelaChartProps {
   symbol?: string;
   timeframe?: string;
@@ -36,24 +38,28 @@ export function resolveVelaSymbol(sym: string): string {
   if (!sym) return 'binance:BTCUSDT';
   let clean = sym.trim().toUpperCase();
 
-  // 1. If already prefixed (e.g. 'binance:btcusdt', 'okx:...'), preserve it
+  // 1. If already prefixed (e.g. 'binance:btcusdt', 'okx:...', 'multiasset:...'), preserve it
   if (clean.includes(':')) {
     const [p, t] = clean.split(':');
     return `${p.toLowerCase()}:${t}`;
   }
 
-  // 2. Non-crypto (Forex, Metals, Indices)
-  const nonCrypto = ['XAUUSD', 'XAGUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'GBPJPY', 'EURJPY', 'USDCAD', 'USDCHF', 'US100', 'US500', 'US30'];
-  if (nonCrypto.some((item) => clean.startsWith(item))) {
-    return `multiasset:${clean}`;
+  // 2. Normalize and check asset category
+  const normalized = normalizeSymbol(clean);
+  const category = getSymbolCategory(normalized);
+
+  // 3. Non-crypto (Forex, Metals, Indices) ALWAYS route to multiasset with canonical ticker
+  // NEVER append USDT or route non-crypto to Binance!
+  if (category === 'FOREX' || category === 'METALS' || category === 'INDICES') {
+    return `multiasset:${normalized}`;
   }
 
-  // 3. OKX Swap/Perp notation (e.g. BTC-USDT-SWAP, BTC-USDT)
+  // 4. OKX Swap/Perp notation (e.g. BTC-USDT-SWAP, BTC-USDT)
   if (clean.includes('-SWAP') || clean.includes('-USDT')) {
     return `okx:${clean}`;
   }
 
-  // 4. Handle crypto perpetual futures ending in .P (e.g. LTCUSDT.P, BTCUSDT.P, LTC.P)
+  // 5. Handle crypto perpetual futures ending in .P (e.g. LTCUSDT.P, BTCUSDT.P, LTC.P)
   if (clean.endsWith('.P')) {
     const base = clean.slice(0, -2);
     if (base.endsWith('USDT')) {
@@ -65,17 +71,17 @@ export function resolveVelaSymbol(sym: string): string {
     return `binance:${base}USDT.P`;
   }
 
-  // 5. Crypto ending in USDT
+  // 6. Crypto ending in USDT
   if (clean.endsWith('USDT')) {
     return `binance:${clean}`;
   }
 
-  // 6. Crypto ending in USD (e.g. BTCUSD -> BTCUSDT)
+  // 7. Crypto ending in USD (e.g. BTCUSD -> BTCUSDT)
   if (clean.endsWith('USD')) {
     return `binance:${clean.slice(0, -3)}USDT`;
   }
 
-  // 7. Generic crypto fallback (e.g. BTC -> BTCUSDT)
+  // 8. Generic crypto fallback (e.g. BTC -> BTCUSDT)
   return `binance:${clean}USDT`;
 }
 
@@ -100,11 +106,12 @@ export default function VelaWorkspaceClient({
     const targetSymbol = resolveVelaSymbol(symbol);
 
     try {
-      // Initialize Vela Trading Terminal
+      // Initialize Vela Trading Terminal with deep historical bars
       const ws = new VelaWorkspace(containerRef.current, {
         layout: layout ?? false,
         symbol: targetSymbol,
         timeframe: timeframe || '5',
+        bars: 1500, // Deep initial history
         live: true,
         theme: activeTheme as any,
         drawingToolbar: showToolbar,
