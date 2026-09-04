@@ -4,10 +4,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import AccessGuard from '@/components/AccessGuard';
 import VelaChart from '@/components/chart/VelaChart';
 import ReplayToolbar from '@/components/chart/ReplayToolbar';
-import { Layout, Maximize2, SplitSquareVertical, Grid2X2, History, RotateCcw, Loader2 } from 'lucide-react';
+import TemplateModal, { ChartTemplate } from '@/components/chart/TemplateModal';
+import { Layout, Maximize2, SplitSquareVertical, Grid2X2, History, RotateCcw, Loader2, Bookmark } from 'lucide-react';
 import { fetchMarketCandles } from '@/lib/market-data';
 import { replayProviderInstance } from '@/lib/chart/providers/ReplayProvider';
 import type { OHLCV } from '@/lib/chart/providers/MultiAssetProvider';
+import type { VelaWorkspace } from '@luxalgo/vela/workspace';
 
 const QUICK_SYMBOLS = [
   { label: 'BTC/USDT', value: 'binance:BTCUSDT' },
@@ -22,6 +24,41 @@ const QUICK_SYMBOLS = [
 export default function ProChartPage() {
   const [selectedSymbol, setSelectedSymbol] = useState('binance:BTCUSDT');
   const [layoutMode, setLayoutMode] = useState<string | false>(false);
+
+  // --- Workspace & Template State ---
+  const [workspaceInstance, setWorkspaceInstance] = useState<VelaWorkspace | null>(null);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [templateCount, setTemplateCount] = useState(0);
+
+  // Refresh saved templates count from localStorage
+  const refreshTemplateCount = useCallback(() => {
+    try {
+      const raw = localStorage.getItem('crt_algo_chart_templates');
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          setTemplateCount(list.length);
+        }
+      }
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => {
+    refreshTemplateCount();
+  }, [refreshTemplateCount]);
+
+  // Keyboard shortcut: Ctrl+S / Cmd+S to open template save modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        refreshTemplateCount();
+        setIsTemplateModalOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [refreshTemplateCount]);
 
   // --- Replay Mode State ---
   const [isReplayMode, setIsReplayMode] = useState(false);
@@ -233,6 +270,24 @@ export default function ProChartPage() {
               <span>{isReplayMode ? 'REPLAY ACTIVE' : 'BAR REPLAY'}</span>
             </button>
 
+            {/* Template Manager Button */}
+            <button
+              onClick={() => {
+                refreshTemplateCount();
+                setIsTemplateModalOpen(true);
+              }}
+              title="Save or Load Chart Templates (Ctrl+S)"
+              className="px-3 py-1.5 rounded-lg border border-[var(--glass-border)] bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:border-orange-500/50"
+            >
+              <Bookmark size={15} className="text-orange-400" />
+              <span>TEMPLATES</span>
+              {templateCount > 0 && (
+                <span className="px-1.5 py-0.2 text-[10px] bg-orange-500/20 text-orange-400 rounded-full font-mono font-bold">
+                  {templateCount}
+                </span>
+              )}
+            </button>
+
             {/* Layout Toggles */}
             <div className="flex items-center gap-1 bg-black/20 p-1 rounded-lg border border-[var(--glass-border)]">
               <button
@@ -298,9 +353,30 @@ export default function ProChartPage() {
             layout={layoutMode}
             replayMode={isReplayMode}
             showToolbar={true}
+            persist={isReplayMode ? false : `crt-chart-${rawSymbol.toLowerCase()}`}
+            onWorkspaceReady={(ws) => setWorkspaceInstance(ws)}
             className="w-full h-full"
           />
         </div>
+
+        {/* Chart & Drawing Templates Modal */}
+        <TemplateModal
+          isOpen={isTemplateModalOpen}
+          onClose={() => {
+            setIsTemplateModalOpen(false);
+            refreshTemplateCount();
+          }}
+          workspace={workspaceInstance}
+          currentSymbol={rawSymbol}
+          currentTimeframe="15"
+          currentLayout={layoutMode}
+          onApplyTemplate={(tpl) => {
+            if (tpl.layout !== undefined) {
+              setLayoutMode(tpl.layout);
+            }
+            refreshTemplateCount();
+          }}
+        />
       </div>
     </AccessGuard>
   );
