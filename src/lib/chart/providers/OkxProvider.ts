@@ -109,18 +109,31 @@ export class OkxProvider {
   async getBars(ticker: string, timeframe: string, range: BarRange): Promise<OHLCV[]> {
     const instId = OkxProvider.formatInstId(ticker);
     const bar = TF_TO_OKX[timeframe] || (timeframe.endsWith('m') ? timeframe : `${timeframe}m`);
-    const limit = Math.min(range.limit || 300, 300);
+    const targetCount = Math.min(range.limit || 1000, 1500);
 
-    // OKX returns newest first: [ts, o, h, l, c, vol, ...]
-    const url = `${OKX_REST}/api/v5/market/candles?instId=${instId}&bar=${bar}&limit=${limit}`;
+    const allRows: string[][] = [];
+    let afterCursor = range.to ? String(range.to) : '';
 
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`OKX HTTP ${res.status}`);
-      const json = await res.json();
-      if (!json.data || !Array.isArray(json.data)) return [];
+      // Paginate up to targetCount (OKX serves up to 100 candles per page)
+      const maxPages = Math.min(Math.ceil(targetCount / 100), 15);
+      for (let i = 0; i < maxPages; i++) {
+        const query = `instId=${instId}&bar=${bar}&limit=100${afterCursor ? `&after=${afterCursor}` : ''}`;
+        const endpoint = i === 0 && !range.to ? 'candles' : 'history-candles';
+        const res = await fetch(`${OKX_REST}/api/v5/market/${endpoint}?${query}`);
+        if (!res.ok) break;
+        const json = await res.json();
+        if (!json.data || !Array.isArray(json.data) || json.data.length === 0) break;
 
-      const bars: OHLCV[] = json.data.map((row: string[]) => ({
+        allRows.push(...json.data);
+        afterCursor = json.data[json.data.length - 1][0]; // oldest timestamp in page
+        if (json.data.length < 100) break;
+        if (range.from && Number(afterCursor) <= range.from) break;
+      }
+
+      if (allRows.length === 0) return [];
+
+      const bars: OHLCV[] = allRows.map((row: string[]) => ({
         time: Number(row[0]),
         open: parseFloat(row[1]),
         high: parseFloat(row[2]),
@@ -129,9 +142,15 @@ export class OkxProvider {
         volume: parseFloat(row[5] || '0'),
       }));
 
-      // Sort ascending by time (Vela contract requirement)
-      bars.sort((a, b) => a.time - b.time);
-      return bars;
+      // Deduplicate and sort ascending by time
+      const map = new Map<number, OHLCV>();
+      for (const b of bars) {
+        if (!isNaN(b.time) && !isNaN(b.close)) {
+          map.set(b.time, b);
+        }
+      }
+
+      return Array.from(map.values()).sort((a, b) => a.time - b.time);
     } catch (err) {
       console.error(`[OkxProvider] Failed to fetch bars for ${instId}:`, err);
       return [];
