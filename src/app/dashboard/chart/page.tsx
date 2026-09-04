@@ -50,7 +50,7 @@ export default function ProChartPage() {
     // Activate Replay Mode
     setIsLoadingReplay(true);
     try {
-      const rawCandles = await fetchMarketCandles(rawSymbol, '15m', { limit: 1000 });
+      const rawCandles = await fetchMarketCandles(rawSymbol, '15m', { limit: 5000 });
       if (!rawCandles || rawCandles.length < 20) {
         alert('Insufficient historical candles to start Replay Mode for this asset.');
         setIsLoadingReplay(false);
@@ -119,6 +119,26 @@ export default function ProChartPage() {
     setReplaySessionId((prev) => prev + 1);
   };
 
+  // Trim future candles from current position (establishes current bar as cut point)
+  const handleTrim = () => {
+    if (!isReplayMode || replayBars.length === 0) return;
+    setIsPlaying(false);
+    setInitialCutIndex(replayIndex);
+    replayProviderInstance.setBars(replayBars.slice(0, replayIndex + 1));
+    setReplaySessionId((prev) => prev + 1);
+  };
+
+  // Quick trim: jump back N candles
+  const handleQuickTrim = (barsBack: number) => {
+    if (!isReplayMode || replayBars.length === 0) return;
+    const targetIdx = Math.max(5, replayBars.length - 1 - barsBack);
+    setIsPlaying(false);
+    setInitialCutIndex(targetIdx);
+    setReplayIndex(targetIdx);
+    replayProviderInstance.setBars(replayBars.slice(0, targetIdx + 1));
+    setReplaySessionId((prev) => prev + 1);
+  };
+
   // Auto-play interval
   useEffect(() => {
     if (!isPlaying || !isReplayMode) {
@@ -162,8 +182,10 @@ export default function ProChartPage() {
               <Layout size={20} />
             </div>
             <div>
-              <h1 className="text-base font-extrabold tracking-tight text-foreground">Pro Trading Terminal</h1>
-              <p className="text-[11px] text-zinc-400 font-medium">Native WebGL2 Charting powered by Vela</p>
+              <h1 className="text-base font-black tracking-tighter uppercase text-foreground">
+                CRT-ALGO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">PRO</span> TERMINAL
+              </h1>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Deep Historical & Replay Charting</p>
             </div>
           </div>
 
@@ -256,6 +278,8 @@ export default function ProChartPage() {
             onStep={handleStep}
             onReset={handleReset}
             onScrub={handleScrub}
+            onTrim={handleTrim}
+            onQuickTrim={handleQuickTrim}
             onSpeedChange={setReplaySpeed}
             onExit={() => {
               setIsPlaying(false);
