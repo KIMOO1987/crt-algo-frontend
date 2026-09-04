@@ -444,7 +444,24 @@ export default function ActiveSignalsPage() {
 
                   <div className="flex flex-col mt-2">
                     <button
-                      onClick={() => setSelectedSignal(signal)}
+                      onClick={() => {
+                        const clean = normalizeSymbol(signal.symbol);
+                        const current = livePrices[clean] ?? Number(signal.current_price || signal.entry_price);
+                        const entry = Number(signal.entry_price);
+                        const isBuy = signal.side?.toUpperCase() === 'BUY' || signal.side?.toUpperCase() === 'BULLISH';
+                        const pnlPercent = entry ? ((isBuy ? (current - entry) : (entry - current)) / entry) * 100 : 0;
+                        const liveRR = calculateLiveRR(signal, livePrices);
+                        const displayStatus = getDisplayStatus(signal.status, current, signal);
+
+                        setSelectedSignal({
+                          ...signal,
+                          status: displayStatus,
+                          rawStatus: signal.status,
+                          livePrice: current,
+                          livePnlPercent: pnlPercent,
+                          liveRR: liveRR,
+                        });
+                      }}
                       className="btn-modern w-full flex items-center justify-center gap-2 text-xs py-3 h-[42px] border border-orange-500/20"
                     >
                       <Layout size={14} className="text-white" />
@@ -470,7 +487,27 @@ export default function ActiveSignalsPage() {
         </div>
 
         <AnimatePresence>
-          {selectedSignal && <SignalModal signal={selectedSignal} onClose={() => setSelectedSignal(null)} />}
+          {selectedSignal && (
+            <SignalModal
+              signal={{
+                ...selectedSignal,
+                livePrice: livePrices[normalizeSymbol(selectedSignal.symbol)] ?? selectedSignal.livePrice,
+                status: getDisplayStatus(
+                  selectedSignal.rawStatus || selectedSignal.status,
+                  livePrices[normalizeSymbol(selectedSignal.symbol)] ?? selectedSignal.livePrice,
+                  selectedSignal
+                ),
+                liveRR: calculateLiveRR(selectedSignal, livePrices),
+                livePnlPercent: (() => {
+                  const cur = livePrices[normalizeSymbol(selectedSignal.symbol)] ?? selectedSignal.livePrice ?? Number(selectedSignal.entry_price);
+                  const ent = Number(selectedSignal.entry_price);
+                  const isB = selectedSignal.side?.toUpperCase() === 'BUY' || selectedSignal.side?.toUpperCase() === 'BULLISH';
+                  return ent ? ((isB ? (cur - ent) : (ent - cur)) / ent) * 100 : 0;
+                })(),
+              }}
+              onClose={() => setSelectedSignal(null)}
+            />
+          )}
         </AnimatePresence>
       </div>
     </AccessGuard>
