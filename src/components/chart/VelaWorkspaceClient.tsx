@@ -127,7 +127,7 @@ export default function VelaWorkspaceClient({
         layout: layout ?? false,
         symbol: targetSymbol,
         timeframe: targetTimeframe,
-        bars: 1500, // Deep initial history
+        bars: 5000, // Deep initial history
         live: !replayMode,
         theme: activeTheme as any,
         drawingToolbar: showToolbar,
@@ -286,13 +286,21 @@ export default function VelaWorkspaceClient({
   }, [symbol, timeframe, signal?.tf, signal?.tf_alignment, layout, theme, replayMode]);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className} [&_.vela-attribution]:!hidden`}>
       {loading && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[var(--bg-surface)]/60 backdrop-blur-sm">
           <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-2" />
           <span className="text-xs text-zinc-400 font-mono font-medium tracking-wide">Initializing Vela Engine...</span>
         </div>
       )}
+
+      {/* Official CRT-ALGO PRO Logo on Chart (matching sidebar top) */}
+      <div className="absolute bottom-2.5 left-3.5 z-20 flex items-center gap-1.5 pointer-events-none select-none drop-shadow-md">
+        <span className="text-sm md:text-base font-black tracking-tighter uppercase text-zinc-900 dark:text-white">
+          CRT-ALGO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">PRO</span>
+        </span>
+      </div>
+
       <div ref={containerRef} className="w-full h-full min-h-[450px]" />
     </div>
   );
