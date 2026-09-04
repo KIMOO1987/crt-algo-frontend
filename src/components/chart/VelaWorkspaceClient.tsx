@@ -22,6 +22,7 @@ export interface VelaChartProps {
     sl?: number | string;
     status?: string;
     side?: string;
+    created_at?: string;
   };
   showToolbar?: boolean;
   className?: string;
@@ -31,27 +32,51 @@ export interface VelaChartProps {
 /**
  * Maps incoming symbol to Vela provider:symbol format
  */
-function resolveVelaSymbol(sym: string): string {
+export function resolveVelaSymbol(sym: string): string {
   if (!sym) return 'binance:BTCUSDT';
-  const clean = sym.trim().toUpperCase();
+  let clean = sym.trim().toUpperCase();
 
-  // If already prefixed, keep it
-  if (clean.includes(':')) return clean.toLowerCase();
+  // 1. If already prefixed (e.g. 'binance:btcusdt', 'okx:...'), preserve it
+  if (clean.includes(':')) {
+    const [p, t] = clean.split(':');
+    return `${p.toLowerCase()}:${t}`;
+  }
 
-  // Non-crypto (Forex, Metals, Indices)
+  // 2. Non-crypto (Forex, Metals, Indices)
   const nonCrypto = ['XAUUSD', 'XAGUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'GBPJPY', 'EURJPY', 'USDCAD', 'USDCHF', 'US100', 'US500', 'US30'];
   if (nonCrypto.some((item) => clean.startsWith(item))) {
     return `multiasset:${clean}`;
   }
 
-  // OKX Swap/Perp notation
+  // 3. OKX Swap/Perp notation (e.g. BTC-USDT-SWAP, BTC-USDT)
   if (clean.includes('-SWAP') || clean.includes('-USDT')) {
     return `okx:${clean}`;
   }
 
-  // Default to Binance for crypto pairs
-  const binanceTicker = clean.endsWith('USDT') ? clean : `${clean}USDT`;
-  return `binance:${binanceTicker}`;
+  // 4. Handle crypto perpetual futures ending in .P (e.g. LTCUSDT.P, BTCUSDT.P, LTC.P)
+  if (clean.endsWith('.P')) {
+    const base = clean.slice(0, -2);
+    if (base.endsWith('USDT')) {
+      return `binance:${base}.P`;
+    }
+    if (base.endsWith('USD')) {
+      return `binance:${base.slice(0, -3)}USDT.P`;
+    }
+    return `binance:${base}USDT.P`;
+  }
+
+  // 5. Crypto ending in USDT
+  if (clean.endsWith('USDT')) {
+    return `binance:${clean}`;
+  }
+
+  // 6. Crypto ending in USD (e.g. BTCUSD -> BTCUSDT)
+  if (clean.endsWith('USD')) {
+    return `binance:${clean.slice(0, -3)}USDT`;
+  }
+
+  // 7. Generic crypto fallback (e.g. BTC -> BTCUSDT)
+  return `binance:${clean}USDT`;
 }
 
 export default function VelaWorkspaceClient({
@@ -109,51 +134,91 @@ export default function VelaWorkspaceClient({
           const isTp1Hit = signal.status?.includes('TP1') || signal.status === 'WIN';
           if (isTp1Hit && entry) sl = entry;
 
+          // Get visible range to anchor the labels visibly on screen
+          const vr = ws.chart.getVisibleRange();
+          const labelTime = vr && vr.to > vr.from ? vr.from + (vr.to - vr.from) * 0.12 : Date.now();
+
           try {
+            // 1. ADD FULL-WIDTH HORIZONTAL PRICE LINES WITH CLEAR LABELS
             if (entry && !isNaN(entry)) {
               ws.chart.drawings?.add('hline', {
-                anchors: [{ time: 0, price: entry }],
+                anchors: [{ time: labelTime, price: entry }],
                 style: { lineColor: '#3b82f6', lineWidth: 2, lineStyle: 'dotted' as any },
-                text: { value: 'ENTRY', size: 'small', hAlign: 'left', vAlign: 'top' },
+                text: { value: `ENTRY: ${entry}`, color: '#3b82f6', size: 'small', bold: true, hAlign: 'left', vAlign: 'top' },
               });
             }
             if (tp1 && !isNaN(tp1)) {
               ws.chart.drawings?.add('hline', {
-                anchors: [{ time: 0, price: tp1 }],
+                anchors: [{ time: labelTime, price: tp1 }],
                 style: { lineColor: '#10b981', lineWidth: 2, lineStyle: 'dashed' as any },
-                text: { value: 'TP1', size: 'small', hAlign: 'left', vAlign: 'top' },
+                text: { value: `TP1: ${tp1}`, color: '#10b981', size: 'small', bold: true, hAlign: 'left', vAlign: 'top' },
               });
             }
             if (tp2 && !isNaN(tp2)) {
               ws.chart.drawings?.add('hline', {
-                anchors: [{ time: 0, price: tp2 }],
+                anchors: [{ time: labelTime, price: tp2 }],
                 style: { lineColor: '#eab308', lineWidth: 2, lineStyle: 'dashed' as any },
-                text: { value: 'TP2', size: 'small', hAlign: 'left', vAlign: 'top' },
+                text: { value: `TP2: ${tp2}`, color: '#eab308', size: 'small', bold: true, hAlign: 'left', vAlign: 'top' },
               });
             }
             if (tp3 && !isNaN(tp3)) {
               ws.chart.drawings?.add('hline', {
-                anchors: [{ time: 0, price: tp3 }],
+                anchors: [{ time: labelTime, price: tp3 }],
                 style: { lineColor: '#06b6d4', lineWidth: 2, lineStyle: 'dashed' as any },
-                text: { value: 'TP3', size: 'small', hAlign: 'left', vAlign: 'top' },
+                text: { value: `TP3: ${tp3}`, color: '#06b6d4', size: 'small', bold: true, hAlign: 'left', vAlign: 'top' },
               });
             }
             if (tp4 && !isNaN(tp4)) {
               ws.chart.drawings?.add('hline', {
-                anchors: [{ time: 0, price: tp4 }],
+                anchors: [{ time: labelTime, price: tp4 }],
                 style: { lineColor: '#a855f7', lineWidth: 2, lineStyle: 'dashed' as any },
-                text: { value: 'TP4', size: 'small', hAlign: 'left', vAlign: 'top' },
+                text: { value: `TP4: ${tp4}`, color: '#a855f7', size: 'small', bold: true, hAlign: 'left', vAlign: 'top' },
               });
             }
             if (sl && !isNaN(sl)) {
               ws.chart.drawings?.add('hline', {
-                anchors: [{ time: 0, price: sl }],
+                anchors: [{ time: labelTime, price: sl }],
                 style: { lineColor: '#ef4444', lineWidth: 2, lineStyle: 'solid' as any },
-                text: { value: isTp1Hit ? 'SL (BE)' : 'SL', size: 'small', hAlign: 'left', vAlign: 'top' },
+                text: { value: isTp1Hit ? `SL (BE): ${sl}` : `SL: ${sl}`, color: '#ef4444', size: 'small', bold: true, hAlign: 'left', vAlign: 'top' },
+              });
+            }
+
+            // 2. ADD BUY/SELL POSITION TOOL (Long/Short Risk-Reward Box)
+            const mainTarget = tp1 || tp2;
+            if (entry && sl && mainTarget && !isNaN(entry) && !isNaN(sl) && !isNaN(mainTarget)) {
+              const signalTime = signal.created_at ? new Date(signal.created_at).getTime() : NaN;
+              const hasValidSignalTime = !isNaN(signalTime) && vr && signalTime >= vr.from && signalTime <= vr.to;
+
+              const posStart = hasValidSignalTime
+                ? signalTime
+                : (vr && vr.to > vr.from ? vr.to - (vr.to - vr.from) * 0.35 : Date.now() - 3600000);
+              const posSpan = vr && vr.to > vr.from ? (vr.to - vr.from) * 0.20 : 3600000 * 2;
+              const posEnd = posStart + posSpan;
+
+              ws.chart.drawings?.add('position', {
+                anchors: [
+                  { time: posStart, price: entry },
+                  { time: posEnd, price: sl },
+                  { time: posEnd, price: mainTarget },
+                ],
+                props: {
+                  showText: true,
+                  showHeader: true,
+                  showPrices: true,
+                  showLossSize: true,
+                  showTargetLabel: true,
+                  showStopLabel: true,
+                  profitColor: '#10b981',
+                  lossColor: '#ef4444',
+                },
+                style: {
+                  lineColor: '#3b82f6',
+                  lineWidth: 1,
+                },
               });
             }
           } catch (drawingErr) {
-            console.warn('[VelaChart] Drawing signal lines failed:', drawingErr);
+            console.warn('[VelaChart] Drawing signal lines/position tool failed:', drawingErr);
           }
         }
       });
