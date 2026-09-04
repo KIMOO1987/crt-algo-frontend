@@ -37,7 +37,9 @@ export interface VelaChartProps {
   };
   showToolbar?: boolean;
   className?: string;
+  persist?: boolean | string;
   onLoaded?: () => void;
+  onWorkspaceReady?: (ws: VelaWorkspace) => void;
 }
 
 /**
@@ -102,7 +104,9 @@ export default function VelaWorkspaceClient({
   signal,
   showToolbar = true,
   className = 'w-full h-full min-h-[450px]',
+  persist,
   onLoaded,
+  onWorkspaceReady,
 }: VelaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<VelaWorkspace | null>(null);
@@ -114,6 +118,10 @@ export default function VelaWorkspaceClient({
 
     const activeTheme = document.documentElement.classList.contains('dark') || theme === 'dark' ? 'dark' : 'light';
     const targetSymbol = resolveVelaSymbol(symbol);
+    const cleanSymbol = (symbol.includes(':') ? symbol.split(':').pop()! : symbol).toLowerCase();
+    const persistKey = persist !== undefined
+      ? persist
+      : (replayMode || signal ? false : `crt-chart-${cleanSymbol}`);
 
     try {
       // Resolve execution timeframe (e.g. M30/H6 -> 30) if signal is present
@@ -131,7 +139,7 @@ export default function VelaWorkspaceClient({
         live: !replayMode,
         theme: activeTheme as any,
         drawingToolbar: showToolbar,
-        persist: false, // Don't cache state in temporary modals/views
+        persist: persistKey as any,
         providers: {
           binance: () => new BinanceProvider(),
           okx: () => new OkxProvider() as any,
@@ -146,6 +154,7 @@ export default function VelaWorkspaceClient({
       void ws.chart.ready().then(() => {
         setLoading(false);
         if (onLoaded) onLoaded();
+        if (onWorkspaceReady) onWorkspaceReady(ws);
 
         if (signal) {
           const entry = Number(signal.entry_price);
@@ -266,24 +275,72 @@ export default function VelaWorkspaceClient({
           } catch (drawingErr) {
             console.warn('[VelaChart] Drawing signal lines/position tool failed:', drawingErr);
           }
+        } else if (!replayMode) {
+          // Normal/Pro chart mode: restore saved drawings for this asset if present
+          try {
+            const savedDocRaw = localStorage.getItem(`crt_drawings_${cleanSymbol}`);
+            if (savedDocRaw) {
+              const savedDoc = JSON.parse(savedDocRaw);
+              if (savedDoc && (Array.isArray(savedDoc.drawings) ? savedDoc.drawings.length > 0 : savedDoc.items?.length > 0)) {
+                ws.chart.drawings?.fromJSON(savedDoc);
+              }
+            }
+          } catch (err) {
+            console.warn('[VelaChart] Error restoring saved drawings:', err);
+          }
         }
       });
+
+      // Auto-save drawings to localStorage as user creates, edits, or deletes drawings
+      const saveDrawings = () => {
+        if (!ws.chart?.drawings || replayMode || signal) return;
+        try {
+          const doc = ws.chart.drawings.toJSON();
+          if (doc) {
+            localStorage.setItem(`crt_drawings_${cleanSymbol}`, JSON.stringify(doc));
+          }
+        } catch (e) {
+          console.warn('[VelaChart] Error auto-saving drawings to localStorage:', e);
+        }
+      };
+
+      const unsubs: (() => void)[] = [];
+      const offState = ws.on('state:changed', saveDrawings);
+      if (typeof offState === 'function') unsubs.push(offState);
+      const offCreated = ws.chart.on('drawing:created', saveDrawings);
+      if (typeof offCreated === 'function') unsubs.push(offCreated);
+      const offEdited = ws.chart.on('drawing:edited', saveDrawings);
+      if (typeof offEdited === 'function') unsubs.push(offEdited);
+      const offRemoved = ws.chart.on('drawing:removed', saveDrawings);
+      if (typeof offRemoved === 'function') unsubs.push(offRemoved);
+
+      const handleBeforeUnload = () => {
+        saveDrawings();
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        saveDrawings();
+        unsubs.forEach((fn) => {
+          try {
+            fn();
+          } catch (_) {}
+        });
+        if (workspaceRef.current) {
+          try {
+            workspaceRef.current.destroy();
+          } catch (e) {
+            // Ignore destroy errors on unmount
+          }
+          workspaceRef.current = null;
+        }
+      };
     } catch (err) {
       console.error('[VelaChart] Error initializing VelaWorkspace:', err);
       setLoading(false);
     }
-
-    return () => {
-      if (workspaceRef.current) {
-        try {
-          workspaceRef.current.destroy();
-        } catch (e) {
-          // Ignore destroy errors on unmount
-        }
-        workspaceRef.current = null;
-      }
-    };
-  }, [symbol, timeframe, signal?.tf, signal?.tf_alignment, layout, theme, replayMode]);
+  }, [symbol, timeframe, signal?.tf, signal?.tf_alignment, layout, theme, replayMode, persist]);
 
   return (
     <div className={`relative ${className} [&_.vela-attribution]:!hidden`}>
