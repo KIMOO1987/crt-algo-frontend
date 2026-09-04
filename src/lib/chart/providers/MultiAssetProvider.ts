@@ -126,7 +126,7 @@ export class MultiAssetProvider {
       const rawCandles = await fetchMarketCandles(clean, timeframe, {
         from: range.from,
         to: range.to,
-        limit: range.limit || 1500,
+        limit: range.limit || 5000,
       });
 
       if (!rawCandles || !Array.isArray(rawCandles)) return [];
