@@ -73,7 +73,12 @@ export class CrtIndicatorEngine implements ScriptingEngine {
         });
 
         if (!response.ok) {
-          throw new Error(`CRT calculation failed with status ${response.status}`);
+          let errDetail = '';
+          try {
+            const errJson = await response.json();
+            if (errJson?.error) errDetail = `: ${errJson.error}`;
+          } catch (_) {}
+          throw new Error(`CRT calculation failed with status ${response.status}${errDetail}`);
         }
 
         const data = await response.json();
