@@ -648,9 +648,13 @@ export default function VelaWorkspaceClient({
         />
       )}
 
-      {/* Official CRT-ALGO PRO Logo on Chart (matching sidebar top) */}
-      <div className="absolute bottom-2.5 left-3.5 z-20 flex items-center gap-1.5 pointer-events-none select-none drop-shadow-md">
-        <span className="text-sm md:text-base font-black tracking-tighter uppercase text-zinc-900 dark:text-white">
+      {/* Official CRT-ALGO PRO Logo on Chart (matching sidebar top, positioned clear of toolbars) */}
+      <div
+        className={`absolute z-10 flex items-center gap-1.5 pointer-events-none select-none drop-shadow-lg ${
+          showToolbar !== false ? 'bottom-[68px] left-[56px]' : 'bottom-[68px] left-5'
+        }`}
+      >
+        <span className="text-lg md:text-xl font-black tracking-tighter uppercase text-zinc-900/90 dark:text-white/90">
           CRT-ALGO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">PRO</span>
         </span>
       </div>
