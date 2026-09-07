@@ -839,4 +839,31 @@ for (const filePath of UI_FILES) {
   }
 }
 
+// ==========================================
+// 3. PINETS TYPE-CHECK UNDEFINED / NA PATCH
+// ==========================================
+const PINETS_DIR = path.join(__dirname, '..', 'node_modules', 'pinets', 'dist');
+if (fs.existsSync(PINETS_DIR)) {
+  const pinetsFiles = [
+    'pinets.min.cjs',
+    'pinets.min.es.js',
+    'pinets.min.browser.es.js',
+    'pinets.min.browser.js',
+  ];
+  for (const f of pinetsFiles) {
+    const filePath = path.join(PINETS_DIR, f);
+    if (!fs.existsSync(filePath)) continue;
+    let content = fs.readFileSync(filePath, 'utf8');
+    const target = 'if(typeof t=="number"&&isNaN(t)||';
+    const replacement = 'if(t===void 0||t===null||typeof t=="number"&&isNaN(t)||';
+    if (content.includes(target)) {
+      content = content.replace(target, replacement);
+      fs.writeFileSync(filePath, content, 'utf8');
+      totalPatched++;
+      console.log(`[patch-vela] Patched pinets: ${f}`);
+    }
+  }
+}
+
 console.log(`[patch-vela] Completed successfully. Total files updated/verified: ${totalPatched}.`);
+
