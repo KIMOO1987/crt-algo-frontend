@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/hooks/useAuth';
 import AccessGuard from '@/components/AccessGuard';
-import SignalChart from '@/components/SignalChart';
+import SignalModal from '@/components/SignalModal';
 import CustomSelect from '@/components/CustomSelect';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSymbolCategory, normalizeSymbol } from '@/lib/symbol-mapper';
@@ -36,21 +36,6 @@ const ITEMS_PER_PAGE = 20;
 
 // --- 1. UI HELPERS ---
 
-
-const DetailBox = ({ label, value, color = "text-zinc-900 dark:text-white", highlight = false }: any) => (
-  <div className={`p-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] ${highlight ? 'border-blue-500/20 bg-blue-500/[0.02]' : ''}`}>
-    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">{label}</p>
-    <p className={`text-[11px] font-bold truncate tracking-tight ${color}`}>{value}</p>
-  </div>
-);
-
-const PriceRow = ({ label, value, color }: any) => (
-  <div className="flex justify-between items-center py-3 border-b border-[var(--glass-border)] last:border-0">
-    <span className="text-[9px] font-black text-zinc-600 dark:text-zinc-500 uppercase tracking-widest">{label}</span>
-    <span className={`font-mono text-sm font-black ${color}`}>{Number(value || 0).toFixed(5)}</span>
-  </div>
-);
-
 const ResultBadge = ({ status }: { status: string }) => {
   const s = status?.toUpperCase();
   if (s === 'TP2' || s === 'WIN') return (
@@ -72,54 +57,6 @@ const ResultBadge = ({ status }: { status: string }) => {
     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-500/20 bg-[var(--glass-bg)] text-zinc-700 dark:text-zinc-400 text-[9px] md:text-[10px] font-black uppercase tracking-widest shadow-lg">
       <Clock size={12} /> {status || 'CLOSED'}
     </span>
-  );
-};
-
-// --- 2. MODAL COMPONENT ---
-const SignalModal = ({ signal, onClose }: { signal: any, onClose: () => void }) => {
-  if (!signal) return null;
-  const isBuy = signal.side?.toUpperCase() === 'BUY' || signal.side?.toUpperCase() === 'BULLISH';
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 /80 backdrop-blur-2xl"
-      onClick={onClose}
-    >
-      <motion.div 
-        initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="w-full max-w-6xl glass-panel overflow-hidden flex flex-col lg:flex-row shadow-[0_0_100px_rgba(0,0,0,0.8)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="lg:w-[35%] p-8 overflow-y-auto max-h-[50vh] lg:max-h-none border-b lg:border-b-0 lg:border-r border-[var(--glass-border)] relative">
-          <div className="absolute top-0 left-0 w-full h-full bg-blue-500/5 blur-[100px] pointer-events-none" />
-          <div className="flex justify-between items-start mb-8">
-            <div className="relative z-10">
-              <h2 className="text-3xl font-black italic tracking-tighter uppercase text-zinc-900 dark:text-white drop-shadow-md">{signal.symbol}</h2>
-              <p className="text-[10px] text-blue-500 font-bold tracking-[0.2em] mt-1">PERFORMANCE AUDIT</p>
-            </div>
-            <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all"><X size={20} className="text-zinc-600 dark:text-zinc-500" /></button>
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            <DetailBox label="Execution Date" value={new Date(signal.created_at).toLocaleDateString()} />
-            <DetailBox label="Confluences" value={signal.confluences || 'Institutional Bias Confirmed'} />
-          </div>
-          <div className="space-y-3">
-            <PriceRow label="ENTRY" value={signal.entry_price} color="text-blue-400" />
-            <PriceRow label="STOP LOSS" value={signal.sl} color="text-red-400" />
-            <PriceRow label="TP 1" value={signal.tp} color="text-green-400" />
-            <PriceRow label="TP 2" value={signal.tp_secondary} color="text-green-400" />
-          </div>
-        </div>
-        <div className="lg:w-[65%] bg-[var(--input-bg)] relative flex flex-col min-h-[450px]">
-          <div className="absolute top-6 left-6 z-10 flex gap-2">
-             <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest shadow-lg ${isBuy ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/10 text-red-400 border border-red-500/30'}`}>{isBuy ? 'LONG' : 'SHORT'}</span>
-             <span className="px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 flex items-center gap-2 shadow-lg"><Clock size={12} /> ARCHIVED</span>
-          </div>
-          <SignalChart symbol={signal.symbol} />
-        </div>
-      </motion.div>
-    </motion.div>
   );
 };
 
@@ -532,7 +469,8 @@ export default function PerformancePage() {
                         <motion.tr 
                           layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
                           key={item.symbol}
-                          className="group hover:bg-[var(--glass-bg)] transition-colors"
+                          onClick={() => setSelectedSignal({ symbol: item.symbol, algo: 'CRT' })}
+                          className="group hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
                         >
                           <td className="px-6 md:px-8 py-6">
                             <div className="flex items-center gap-3">
