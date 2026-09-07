@@ -188,6 +188,7 @@ export default function VelaWorkspaceClient({
         timeframe: targetTimeframe,
         bars: 5000, // Deep initial history
         live: !replayMode,
+        volume: false, // User requested: remove volume indicator as default
         theme: activeTheme as any,
         drawingToolbar: showToolbar,
         persist: persistKey as any,
@@ -219,8 +220,8 @@ export default function VelaWorkspaceClient({
         // This ensures the current candle and active price are NEVER jammed against the right price scale!
         const toTime = referenceTime + 16 * barMs;
 
-        // Show ~85 bars of recent price action for ideal candle thickness and clear wicks
-        let fromTime = referenceTime - 85 * barMs;
+        // Show ~125 bars of recent price action for ideal candle thickness and clear wicks
+        let fromTime = referenceTime - 125 * barMs;
 
         if (signal) {
           const signalTime = signal.created_at ? new Date(signal.created_at).getTime() : NaN;
