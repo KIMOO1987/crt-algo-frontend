@@ -12,7 +12,6 @@ import { mapTfToVela } from '@/components/SignalChart';
 import { replayProviderInstance } from '@/lib/chart/providers/ReplayProvider';
 import FibSettingsModal, { FibSettingsData } from './FibSettingsModal';
 import { SlidersHorizontal } from 'lucide-react';
-import { CrtIndicatorEngine } from '@/lib/chart/CrtIndicatorEngine';
 
 export interface VelaChartProps {
   symbol?: string;
@@ -132,8 +131,6 @@ export default function VelaWorkspaceClient({
     style?: Record<string, any>;
   } | null>(null);
   const [isFibModalOpen, setIsFibModalOpen] = useState(false);
-  const [crtVisible, setCrtVisible] = useState(true);
-  const crtHandleRef = useRef<any>(null);
   const selectedDrawingRef = useRef<string | null>(null);
   const { theme } = useTheme();
 
@@ -168,18 +165,6 @@ export default function VelaWorkspaceClient({
         theme: activeTheme as any,
         drawingToolbar: showToolbar,
         persist: persistKey as any,
-        engines: {
-          crt: () => new CrtIndicatorEngine(),
-        },
-        indicators: [
-          {
-            name: 'CRT-Algo PRO',
-            language: 'crt',
-            script: '// CRT-Algo PRO Server-Side Calculation Engine',
-            enabled: true,
-            category: 'CRT',
-          },
-        ],
         providers: {
           binance: () => new BinanceProvider(),
           okx: () => new OkxProvider() as any,
@@ -195,23 +180,6 @@ export default function VelaWorkspaceClient({
         setLoading(false);
         if (onLoaded) onLoaded();
         if (onWorkspaceReady) onWorkspaceReady(ws);
-
-        // Ensure CRT-Algo PRO default indicator is mounted on chart
-        try {
-          const indList = ws.chart.indicators ? ws.chart.indicators() : [];
-          let crtHandle = indList.find(
-            (i: any) => i.title?.includes('CRT') || i.id?.includes('crt')
-          );
-          if (!crtHandle && !replayMode) {
-            crtHandle = ws.chart.addIndicator('// CRT-Algo PRO', { language: 'crt' });
-          }
-          crtHandleRef.current = crtHandle;
-          if (crtHandle && typeof crtHandle.visible === 'boolean') {
-            setCrtVisible(crtHandle.visible);
-          }
-        } catch (err) {
-          console.warn('[VelaChart] Error registering CRT indicator on chart:', err);
-        }
 
         if (signal) {
           const entry = Number(signal.entry_price);
@@ -532,29 +500,6 @@ export default function VelaWorkspaceClient({
     }
   };
 
-  const toggleCrtIndicator = () => {
-    if (!workspaceRef.current?.chart) return;
-    const ws = workspaceRef.current;
-    try {
-      const indList = ws.chart.indicators ? ws.chart.indicators() : [];
-      let currentHandle =
-        crtHandleRef.current ||
-        indList.find((i: any) => i.title?.includes('CRT') || i.id?.includes('crt'));
-
-      if (currentHandle) {
-        const nextState = !crtVisible;
-        currentHandle.setVisible(nextState);
-        setCrtVisible(nextState);
-      } else {
-        const newHandle = ws.chart.addIndicator('// CRT-Algo PRO', { language: 'crt' });
-        crtHandleRef.current = newHandle;
-        setCrtVisible(true);
-      }
-    } catch (e) {
-      console.warn('[VelaChart] Failed to toggle CRT indicator:', e);
-    }
-  };
-
   return (
     <div className={`relative ${className} [&_.vela-attribution]:!hidden`}>
       {loading && (
@@ -703,25 +648,11 @@ export default function VelaWorkspaceClient({
         />
       )}
 
-      {/* Official CRT-ALGO PRO Logo & Indicator Toggle Button on Chart */}
-      <div className="absolute bottom-2.5 left-3.5 z-20 flex items-center gap-3 select-none drop-shadow-md">
-        <span className="text-sm md:text-base font-black tracking-tighter uppercase text-zinc-900 dark:text-white pointer-events-none">
+      {/* Official CRT-ALGO PRO Logo on Chart (matching sidebar top) */}
+      <div className="absolute bottom-2.5 left-3.5 z-20 flex items-center gap-1.5 pointer-events-none select-none drop-shadow-md">
+        <span className="text-sm md:text-base font-black tracking-tighter uppercase text-zinc-900 dark:text-white">
           CRT-ALGO<span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">PRO</span>
         </span>
-
-        <button
-          type="button"
-          onClick={toggleCrtIndicator}
-          className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold backdrop-blur-md border shadow-md transition-all cursor-pointer ${
-            crtVisible
-              ? 'bg-orange-500/20 text-orange-400 border-orange-500/40 hover:bg-orange-500/30'
-              : 'bg-zinc-800/80 text-zinc-400 border-zinc-700/50 hover:bg-zinc-700/80 hover:text-zinc-200'
-          }`}
-          title="Toggle CRT-Algo PRO Indicator overlay (HTF candles, sweeps, imbalances, swing levels)"
-        >
-          <span className={`w-1.5 h-1.5 rounded-full ${crtVisible ? 'bg-orange-500 animate-pulse' : 'bg-zinc-500'}`} />
-          <span>CRT ALGO: {crtVisible ? 'ON' : 'OFF'}</span>
-        </button>
       </div>
 
       <div ref={containerRef} className="w-full h-full min-h-[450px]" />
