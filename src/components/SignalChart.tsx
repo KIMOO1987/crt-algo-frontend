@@ -52,17 +52,19 @@ export default function SignalChart({
   symbol,
   signal,
   onLoaded,
+  className,
 }: {
   symbol: string;
   signal?: any;
   onLoaded?: () => void;
+  className?: string;
 }) {
   // Check tf_alignment (CRT signals), tf (SFP signals), timeframe, interval
   const rawTf = signal?.tf_alignment || signal?.tf || signal?.timeframe || signal?.time_frame || signal?.interval;
   const tf = mapTfToVela(rawTf);
 
   return (
-    <div className="w-full h-full min-h-[450px] relative bg-[var(--bg-surface)] overflow-hidden rounded-xl">
+    <div className={`w-full h-full min-h-0 relative bg-[var(--bg-surface)] overflow-hidden ${className || 'min-h-[450px] rounded-xl'}`}>
       <VelaChart
         symbol={symbol}
         timeframe={tf}
