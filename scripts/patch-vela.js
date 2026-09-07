@@ -832,6 +832,81 @@ for (const filePath of UI_FILES) {
     }
   }
 
+  // E. Candle thickness & Wick thickness to 1 by default
+  if (content.includes('var CANDLE_WICK_W = 1.5;') || content.includes('CANDLE_WICK_W = 1.5;')) {
+    content = content.replaceAll('var CANDLE_WICK_W = 1.5;', 'var CANDLE_WICK_W = 1.0;');
+    content = content.replaceAll('CANDLE_WICK_W = 1.5;', 'CANDLE_WICK_W = 1.0;');
+    modified = true;
+  }
+  if (content.includes('return Math.max(1, Math.min(CANDLE_WICK_W, halfBody));')) {
+    content = content.replaceAll('return Math.max(1, Math.min(CANDLE_WICK_W, halfBody));', 'return 1.0;');
+    modified = true;
+  }
+  if (content.includes('const wDev = Math.max(1, Math.round(wickWidth(spacing) * coords.dpr));')) {
+    content = content.replaceAll('const wDev = Math.max(1, Math.round(wickWidth(spacing) * coords.dpr));', 'const wDev = 1;');
+    modified = true;
+  }
+  // Reduce candle body thickness from 0.7 to 0.52 (slimmer, crisper candles)
+  if (content.includes('spacing * 0.7')) {
+    content = content.replaceAll('spacing * 0.7', 'spacing * 0.52');
+    modified = true;
+  }
+  if (content.includes('barSpacing * 0.7')) {
+    content = content.replaceAll('barSpacing * 0.7', 'barSpacing * 0.52');
+    modified = true;
+  }
+
+  // F. Candle Border Thickness to 1 (1 physical device pixel, crisp & razor-sharp)
+  const CANDLE_BORDER_WEBGL_REGEX = /const bw = Math\.max\(0, g\.bodyW - 1\);\s*const bh = Math\.max\(0, bodyH - 1\);\s*b\.rectStroke\(g\.bodyX \+ 0\.5, bodyTop \+ 0\.5, bw, bh, 1, bord\);/;
+  if (CANDLE_BORDER_WEBGL_REGEX.test(content)) {
+    content = content.replace(CANDLE_BORDER_WEBGL_REGEX, `const bW = 1 / coords.dpr;
+          b.rect(g.bodyX, bodyTop, g.bodyW, bW, bord);
+          b.rect(g.bodyX, bodyTop + Math.max(0, bodyH - bW), g.bodyW, bW, bord);
+          b.rect(g.bodyX, bodyTop, bW, bodyH, bord);
+          b.rect(g.bodyX + Math.max(0, g.bodyW - bW), bodyTop, bW, bodyH, bord);`);
+    modified = true;
+  }
+
+  const CANDLE_BORDER_CANVAS_REGEX = /ctx\.strokeStyle = cs\.borderVisible \? \(up \? cs\.borderUpColor : cs\.borderDownColor\) \?\? color : color;\s*ctx\.lineWidth = 1;\s*const bw = Math\.max\(0, g\.bodyW - 1\);\s*const bh = Math\.max\(0, bodyH - 1\);\s*ctx\.strokeRect\(g\.bodyX \+ 0\.5, top \+ 0\.5, bw, bh\);/;
+  if (CANDLE_BORDER_CANVAS_REGEX.test(content)) {
+    content = content.replace(CANDLE_BORDER_CANVAS_REGEX, `const bord = cs.borderVisible ? (up ? cs.borderUpColor : cs.borderDownColor) ?? color : color;
+          const bW = 1 / coords.dpr;
+          ctx.fillStyle = bord;
+          ctx.fillRect(g.bodyX, top, g.bodyW, bW);
+          ctx.fillRect(g.bodyX, top + Math.max(0, bodyH - bW), g.bodyW, bW);
+          ctx.fillRect(g.bodyX, top, bW, bodyH);
+          ctx.fillRect(g.bodyX + Math.max(0, g.bodyW - bW), top, bW, bodyH);`);
+    modified = true;
+  }
+
+  const PLOT_CANDLE_BORDER_WEBGL = /if \(bc\?\.borderColor\) \{\s*const bord = parseColor\(bc\.borderColor\);\s*b\.rect\(x - half, top, half \* 2, 1, bord\);\s*b\.rect\(x - half, top \+ h - 1, half \* 2, 1, bord\);\s*b\.rect\(x - half, top, 1, h, bord\);\s*b\.rect\(x \+ half - 1, top, 1, h, bord\);\s*\}/;
+  if (PLOT_CANDLE_BORDER_WEBGL.test(content)) {
+    content = content.replace(PLOT_CANDLE_BORDER_WEBGL, `if (bc?.borderColor) {
+        const bord = parseColor(bc.borderColor);
+        const bW = 1 / coords.dpr;
+        b.rect(x - half, top, half * 2, bW, bord);
+        b.rect(x - half, top + Math.max(0, h - bW), half * 2, bW, bord);
+        b.rect(x - half, top, bW, h, bord);
+        b.rect(x + Math.max(0, half * 2 - bW) - half, top, bW, h, bord);
+      }`);
+    modified = true;
+  }
+
+  const PLOT_CANDLE_BORDER_CANVAS = /if \(bc\?\.borderColor\) \{\s*ctx\.strokeStyle = bc\.borderColor;\s*ctx\.strokeRect\(x - half, Math\.min\(oY, cY\), half \* 2, Math\.max\(1, Math\.abs\(cY - oY\)\)\);\s*\}/;
+  if (PLOT_CANDLE_BORDER_CANVAS.test(content)) {
+    content = content.replace(PLOT_CANDLE_BORDER_CANVAS, `if (bc?.borderColor) {
+        ctx.fillStyle = bc.borderColor;
+        const bW = 1 / coords.dpr;
+        const pTop = Math.min(oY, cY);
+        const pH = Math.max(1, Math.abs(cY - oY));
+        ctx.fillRect(x - half, pTop, half * 2, bW);
+        ctx.fillRect(x - half, pTop + Math.max(0, pH - bW), half * 2, bW);
+        ctx.fillRect(x - half, pTop, bW, pH);
+        ctx.fillRect(x + Math.max(0, half * 2 - bW) - half, pTop, bW, pH);
+      }`);
+    modified = true;
+  }
+
   if (modified) {
     fs.writeFileSync(filePath, content, 'utf8');
     totalPatched++;
