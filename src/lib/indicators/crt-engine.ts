@@ -156,6 +156,20 @@ function loadAndInlineScripts(): { combined: string; maxMtime: number } {
     "time(candleSet.settings.htf)"
   );
 
+  // Fix switch scope issue with candle.o_time inside $M_Monitor
+  cleanLibCode = cleanLibCode.replace(/str\.format_time\(candle\.o_time/g, 'str.format_time(time');
+
+  // Normalize non-standard resolutions not in pinets array
+  cleanLibCode = cleanLibCode
+    .replace(/"360"/g, '"240"')
+    .replace(/"720"/g, '"240"')
+    .replace(/"3M"/g, '"1M"');
+
+  crtCode = crtCode
+    .replace(/"360"/g, '"240"')
+    .replace(/"720"/g, '"240"')
+    .replace(/"3M"/g, '"1M"');
+
   // Unchain method calls
   crtCode = unchainMethods(crtCode);
 
@@ -231,6 +245,30 @@ async function getPreparedEngine(): Promise<{ engine: PineEngine; prepared: any 
 }
 
 /**
+ * Ensures timeframe is strictly within pinets supported set:
+ * ["1","3","5","15","30","45","60","120","180","240","D","W","M"]
+ */
+function toPinetsTimeframe(tf?: string): string {
+  if (!tf) return '5';
+  const t = tf.trim().toUpperCase();
+  if (t === 'D' || t === '1D') return 'D';
+  if (t === 'W' || t === '1W') return 'W';
+  if (t === 'M' || t === '1M') return 'M';
+  const num = parseInt(t.replace(/[^0-9]/g, ''), 10);
+  if (isNaN(num)) return '5';
+  if (num <= 1) return '1';
+  if (num <= 3) return '3';
+  if (num <= 5) return '5';
+  if (num <= 15) return '15';
+  if (num <= 30) return '30';
+  if (num <= 45) return '45';
+  if (num <= 60) return '60';
+  if (num <= 120) return '120';
+  if (num <= 180) return '180';
+  return '240';
+}
+
+/**
  * Executes CRT-Algo against the provided market bars and returns visual geometry.
  */
 export async function computeCrtIndicator(
@@ -242,9 +280,11 @@ export async function computeCrtIndicator(
     return { boxes: [], lines: [], labels: [], series: [], tables: [] };
   }
 
+  const safeTf = toPinetsTimeframe(timeframe);
+
   // Check in-memory result cache
   const lastBar = bars[bars.length - 1];
-  const cacheKey = `${symbol}:${timeframe}:${lastBar.time}:${bars.length}`;
+  const cacheKey = `${symbol}:${safeTf}:${lastBar.time}:${bars.length}`;
   const now = Date.now();
   const cachedEntry = resultMap.get(cacheKey);
 
@@ -263,7 +303,7 @@ export async function computeCrtIndicator(
       prepared,
       bars: calculationBars,
       getBars: () => calculationBars,
-      market: { symbol, timeframe },
+      market: { symbol, timeframe: safeTf },
       inputs: {},
       props: {},
     };
