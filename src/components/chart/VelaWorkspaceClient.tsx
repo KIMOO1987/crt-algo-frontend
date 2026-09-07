@@ -98,6 +98,32 @@ export function resolveVelaSymbol(sym: string): string {
   return `binance:${clean}USDT`;
 }
 
+/**
+ * Returns timeframe duration in milliseconds for intelligent viewport framing
+ */
+export function getTfDurationMs(tfStr?: string): number {
+  if (!tfStr) return 5 * 60 * 1000;
+  const s = String(tfStr).trim().toUpperCase();
+  if (s === 'D' || s === '1D' || s === 'DAILY') return 24 * 60 * 60 * 1000;
+  if (s === 'W' || s === '1W' || s === 'WEEKLY') return 7 * 24 * 60 * 60 * 1000;
+  if (s === 'M' || s === '1M' || s === 'MONTHLY') return 30 * 24 * 60 * 60 * 1000;
+
+  const first = s.split(/[\/\-]/)[0].trim();
+  const hMatch = first.match(/^H(\d+)$/) || first.match(/^(\d+)H$/);
+  if (hMatch) return parseInt(hMatch[1], 10) * 60 * 60 * 1000;
+
+  const mMatch = first.match(/^M?(\d+)[M]?$/i);
+  if (mMatch) {
+    const mins = parseInt(mMatch[1], 10);
+    if (!isNaN(mins) && mins > 0) return mins * 60 * 1000;
+  }
+
+  const num = parseInt(first, 10);
+  if (!isNaN(num) && num > 0) return num * 60 * 1000;
+
+  return 5 * 60 * 1000;
+}
+
 export default function VelaWorkspaceClient({
   symbol = 'BTCUSDT',
   timeframe = '5',
@@ -105,7 +131,7 @@ export default function VelaWorkspaceClient({
   replayMode = false,
   signal,
   showToolbar = true,
-  className = 'w-full h-full min-h-[450px]',
+  className = 'w-full h-full',
   persist,
   onLoaded,
   onWorkspaceReady,
@@ -181,6 +207,48 @@ export default function VelaWorkspaceClient({
         if (onLoaded) onLoaded();
         if (onWorkspaceReady) onWorkspaceReady(ws);
 
+        // Intelligently frame visible candles so they are NOT squished into 1,000+ bars from Aug 5
+        const barMs = getTfDurationMs(targetTimeframe);
+        const now = Date.now();
+        const initialVr = ws.chart.getVisibleRange();
+        const referenceTime = (initialVr && initialVr.to > 0 && initialVr.to <= now + 86400000)
+          ? Math.min(initialVr.to, now)
+          : now;
+
+        // Right margin: 16 bars of breathing room (like TradingView right margin)
+        // This ensures the current candle and active price are NEVER jammed against the right price scale!
+        const toTime = referenceTime + 16 * barMs;
+
+        // Show ~85 bars of recent price action for ideal candle thickness and clear wicks
+        let fromTime = referenceTime - 85 * barMs;
+
+        if (signal) {
+          const signalTime = signal.created_at ? new Date(signal.created_at).getTime() : NaN;
+          if (!isNaN(signalTime) && signalTime < referenceTime) {
+            // Show at least 25 bars of price action before entry
+            const contextFrom = signalTime - 25 * barMs;
+            if (referenceTime - contextFrom <= 220 * barMs) {
+              fromTime = Math.min(fromTime, contextFrom);
+            }
+          }
+        }
+
+        // Apply optimal candle framing immediately
+        if (!replayMode) {
+          try {
+            ws.chart.setVisibleRange({ from: fromTime, to: toTime });
+          } catch (e) {
+            console.warn('[VelaChart] Initial setVisibleRange failed:', e);
+          }
+
+          // Also schedule after 120ms to override any post-mount canvas reflow/ALL preset
+          setTimeout(() => {
+            try {
+              ws.chart.setVisibleRange({ from: fromTime, to: toTime });
+            } catch (_) {}
+          }, 120);
+        }
+
         if (signal) {
           const entry = Number(signal.entry_price);
           const tp1 = Number(signal.tp);
@@ -195,9 +263,8 @@ export default function VelaWorkspaceClient({
             statusUpper.includes('BE') ||
             statusUpper.includes('PROFIT');
 
-          // Get visible range to anchor the labels visibly on screen
-          const vr = ws.chart.getVisibleRange();
-          const labelTime = vr && vr.to > vr.from ? vr.from + (vr.to - vr.from) * 0.12 : Date.now();
+          // Place line labels right inside the visible view (8% into the visible span)
+          const labelTime = fromTime + (toTime - fromTime) * 0.08;
 
           try {
             // 1. ADD FULL-WIDTH HORIZONTAL PRICE LINES WITH CLEAR LABELS
@@ -262,18 +329,14 @@ export default function VelaWorkspaceClient({
             }
 
             // 2. ADD BUY/SELL POSITION TOOL (Long/Short Risk-Reward Box)
-            // Pick TP2 (e.g. 2.5RR target) if present, otherwise TP1
             const mainTarget = tp2 || tp1;
             const posSl = origSl;
             if (entry && posSl && mainTarget && !isNaN(entry) && !isNaN(posSl) && !isNaN(mainTarget)) {
               const signalTime = signal.created_at ? new Date(signal.created_at).getTime() : NaN;
-              const hasValidSignalTime = !isNaN(signalTime) && vr && signalTime >= vr.from && signalTime <= vr.to;
-
-              const posStart = hasValidSignalTime
+              const posStart = (!isNaN(signalTime) && signalTime < referenceTime)
                 ? signalTime
-                : (vr && vr.to > vr.from ? vr.to - (vr.to - vr.from) * 0.35 : Date.now() - 3600000);
-              const posSpan = vr && vr.to > vr.from ? (vr.to - vr.from) * 0.20 : 3600000 * 2;
-              const posEnd = posStart + posSpan;
+                : (referenceTime - 35 * barMs);
+              const posEnd = referenceTime + 8 * barMs;
 
               ws.chart.drawings?.add('position', {
                 anchors: [
@@ -659,7 +722,7 @@ export default function VelaWorkspaceClient({
         </span>
       </div>
 
-      <div ref={containerRef} className="w-full h-full min-h-[450px]" />
+      <div ref={containerRef} className="w-full h-full min-h-0" />
     </div>
   );
 }
