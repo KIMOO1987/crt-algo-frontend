@@ -1,8 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MtfStatus } from '@/server/indicators/sfp-engine';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+
+export interface MtfStatus {
+  timeframe: string;
+  label: string;
+  bias: number; // 1 = Bullish, -1 = Bearish, 0 = Neutral
+  status: 'Confirm' | 'Unconfirmed' | 'Waiting';
+  emoji: '🟢' | '🔴' | '🟡' | '⚪';
+}
 
 interface SfpDashboardTableProps {
   statuses: MtfStatus[];

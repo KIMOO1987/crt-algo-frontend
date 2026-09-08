@@ -2,7 +2,66 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, RotateCcw, Check, Sliders, Palette } from 'lucide-react';
-import { SfpSettings, DEFAULT_SFP_SETTINGS } from '@/server/indicators/sfp-engine';
+
+export interface SfpSettings {
+  // Module Selection
+  showSFP: boolean;
+  enableMTFEntry: boolean;
+
+  // Swing Failure Pattern Settings
+  len2: number;
+  bullSFP: boolean;
+  bearSFP: boolean;
+  dSwingLine: boolean;
+  dOpposLine: boolean;
+  dSFP_Line: boolean;
+  dSFP_Label: boolean;
+  colBl: string;
+  colBr: string;
+  colBl2: string;
+  colBr2: string;
+
+  // Fib Levels Customization
+  showSFPFib: boolean;
+  showSFPFibHistory: boolean;
+  colFib: string;
+  styleFib: 'solid' | 'dashed' | 'dotted';
+  widthFib: number;
+
+  // MTF Dashboard Settings
+  tablePosInput: 'top_right' | 'top_left' | 'bottom_right' | 'bottom_left';
+  tableSizeInput: 'tiny' | 'small' | 'normal' | 'large';
+  dashboardBg: string;
+  dashboardText: string;
+}
+
+export const DEFAULT_SFP_SETTINGS: SfpSettings = {
+  showSFP: true,
+  enableMTFEntry: true,
+
+  len2: 5,
+  bullSFP: true,
+  bearSFP: true,
+  dSwingLine: true,
+  dOpposLine: true,
+  dSFP_Line: true,
+  dSFP_Label: true,
+  colBl: '#089981',
+  colBr: '#f23645',
+  colBl2: 'rgba(8, 153, 129, 0.5)',
+  colBr2: 'rgba(242, 54, 69, 0.5)',
+
+  showSFPFib: true,
+  showSFPFibHistory: false,
+  colFib: '#0c3299',
+  styleFib: 'dotted',
+  widthFib: 1,
+
+  tablePosInput: 'top_right',
+  tableSizeInput: 'small',
+  dashboardBg: 'rgba(15, 15, 15, 0.85)',
+  dashboardText: '#ffffff',
+};
 
 interface SfpSettingsModalProps {
   isOpen: boolean;
