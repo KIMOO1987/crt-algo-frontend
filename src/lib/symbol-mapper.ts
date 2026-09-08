@@ -144,8 +144,9 @@ export function normalizeSymbol(symbol: string): string {
     clean = clean.split(':')[1];
   }
 
-  // Remove perp suffixes like .P, -P, .PERP, -PERP
-  clean = clean.replace(/[\.\-](P|PERP)$/i, '');
+  // Remove perp suffixes like .P, -P, .PERP, -PERP, _PERP, -SWAP, _SWAP
+  clean = clean.replace(/[\.\-_](P|PERP|SWAP)$/i, '');
+  clean = clean.replace(/(PERP|SWAP)$/i, '');
 
   // Strip common suffixes
   clean = clean.replace(/USDT$/, '');
@@ -190,6 +191,11 @@ export function getMappedSymbol(symbol: string, target: keyof SymbolMapEntry): s
 
   if (entry) {
     return entry[target] || normalized;
+  }
+
+  // Dynamic fallback for Binance crypto pairs (e.g. PNUT -> PNUTUSDT)
+  if (target === 'binance' && getSymbolCategory(symbol) === 'CRYPTO') {
+    return `${normalized}USDT`;
   }
 
   // Fallback heuristic if not in map
