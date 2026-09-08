@@ -5,7 +5,10 @@ import AccessGuard from '@/components/AccessGuard';
 import VelaChart from '@/components/chart/VelaChart';
 import ReplayToolbar from '@/components/chart/ReplayToolbar';
 import TemplateModal, { ChartTemplate } from '@/components/chart/TemplateModal';
-import { Layout, Maximize2, SplitSquareVertical, Grid2X2, History, RotateCcw, Loader2, Bookmark } from 'lucide-react';
+import SfpSettingsModal from '@/components/chart/SfpSettingsModal';
+import SfpDashboardTable from '@/components/chart/SfpDashboardTable';
+import { useSfpIndicator } from '@/components/chart/useSfpIndicator';
+import { Layout, Maximize2, SplitSquareVertical, Grid2X2, History, RotateCcw, Loader2, Bookmark, Eye, EyeOff, Settings } from 'lucide-react';
 import { fetchMarketCandles } from '@/lib/market-data';
 import { replayProviderInstance } from '@/lib/chart/providers/ReplayProvider';
 import type { OHLCV } from '@/lib/chart/providers/MultiAssetProvider';
@@ -73,6 +76,14 @@ export default function ProChartPage() {
 
   // Clean symbol string for provider (e.g. BTCUSDT, XAUUSD)
   const rawSymbol = selectedSymbol.includes(':') ? selectedSymbol.split(':').pop()! : selectedSymbol;
+
+  // --- SFP Indicator Controller Hook (Server-Side Protected & Default Active) ---
+  const sfp = useSfpIndicator({
+    workspace: workspaceInstance,
+    symbol: selectedSymbol,
+    timeframe: '15',
+    replayMode: isReplayMode,
+  });
 
   // Toggle Replay Mode
   const handleToggleReplay = async () => {
@@ -270,6 +281,30 @@ export default function ProChartPage() {
               <span>{isReplayMode ? 'REPLAY ACTIVE' : 'BAR REPLAY'}</span>
             </button>
 
+            {/* SFP Indicator Toggle & Settings */}
+            <div className="flex items-center gap-1 bg-zinc-800/90 p-1 rounded-lg border border-[var(--glass-border)] shadow-sm">
+              <button
+                onClick={sfp.toggleEnabled}
+                title={sfp.isEnabled ? 'Hide SFP Indicator' : 'Show SFP Indicator'}
+                className={`px-2.5 py-1 text-xs font-extrabold rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
+                  sfp.isEnabled
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {sfp.isEnabled ? <Eye size={14} className="text-emerald-400" /> : <EyeOff size={14} className="text-zinc-500" />}
+                <span>SFP</span>
+                {sfp.isLoading && <Loader2 size={12} className="animate-spin text-orange-400 ml-0.5" />}
+              </button>
+              <button
+                onClick={sfp.openSettings}
+                title="SFP Indicator Settings (Pine Script v6)"
+                className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <Settings size={14} />
+              </button>
+            </div>
+
             {/* Template Manager Button */}
             <button
               onClick={() => {
@@ -357,6 +392,17 @@ export default function ProChartPage() {
             onWorkspaceReady={(ws) => setWorkspaceInstance(ws)}
             className="w-full h-full"
           />
+
+          {/* SFP Multi-Timeframe Entry Model Dashboard Table */}
+          {sfp.isEnabled && sfp.settings.enableMTFEntry && sfp.statuses.length > 0 && (
+            <SfpDashboardTable
+              statuses={sfp.statuses}
+              position={sfp.settings.tablePosInput}
+              size={sfp.settings.tableSizeInput}
+              bgColor={sfp.settings.dashboardBg}
+              textColor={sfp.settings.dashboardText}
+            />
+          )}
         </div>
 
         {/* Chart & Drawing Templates Modal */}
@@ -376,6 +422,14 @@ export default function ProChartPage() {
             }
             refreshTemplateCount();
           }}
+        />
+
+        {/* SFP Indicator Settings Dialog (TradingView Style) */}
+        <SfpSettingsModal
+          isOpen={sfp.isSettingsOpen}
+          onClose={sfp.closeSettings}
+          settings={sfp.settings}
+          onSave={sfp.updateSettings}
         />
       </div>
     </AccessGuard>
