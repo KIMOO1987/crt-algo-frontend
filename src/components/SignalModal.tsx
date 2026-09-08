@@ -10,9 +10,16 @@ const DetailBox = ({ label, value, color = "text-zinc-900 dark:text-white", high
   </div>
 );
 
-const PriceRow = ({ label, value, color }: any) => (
+const PriceRow = ({ label, value, color, isFilled }: any) => (
   <div className="flex justify-between items-center py-2 border-b border-[var(--glass-border)] last:border-0">
-    <span className="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{label}</span>
+    <div className="flex items-center gap-1.5">
+      <span className="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{label}</span>
+      {isFilled && (
+        <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+          ✓ FILLED
+        </span>
+      )}
+    </div>
     <span className={`font-mono text-xs md:text-[13px] font-extrabold ${color}`}>{Number(value || 0).toFixed(5)}</span>
   </div>
 );
@@ -36,7 +43,10 @@ export default function SignalModal({ signal, onClose }: { signal: any, onClose:
 
   const statusText = signal.status || 'ACTIVE';
   const statusUpper = statusText.toUpperCase();
-  const isTp1Hit = statusUpper.includes('TP') || statusUpper.includes('WIN') || statusUpper.includes('BE') || statusUpper.includes('PROFIT');
+  const isTp4Hit = statusUpper.includes('TP4') || statusUpper === 'WIN';
+  const isTp3Hit = isTp4Hit || statusUpper.includes('TP3');
+  const isTp2Hit = isTp3Hit || statusUpper.includes('TP2');
+  const isTp1Hit = isTp2Hit || statusUpper.includes('TP') || statusUpper.includes('BE') || statusUpper.includes('PROFIT');
 
   // Live PnL & Live RR computation (fallback if not already attached)
   const entry = Number(signal.entry_price || 0);
@@ -107,9 +117,11 @@ export default function SignalModal({ signal, onClose }: { signal: any, onClose:
                   <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
                     statusUpper.includes('SL HIT')
                       ? 'text-red-500 animate-pulse'
-                      : isTp1Hit
-                        ? 'text-emerald-500'
-                        : 'text-orange-500'
+                      : isTp2Hit
+                        ? 'text-emerald-400 font-black'
+                        : isTp1Hit
+                          ? 'text-emerald-500'
+                          : 'text-orange-500'
                   }`}>
                     {statusText}
                   </span>
@@ -158,15 +170,15 @@ export default function SignalModal({ signal, onClose }: { signal: any, onClose:
 
                   {isSfp ? (
                     <>
-                      <PriceRow label="TP 1 (2RR)" value={signal.tp} color="text-emerald-500" />
-                      <PriceRow label="TP 2 (2.5RR)" value={signal.tp2} color="text-emerald-500" />
-                      <PriceRow label="TP 3 (4RR)" value={signal.tp3} color="text-emerald-500" />
-                      <PriceRow label="TP 4 (4.5RR)" value={signal.tp4} color="text-emerald-500" />
+                      <PriceRow label="TP 1 (2RR)" value={signal.tp} color="text-emerald-500" isFilled={isTp1Hit} />
+                      <PriceRow label="TP 2 (2.5RR)" value={signal.tp2} color="text-emerald-500" isFilled={isTp2Hit} />
+                      <PriceRow label="TP 3 (4RR)" value={signal.tp3} color="text-emerald-500" isFilled={isTp3Hit} />
+                      <PriceRow label="TP 4 (4.5RR)" value={signal.tp4} color="text-emerald-500" isFilled={isTp4Hit} />
                     </>
                   ) : (
                     <>
-                      <PriceRow label="TP 1 (EQ)" value={signal.tp} color="text-emerald-500" />
-                      <PriceRow label="TP 2 (TARGET)" value={signal.tp_secondary} color="text-emerald-500" />
+                      <PriceRow label="TP 1 (EQ)" value={signal.tp} color="text-emerald-500" isFilled={isTp1Hit} />
+                      <PriceRow label="TP 2 (TARGET)" value={signal.tp_secondary} color="text-emerald-500" isFilled={isTp2Hit} />
                     </>
                   )}
                 </div>
@@ -214,12 +226,20 @@ export default function SignalModal({ signal, onClose }: { signal: any, onClose:
                 <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-wider border flex items-center gap-1.5 whitespace-nowrap ${
                   statusUpper.includes('SL HIT')
                     ? 'bg-red-500/10 text-red-400 border-red-500/30'
-                    : isTp1Hit
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                      : 'bg-zinc-800/80 text-zinc-300 border-[var(--glass-border)]'
+                    : isTp2Hit
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+                      : isTp1Hit
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        : 'bg-zinc-800/80 text-zinc-300 border-[var(--glass-border)]'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${
-                    statusUpper.includes('SL HIT') ? 'bg-red-500 animate-pulse' : isTp1Hit ? 'bg-emerald-400' : 'bg-orange-500 animate-pulse'
+                    statusUpper.includes('SL HIT')
+                      ? 'bg-red-500 animate-pulse'
+                      : isTp2Hit
+                        ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                        : isTp1Hit
+                          ? 'bg-emerald-400'
+                          : 'bg-orange-500 animate-pulse'
                   }`} />
                   {statusText}
                 </span>
