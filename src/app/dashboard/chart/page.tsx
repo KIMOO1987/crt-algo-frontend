@@ -5,231 +5,11 @@ import AccessGuard from '@/components/AccessGuard';
 import VelaChart from '@/components/chart/VelaChart';
 import ReplayToolbar from '@/components/chart/ReplayToolbar';
 import TemplateModal, { ChartTemplate } from '@/components/chart/TemplateModal';
-import SfpSettingsModal, { SfpSettings, DEFAULT_SFP_SETTINGS } from '@/components/chart/SfpSettingsModal';
-import SfpDashboardTable, { MtfStatus } from '@/components/chart/SfpDashboardTable';
-import { Layout, Maximize2, SplitSquareVertical, Grid2X2, History, RotateCcw, Loader2, Bookmark, Eye, EyeOff, Settings } from 'lucide-react';
+import { Layout, Maximize2, SplitSquareVertical, Grid2X2, History, RotateCcw, Loader2, Bookmark } from 'lucide-react';
 import { fetchMarketCandles } from '@/lib/market-data';
 import { replayProviderInstance } from '@/lib/chart/providers/ReplayProvider';
 import type { OHLCV } from '@/lib/chart/providers/MultiAssetProvider';
 import type { VelaWorkspace } from '@luxalgo/vela/workspace';
-
-interface SfpDrawing {
-  id: string;
-  type: 'trendline' | 'hline' | 'ray' | 'text';
-  anchors: Array<{ time: number; price: number }>;
-  style?: {
-    lineColor?: string;
-    lineWidth?: number;
-    lineStyle?: 'solid' | 'dashed' | 'dotted';
-  };
-  text?: {
-    value: string;
-    color?: string;
-    size?: 'tiny' | 'small' | 'normal' | 'large';
-    bold?: boolean;
-    hAlign?: 'left' | 'center' | 'right';
-    vAlign?: 'top' | 'center' | 'bottom';
-  };
-}
-
-interface UseSfpIndicatorProps {
-  workspace: VelaWorkspace | null;
-  symbol: string;
-  timeframe?: string;
-  replayMode?: boolean;
-}
-
-function useSfpIndicator({
-  workspace,
-  symbol,
-  timeframe = '15',
-  replayMode = false,
-}: UseSfpIndicatorProps) {
-  // Indicator enabled state (default true as requested)
-  const [isEnabled, setIsEnabled] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    try {
-      const saved = localStorage.getItem('crt_sfp_enabled');
-      return saved !== null ? JSON.parse(saved) : true;
-    } catch {
-      return true;
-    }
-  });
-
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  // Indicator Settings
-  const [settings, setSettings] = useState<SfpSettings>(() => {
-    if (typeof window === 'undefined') return DEFAULT_SFP_SETTINGS;
-    try {
-      const saved = localStorage.getItem('crt_sfp_settings');
-      return saved ? { ...DEFAULT_SFP_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SFP_SETTINGS;
-    } catch {
-      return DEFAULT_SFP_SETTINGS;
-    }
-  });
-
-  const [statuses, setStatuses] = useState<MtfStatus[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Track created drawing IDs for clean updates and removal
-  const sfpDrawingIdsRef = useRef<string[]>([]);
-  const lastFetchRef = useRef<string>('');
-
-  // Save enabled toggle to localStorage
-  const toggleEnabled = useCallback(() => {
-    setIsEnabled((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('crt_sfp_enabled', JSON.stringify(next));
-      } catch (_) {}
-      return next;
-    });
-  }, []);
-
-  // Save settings to localStorage
-  const updateSettings = useCallback((newSettings: SfpSettings) => {
-    setSettings(newSettings);
-    try {
-      localStorage.setItem('crt_sfp_settings', JSON.stringify(newSettings));
-    } catch (_) {}
-  }, []);
-
-  // Clear all SFP drawings currently on chart
-  const clearSfpDrawings = useCallback((ws: VelaWorkspace | null) => {
-    if (!ws || !ws.chart || !ws.chart.drawings) return;
-    if (sfpDrawingIdsRef.current.length > 0) {
-      try {
-        ws.chart.drawings.removeMany(sfpDrawingIdsRef.current);
-      } catch (err) {
-        console.warn('[useSfpIndicator] Failed to remove previous SFP drawings:', err);
-      }
-      sfpDrawingIdsRef.current = [];
-    }
-  }, []);
-
-  // Fetch from server and render on chart
-  const calculateAndRender = useCallback(
-    async (force = false) => {
-      if (!workspace || !workspace.chart) return;
-
-      if (!isEnabled || !settings.showSFP) {
-        clearSfpDrawings(workspace);
-        setStatuses([]);
-        return;
-      }
-
-      const requestFingerprint = `${symbol}-${timeframe}-${JSON.stringify(settings)}-${replayMode}`;
-      if (!force && lastFetchRef.current === requestFingerprint) {
-        return;
-      }
-      lastFetchRef.current = requestFingerprint;
-
-      setIsLoading(true);
-
-      try {
-        await workspace.chart.ready();
-
-        const cleanSymbol = symbol.includes(':') ? symbol.split(':').pop()! : symbol;
-
-        // Fetch calculations from protected server-side API route
-        const res = await fetch('/api/indicator/sfp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            symbol: cleanSymbol,
-            timeframe,
-            settings,
-          }),
-        });
-
-        if (!res.ok) {
-          throw new Error(`SFP calculation request failed: ${res.statusText}`);
-        }
-
-        const data = await res.json();
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to calculate SFP');
-        }
-
-        // 1. Remove previous SFP drawings
-        clearSfpDrawings(workspace);
-
-        // 2. Render new drawings onto Vela chart
-        const newIds: string[] = [];
-        if (Array.isArray(data.drawings) && (workspace.chart as any).drawings) {
-          for (const d of data.drawings as SfpDrawing[]) {
-            try {
-              const drawingOptions: any = {
-                anchors: d.anchors,
-                style: d.style,
-              };
-              if (d.text) {
-                drawingOptions.text = d.text;
-              }
-              const created = (workspace.chart.drawings as any).add(d.type, drawingOptions);
-              if (created && (created as any).id) {
-                newIds.push((created as any).id);
-              }
-            } catch (dErr) {
-              console.warn('[useSfpIndicator] Failed to add drawing item:', dErr);
-            }
-          }
-        }
-
-        sfpDrawingIdsRef.current = newIds;
-        setStatuses(data.dashboard || []);
-        setStats(data.stats || null);
-      } catch (err) {
-        console.error('[useSfpIndicator] Calculation & rendering error:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [workspace, symbol, timeframe, isEnabled, settings, replayMode, clearSfpDrawings]
-  );
-
-  // Trigger calculation when workspace, symbol, timeframe, or settings update
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
-      if (workspace && !cancelled) {
-        await calculateAndRender(true);
-      }
-    };
-
-    run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [workspace, symbol, timeframe, isEnabled, settings, calculateAndRender]);
-
-  // Clean up drawings on unmount
-  useEffect(() => {
-    return () => {
-      if (workspace) {
-        clearSfpDrawings(workspace);
-      }
-    };
-  }, [workspace, clearSfpDrawings]);
-
-  return {
-    isEnabled,
-    toggleEnabled,
-    isSettingsOpen,
-    openSettings: () => setIsSettingsOpen(true),
-    closeSettings: () => setIsSettingsOpen(false),
-    settings,
-    updateSettings,
-    statuses,
-    stats,
-    isLoading,
-    refresh: () => calculateAndRender(true),
-  };
-}
 
 const QUICK_SYMBOLS = [
   { label: 'BTC/USDT', value: 'binance:BTCUSDT' },
@@ -293,14 +73,6 @@ export default function ProChartPage() {
 
   // Clean symbol string for provider (e.g. BTCUSDT, XAUUSD)
   const rawSymbol = selectedSymbol.includes(':') ? selectedSymbol.split(':').pop()! : selectedSymbol;
-
-  // --- SFP Indicator Controller Hook (Server-Side Protected & Default Active) ---
-  const sfp = useSfpIndicator({
-    workspace: workspaceInstance,
-    symbol: selectedSymbol,
-    timeframe: '15',
-    replayMode: isReplayMode,
-  });
 
   // Toggle Replay Mode
   const handleToggleReplay = async () => {
@@ -498,30 +270,6 @@ export default function ProChartPage() {
               <span>{isReplayMode ? 'REPLAY ACTIVE' : 'BAR REPLAY'}</span>
             </button>
 
-            {/* SFP Indicator Toggle & Settings */}
-            <div className="flex items-center gap-1 bg-zinc-800/90 p-1 rounded-lg border border-[var(--glass-border)] shadow-sm">
-              <button
-                onClick={sfp.toggleEnabled}
-                title={sfp.isEnabled ? 'Hide SFP Indicator' : 'Show SFP Indicator'}
-                className={`px-2.5 py-1 text-xs font-extrabold rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
-                  sfp.isEnabled
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {sfp.isEnabled ? <Eye size={14} className="text-emerald-400" /> : <EyeOff size={14} className="text-zinc-500" />}
-                <span>SFP</span>
-                {sfp.isLoading && <Loader2 size={12} className="animate-spin text-orange-400 ml-0.5" />}
-              </button>
-              <button
-                onClick={sfp.openSettings}
-                title="SFP Indicator Settings (Pine Script v6)"
-                className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
-              >
-                <Settings size={14} />
-              </button>
-            </div>
-
             {/* Template Manager Button */}
             <button
               onClick={() => {
@@ -609,17 +357,6 @@ export default function ProChartPage() {
             onWorkspaceReady={(ws) => setWorkspaceInstance(ws)}
             className="w-full h-full"
           />
-
-          {/* SFP Multi-Timeframe Entry Model Dashboard Table */}
-          {sfp.isEnabled && sfp.settings.enableMTFEntry && sfp.statuses.length > 0 && (
-            <SfpDashboardTable
-              statuses={sfp.statuses}
-              position={sfp.settings.tablePosInput}
-              size={sfp.settings.tableSizeInput}
-              bgColor={sfp.settings.dashboardBg}
-              textColor={sfp.settings.dashboardText}
-            />
-          )}
         </div>
 
         {/* Chart & Drawing Templates Modal */}
@@ -639,14 +376,6 @@ export default function ProChartPage() {
             }
             refreshTemplateCount();
           }}
-        />
-
-        {/* SFP Indicator Settings Dialog (TradingView Style) */}
-        <SfpSettingsModal
-          isOpen={sfp.isSettingsOpen}
-          onClose={sfp.closeSettings}
-          settings={sfp.settings}
-          onSave={sfp.updateSettings}
         />
       </div>
     </AccessGuard>
