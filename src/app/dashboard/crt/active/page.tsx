@@ -114,30 +114,77 @@ export default function ActiveSignalsPage() {
 
     // Realtime subscription to keep the dashboard live
     const channel = supabase.channel('active_signals_stream')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'signals' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'signals' }, (payload) => {
         fetchActive();
+        if (payload?.new && (payload.new as any).id) {
+          const updated = payload.new as any;
+          setSelectedSignal((prev: any) => {
+            if (prev && prev.id === updated.id) {
+              return {
+                ...prev,
+                ...updated,
+                rawStatus: updated.status,
+              };
+            }
+            return prev;
+          });
+        }
       }).subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  // Sync selectedSignal if activeSignals list updates or trade status changes
+  useEffect(() => {
+    if (!selectedSignal?.id) return;
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('signals')
+          .select('*')
+          .eq('id', selectedSignal.id)
+          .maybeSingle();
+        if (data) {
+          setSelectedSignal((prev: any) => {
+            if (!prev || prev.id !== data.id) return prev;
+            if (prev.status !== data.status || prev.is_active !== data.is_active || prev.rawStatus !== data.status) {
+              return {
+                ...prev,
+                ...data,
+                rawStatus: data.status,
+              };
+            }
+            return prev;
+          });
+        }
+      } catch (e) {}
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [selectedSignal?.id]);
+
   // 2. REAL-TIME PRICE UPDATES
   useEffect(() => {
     if (activeSignals.length === 0) return;
 
-    // --- A. BINANCE WEBSOCKET (ANY SUPPORTED ASSET) ---
-    const binanceSymbols = activeSignals.filter(s => {
-      const normalized = normalizeSymbol(s.symbol);
-      return SYMBOL_MAP[normalized]?.binance;
-    });
+    // Helper to extract Binance ticker for any crypto symbol
+    const getBinanceTicker = (symbol: string): string | null => {
+      const category = getSymbolCategory(symbol);
+      if (category !== 'CRYPTO') return null;
+      const mapped = getMappedSymbol(symbol, 'binance');
+      if (mapped) return mapped.toLowerCase();
+      const clean = normalizeSymbol(symbol);
+      return `${clean.toLowerCase()}usdt`;
+    };
+
+    // --- A. BINANCE WEBSOCKET (ALL CRYPTO ASSETS VIA SYMBOL_MAP OR DYNAMIC TIER) ---
+    const binanceSymbols = activeSignals.filter(s => getBinanceTicker(s.symbol) !== null);
 
     let socket: WebSocket | null = null;
 
     if (binanceSymbols.length > 0) {
-      const streams = binanceSymbols.map(s => {
-        const normalized = normalizeSymbol(s.symbol);
-        return `${SYMBOL_MAP[normalized].binance?.toLowerCase()}@ticker`;
-      }).join('/');
+      const streams = Array.from(new Set(
+        binanceSymbols.map(s => `${getBinanceTicker(s.symbol)}@ticker`)
+      )).join('/');
       
       const url = `wss://stream.binance.com:9443/stream?streams=${streams}`;
 
@@ -160,11 +207,8 @@ export default function ActiveSignalsPage() {
       };
     }
 
-    // --- B. NON-BINANCE POLLING (UNIFIED FALLBACK) ---
-    const otherSignals = activeSignals.filter(s => {
-      const normalized = normalizeSymbol(s.symbol);
-      return !SYMBOL_MAP[normalized]?.binance;
-    });
+    // --- B. NON-BINANCE POLLING (FOREX / METALS / INDICES) ---
+    const otherSignals = activeSignals.filter(s => getBinanceTicker(s.symbol) === null);
 
     const pollInterval = setInterval(async () => {
       if (otherSignals.length === 0) return;
@@ -353,10 +397,13 @@ export default function ActiveSignalsPage() {
                         <div className="flex items-center gap-2.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                           <Activity size={13} className="text-orange-500 animate-pulse" /> Status
                         </div>
-                        <span className={`text-[11px] font-extrabold uppercase tracking-wider ${getDisplayStatus(signal.status, livePrices[normalizeSymbol(signal.symbol)], signal).includes('SL HIT')
-                          ? 'text-red-500 animate-pulse'
-                          : 'text-orange-500'
-                          }`}>
+                        <span className={`text-[11px] font-extrabold uppercase tracking-wider ${(() => {
+                          const s = getDisplayStatus(signal.status, livePrices[normalizeSymbol(signal.symbol)], signal);
+                          if (s.includes('SL HIT')) return 'text-red-500 animate-pulse';
+                          if (s.includes('TP2')) return 'text-emerald-400 font-black';
+                          if (s.includes('TP1') || s.includes('WIN')) return 'text-emerald-500';
+                          return 'text-orange-500';
+                        })()}`}>
                           {getDisplayStatus(signal.status, livePrices[normalizeSymbol(signal.symbol)], signal)}
                         </span>
                       </div>
@@ -536,19 +583,56 @@ function getTimeAgo(timestamp: string) {
 // Global session latch to prevent status flapping on retracements after target hits
 const liveTargetLatch: Record<string, 'TP1' | 'TP2' | 'BE' | 'SL'> = {};
 
+function getTargetLatch(signalId?: string): 'TP1' | 'TP2' | 'BE' | 'SL' | undefined {
+  if (!signalId) return undefined;
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = sessionStorage.getItem(`crt_latch_${signalId}`);
+      if (stored === 'TP2' || stored === 'TP1' || stored === 'BE' || stored === 'SL') {
+        return stored;
+      }
+    } catch (e) {}
+  }
+  return liveTargetLatch[signalId];
+}
+
+function setTargetLatch(signalId: string, val: 'TP1' | 'TP2' | 'BE' | 'SL') {
+  if (!signalId) return;
+  const current = getTargetLatch(signalId);
+  // Enforce one-way progression: once TP2 is confirmed, never downgrade
+  if (current === 'TP2' && val !== 'TP2') return;
+  liveTargetLatch[signalId] = val;
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(`crt_latch_${signalId}`, val);
+    } catch (e) {}
+  }
+}
+
 function getDisplayStatus(status: string, livePrice?: number, signal?: any) {
   const statusUpper = status?.toUpperCase() || '';
 
-  // Seed latch from DB status if already confirmed
+  // Seed latch from DB status if already confirmed in database
   if (signal?.id) {
     if (statusUpper.includes('TP2') || statusUpper === 'WIN') {
-      liveTargetLatch[signal.id] = 'TP2';
-    } else if (statusUpper.includes('TP1') && liveTargetLatch[signal.id] !== 'TP2') {
-      liveTargetLatch[signal.id] = 'TP1';
+      setTargetLatch(signal.id, 'TP2');
+    } else if (statusUpper.includes('TP1')) {
+      setTargetLatch(signal.id, 'TP1');
+    } else if (statusUpper === 'SL') {
+      setTargetLatch(signal.id, 'SL');
+    } else if (statusUpper.includes('BE')) {
+      setTargetLatch(signal.id, 'BE');
     }
   }
 
-  // ORGANIC REAL-TIME DETECTION: For ALL asset classes
+  const latched = signal?.id ? getTargetLatch(signal.id) : undefined;
+
+  // 1. Target 2 Lock: If already latched or confirmed in DB, NEVER downgrade due to candle pullbacks
+  if (statusUpper.includes('TP2') || latched === 'TP2') {
+    return 'TP2 REACHED (LIVE)';
+  }
+
+  // 2. ORGANIC REAL-TIME DETECTION: For ALL asset classes
   if (livePrice && signal) {
     const entry = Number(signal.entry_price);
     const sl = Number(signal.sl);
@@ -558,39 +642,42 @@ function getDisplayStatus(status: string, livePrice?: number, signal?: any) {
     const isBuy = side === 'BUY' || side === 'BULLISH';
     const tolerance = 0.00005; // 0.005% threshold
 
-    const latched = signal.id ? liveTargetLatch[signal.id] : undefined;
-
-    // 1. Target 2 Detection
+    // Check Target 2 FIRST: Has livePrice reached TP2?
     if (tp2 && ((isBuy && livePrice >= (tp2 * (1 - tolerance))) || (!isBuy && livePrice <= (tp2 * (1 + tolerance))))) {
-      if (signal.id) liveTargetLatch[signal.id] = 'TP2';
+      if (signal.id) setTargetLatch(signal.id, 'TP2');
       return 'TP2 REACHED (LIVE)';
     }
 
-    // 2. Target 1 Detection
-    if (tp1 && ((isBuy && livePrice >= (tp1 * (1 - tolerance))) || (!isBuy && livePrice <= (tp1 * (1 + tolerance))))) {
-      if (signal.id && latched !== 'TP2') liveTargetLatch[signal.id] = 'TP1';
-      return 'TP1 REACHED (LIVE)';
-    }
-
-    // 3. Post-TP1 Latching (Holding Breakeven protection during pullbacks)
-    if (latched === 'TP2') {
-      return 'TP2 REACHED (LIVE)';
-    }
-
+    // Check if previously latched at TP1 (Holding Breakeven protection during pullbacks)
     if (latched === 'TP1') {
-      // Check if price retraced back to Breakeven (entry)
+      // Check if price retraced back to Breakeven (entry) or beyond into loss
       if (entry && ((isBuy && livePrice <= (entry * (1 + tolerance))) || (!isBuy && livePrice >= (entry * (1 - tolerance))))) {
+        if (signal.id) setTargetLatch(signal.id, 'BE');
         return 'BE REACHED (LIVE)';
       }
       // Still in profit with SL at Breakeven
       return 'TP1 REACHED (LIVE)';
     }
 
-    // 4. Invalidation Stop Loss (only if TP1 wasn't hit)
+    // Check Target 1: Has livePrice reached TP1?
+    if (tp1 && ((isBuy && livePrice >= (tp1 * (1 - tolerance))) || (!isBuy && livePrice <= (tp1 * (1 + tolerance))))) {
+      if (signal.id) setTargetLatch(signal.id, 'TP1');
+      return 'TP1 REACHED (LIVE)';
+    }
+
+    // Invalidation Stop Loss (only if TP1 wasn't hit)
     if (sl && ((isBuy && livePrice <= (sl * (1 + tolerance))) || (!isBuy && livePrice >= (sl * (1 - tolerance))))) {
+      if (signal.id) setTargetLatch(signal.id, 'SL');
       return 'SL HIT (LIVE)';
     }
   }
+
+  // Post-detection checks based on latch
+  const currentLatch = signal?.id ? getTargetLatch(signal.id) : undefined;
+  if (currentLatch === 'TP2') return 'TP2 REACHED (LIVE)';
+  if (currentLatch === 'TP1') return 'TP1 REACHED (LIVE)';
+  if (currentLatch === 'BE') return 'BE REACHED (LIVE)';
+  if (currentLatch === 'SL') return 'SL HIT (LIVE)';
 
   // Backup Logic for METALS, INDICES, FOREX or DB States
   switch (statusUpper) {
@@ -629,13 +716,15 @@ function getDynamicRR(signal: any) {
 
   if (!entry || !sl || entry === sl) return '0.0R';
   const risk = Math.abs(entry - sl);
+  const latched = signal.id ? getTargetLatch(signal.id) : undefined;
+  const statusUpper = signal.status?.toUpperCase() || '';
 
   // Outcome-based results
-  if (signal.status === 'SL') return '-1.0R';
-  if (signal.status === 'TP2' && tp2) {
+  if (statusUpper === 'SL' || latched === 'SL') return '-1.0R';
+  if ((statusUpper.includes('TP2') || latched === 'TP2') && tp2) {
     return `+${(Math.abs(tp2 - entry) / risk).toFixed(1)}R`;
   }
-  if ((signal.status === 'TP1' || signal.status === 'TP1 + SL (BE)') && tp1) {
+  if ((statusUpper.includes('TP1') || statusUpper === 'TP1 + SL (BE)' || latched === 'TP1') && tp1) {
     return `+${(Math.abs(tp1 - entry) / risk).toFixed(1)}R`;
   }
 
@@ -649,7 +738,7 @@ function getDynamicRR(signal: any) {
  */
 function calculateLiveRR(signal: any, livePrices: { [key: string]: number }) {
   const status = signal.status?.toUpperCase() || '';
-  const latched = signal.id ? liveTargetLatch[signal.id] : undefined;
+  const latched = signal.id ? getTargetLatch(signal.id) : undefined;
   const entry = Number(signal.entry_price || 0);
   const sl = Number(signal.sl || 0);
   const tp1 = Number(signal.tp || 0);
@@ -659,9 +748,21 @@ function calculateLiveRR(signal: any, livePrices: { [key: string]: number }) {
   if (!entry || !sl || risk === 0) return '0.00R';
 
   // Sealing logic for final states
-  if (status === 'SL') return '-1.00R';
-  if (status === 'TP2' && tp2) return `+${(Math.abs(tp2 - entry) / risk).toFixed(2)}R`;
-  if ((status === 'TP1' || status === 'TP1 + SL (BE)') && tp1) return `+${(Math.abs(tp1 - entry) / risk).toFixed(2)}R`;
+  if (status === 'SL' || latched === 'SL') return '-1.00R';
+  if ((status.includes('TP2') || latched === 'TP2') && tp2) {
+    const final_rr = (Math.abs(tp1 - entry) / risk) * 0.5 + (Math.abs(tp2 - entry) / risk) * 0.5;
+    return `+${final_rr.toFixed(2)}R`;
+  }
+  if ((status === 'TP1' || status === 'TP1 + SL (BE)' || latched === 'TP1') && tp1) {
+    const cleanSymbol = normalizeSymbol(signal.symbol);
+    const current = livePrices[cleanSymbol] ?? Number(signal.current_price || entry);
+    const side = signal.side?.toUpperCase();
+    const isBuy = side === 'BUY' || side === 'BULLISH';
+    const reward = isBuy ? (current - entry) : (entry - current);
+    const rr = reward / risk;
+    const final_rr = 1.00 + (0.50 * rr);
+    return `+${final_rr.toFixed(2)}R`;
+  }
 
   // Backup Logic: Always live calculation for Metals, Indices, Forex
   const cleanSymbol = normalizeSymbol(signal.symbol);
