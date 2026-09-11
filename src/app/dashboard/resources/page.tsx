@@ -174,14 +174,15 @@ export default function ResourcesPage() {
 
   // Handle Paid Checkout Submit (CRT-Algo +Ultimate)
   const openPaidCheckout = (id: string, name: string) => {
+    const existing = requests[id];
     setPaidIndicator({ id, name });
     setSelectedPlan(null);
     setPaymentMethod(null);
     setCheckoutStep('plan');
-    setCryptoTvUsername('');
+    setCryptoTvUsername(existing ? existing.tradingview_username : '');
     setCryptoTxHash('');
     setCryptoError('');
-    setWhopTvUsername('');
+    setWhopTvUsername(existing && existing.tradingview_username !== 'AWAITING_USER_INPUT' ? existing.tradingview_username : '');
     setWhopError('');
     setIsPaidModalOpen(true);
   };
@@ -208,6 +209,13 @@ export default function ResourcesPage() {
       return;
     }
 
+    const whopUrl = selectedPlan.duration === 12 ? WHOP_LINKS.twelve_month :
+                     selectedPlan.duration === 6 ? WHOP_LINKS.six_month :
+                     WHOP_LINKS.monthly;
+
+    // Option B: Open the tab synchronously inside user click event context before any await
+    const checkoutWindow = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null;
+
     setWhopSubmitting(true);
     setWhopError('');
 
@@ -230,17 +238,29 @@ export default function ResourcesPage() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Could not record pending Whop checkout invite:', error);
+      } else if (data) {
+        setRequests(prev => ({ ...prev, [paidIndicator.id]: data as InviteRequest }));
+      }
 
-      setRequests(prev => ({ ...prev, [paidIndicator.id]: data as InviteRequest }));
+      // Navigate the opened tab to Whop
+      if (checkoutWindow && !checkoutWindow.closed) {
+        checkoutWindow.location.href = whopUrl;
+      } else {
+        // Direct navigation fallback if popup was completely blocked
+        window.location.href = whopUrl;
+      }
 
-      const whopUrl = selectedPlan.duration === 12 ? WHOP_LINKS.twelve_month :
-                       selectedPlan.duration === 6 ? WHOP_LINKS.six_month :
-                       WHOP_LINKS.monthly;
-      window.open(whopUrl, '_blank');
       setIsPaidModalOpen(false);
     } catch (err: any) {
-      setWhopError(err.message || 'Failed to initialize Whop checkout.');
+      // Ensure the user is still guided to Whop checkout even if an unexpected local error occurred
+      if (checkoutWindow && !checkoutWindow.closed) {
+        checkoutWindow.location.href = whopUrl;
+        setIsPaidModalOpen(false);
+      } else {
+        setWhopError(err.message || 'Failed to initialize Whop checkout.');
+      }
     } finally {
       setWhopSubmitting(false);
     }
